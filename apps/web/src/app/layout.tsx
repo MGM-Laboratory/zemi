@@ -25,7 +25,22 @@ export const metadata: Metadata = {
   description:
     'Every Friday at 13:15, postgrads share research in progress. Undergrads welcome. Free, hybrid, a little chaotic.',
   applicationName: 'Zemi',
-  icons: { icon: '/brand/favicon.svg', apple: '/brand/apple-touch-icon.png' },
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/brand/favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/favicon.ico', sizes: '48x48' },
+    ],
+    apple: '/brand/apple-touch-icon.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'Zemi',
+    locale: 'en_US',
+    images: [{ url: '/brand/og-default.png', width: 1200, height: 630, alt: 'Zemi, the Friday seminar' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/brand/og-default.png'] },
 };
 
 export const viewport: Viewport = {

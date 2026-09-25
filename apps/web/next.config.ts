@@ -5,6 +5,8 @@ const apiInternal = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 const nextConfig: NextConfig = {
   outputFileTracingRoot: new URL('../..', import.meta.url).pathname,
   output: 'standalone',
+  // Lets several local dev servers run side by side (NEXT_DIST_DIR=.next-a next dev -p 3301).
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: ['three'],

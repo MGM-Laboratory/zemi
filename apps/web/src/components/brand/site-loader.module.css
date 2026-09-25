@@ -1,0 +1,162 @@
+/* First-visit loader. Everything is CSS so it runs before hydration and ends on its own. */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #0e1116;
+  clip-path: inset(0 0 0 0);
+  animation:
+    lift 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.74s forwards,
+    gone 0s linear 1.15s forwards;
+  will-change: clip-path;
+}
+
+:global(html[data-zemi-seen]) .root {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    display: none;
+  }
+}
+
+.stage {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  animation: stageOut 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.74s forwards;
+}
+
+.mark {
+  width: clamp(72px, 12vw, 112px);
+  height: auto;
+  overflow: visible;
+  animation: snap 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+}
+
+.shape {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: tumble 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.circle {
+  --from: translate(-70px, -90px) rotate(-200deg) scale(0.4);
+  animation-delay: 0s;
+}
+.triangle {
+  --from: translate(80px, -100px) rotate(170deg) scale(0.4);
+  animation-delay: 0.07s;
+}
+.square {
+  --from: translate(-80px, 90px) rotate(120deg) scale(0.4);
+  animation-delay: 0.14s;
+}
+.arch {
+  --from: translate(90px, 80px) rotate(-150deg) scale(0.4);
+  animation-delay: 0.21s;
+}
+
+.clock {
+  display: inline-flex;
+  font-family: var(--font-recursive), ui-monospace, monospace;
+  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-feature-settings: 'tnum';
+  font-weight: 600;
+  font-size: 1.125rem;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  animation: fadeUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.roll {
+  display: inline-block;
+  height: 1.2em;
+  overflow: hidden;
+}
+
+.rollInner {
+  display: grid;
+  animation: roll 0.28s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+}
+
+.label {
+  font-family: var(--font-recursive), ui-monospace, monospace;
+  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  animation: fadeUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.56s both;
+}
+
+@keyframes tumble {
+  from {
+    opacity: 0;
+    transform: var(--from);
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes snap {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.07);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes stageOut {
+  to {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.96);
+  }
+}
+
+@keyframes lift {
+  to {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes gone {
+  to {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}

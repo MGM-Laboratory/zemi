@@ -184,3 +184,18 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Public site foundation: reference every brand token once so Tailwind emits all of them as
+ * CSS variables. CSS modules and styles/public.css read them with var(--color-*), and Tailwind
+ * only emits theme variables that something in this build uses.
+ */
+:root {
+  --zemi-token-refs: var(--color-bg) var(--color-surface) var(--color-surface-muted) var(--color-surface-inverse)
+    var(--color-blue) var(--color-yellow) var(--color-red) var(--color-green) var(--color-blue-50)
+    var(--color-yellow-50) var(--color-red-50) var(--color-green-50) var(--color-blue-600) var(--color-yellow-600)
+    var(--color-red-600) var(--color-green-600) var(--color-ink) var(--color-ink-2) var(--color-ink-3)
+    var(--color-ink-4) var(--color-ink-inverse) var(--color-line) var(--color-line-strong) var(--color-graph)
+    var(--color-focus) var(--font-display) var(--font-body) var(--font-mono) var(--radius-card) var(--radius-cover)
+    var(--radius-input) var(--shadow-1) var(--shadow-2) var(--shadow-3) var(--ease-out) var(--ease-in-out);
+}

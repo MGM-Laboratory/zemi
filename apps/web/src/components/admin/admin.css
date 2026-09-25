@@ -1,0 +1,176 @@
+/*
+ * Admin-only CSS: keyframes and a few base rules for the calm studio look.
+ * Imported by the admin dashboard layout, the login page and the admin not-found page.
+ * Plain CSS (no @apply) so it does not depend on the Tailwind entry.
+ */
+
+.zemi-admin {
+  --admin-topbar-h: 60px;
+  --admin-sidebar-w: 264px;
+  --admin-sidebar-w-collapsed: 76px;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+
+.zemi-admin h1,
+.zemi-admin h2,
+.zemi-admin h3 {
+  font-variation-settings: 'CASL' 0.2, 'MONO' 0;
+}
+
+@keyframes zemi-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes zemi-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes zemi-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes zemi-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes zemi-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes zemi-slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes zemi-slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes zemi-draw {
+  from {
+    stroke-dashoffset: 16;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes zemi-indeterminate {
+  0% {
+    left: -35%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+@keyframes zemi-shimmer {
+  0% {
+    background-position: 150% 0;
+  }
+  100% {
+    background-position: -50% 0;
+  }
+}
+@keyframes zemi-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.zemi-skeleton {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: zemi-shimmer 1.4s ease-in-out infinite;
+}
+
+/* BlockNote inside the admin: brand fonts and colors. */
+.zemi-blocknote .bn-editor {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-ink);
+  padding-inline: 46px 18px;
+  background: transparent;
+}
+.zemi-blocknote .bn-container[data-color-scheme] {
+  --bn-colors-editor-text: var(--color-ink);
+  --bn-colors-editor-background: #ffffff;
+  --bn-colors-menu-text: var(--color-ink);
+  --bn-colors-menu-background: #ffffff;
+  --bn-colors-tooltip-text: #ffffff;
+  --bn-colors-tooltip-background: var(--color-ink);
+  --bn-colors-hovered-text: var(--color-ink);
+  --bn-colors-hovered-background: var(--color-surface-muted);
+  --bn-colors-selected-text: #ffffff;
+  --bn-colors-selected-background: var(--color-blue);
+  --bn-colors-disabled-text: var(--color-ink-4);
+  --bn-colors-disabled-background: var(--color-surface-muted);
+  --bn-colors-shadow: rgba(14, 17, 22, 0.12);
+  --bn-colors-border: var(--color-line);
+  --bn-colors-side-menu: var(--color-ink-4);
+  --bn-colors-highlights-yellow-background: var(--color-yellow-50);
+  --bn-colors-highlights-blue-background: var(--color-blue-50);
+  --bn-colors-highlights-red-background: var(--color-red-50);
+  --bn-colors-highlights-green-background: var(--color-green-50);
+  --bn-font-family: var(--font-body);
+  --bn-border-radius: 12px;
+}
+.zemi-blocknote .bn-editor h1,
+.zemi-blocknote .bn-editor h2,
+.zemi-blocknote .bn-editor h3,
+.zemi-blocknote [data-content-type='heading'] {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'CASL' 0.2;
+}
+.zemi-blocknote .bn-editor a {
+  color: var(--color-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zemi-skeleton {
+    animation: none;
+  }
+}

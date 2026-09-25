@@ -1,0 +1,59 @@
+/*
+ * Public site globals (imported by app/(public)/layout.tsx only).
+ * Component styles live in co-located CSS modules; this file holds page-level rules that
+ * must target <html>/<body> or third-party markup.
+ * Tokens come from app/globals.css (@theme). Always give var() a fallback here: Tailwind only
+ * emits theme variables that something in its own build uses.
+ */
+
+@layer base {
+  html[data-zemi-public] {
+    scroll-padding-top: calc(var(--nav-h, 72px) + 16px);
+    overflow-x: clip;
+  }
+
+  html[data-zemi-public] body {
+    overflow-x: clip;
+  }
+
+  /* Recursive renders its variable axes smoother with this. */
+  html[data-zemi-public] :is(h1, h2, h3, h4, .display) {
+    font-optical-sizing: auto;
+    font-kerning: normal;
+  }
+
+  /* Native cursor is hidden only while the custom cursor is active, never on text inputs. */
+  html[data-custom-cursor],
+  html[data-custom-cursor] * {
+    cursor: none !important;
+  }
+
+  html[data-custom-cursor]
+    :is(
+      input:not([type='checkbox'], [type='radio'], [type='range'], [type='submit'], [type='button']),
+      textarea,
+      [contenteditable]:not([contenteditable='false']),
+      select,
+      iframe
+    ) {
+    cursor: auto !important;
+  }
+
+  /* Lenis: let nested scrollers and dialogs scroll natively. */
+  html.lenis [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+}
+
+/* Sonner toasts in the brand voice. */
+[data-sonner-toaster][data-theme] {
+  --normal-bg: var(--color-ink, #0e1116);
+  --normal-text: #fff;
+  --normal-border: transparent;
+  --border-radius: 18px;
+  font-family: var(--font-body, system-ui);
+}
+
+[data-sonner-toast] {
+  font-weight: 600;
+}

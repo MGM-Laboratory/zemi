@@ -88,6 +88,13 @@ export const auditLogs = pgTable(
 /* ------------------------------------------------------------------ assets */
 
 export interface AssetVariants {
+  /**
+   * Processing revision. Appended to media URLs as `?v=<rev>` so re-processed files (recrop) bust the
+   * immutable cache while keys stay `assets/<id>/w<width>.<fmt>`. Additive, no migration needed (jsonb).
+   */
+  rev?: string;
+  /** Page count for PDFs, when cheap to read. */
+  pages?: number;
   /** width -> storage key */
   avif?: Record<string, string>;
   webp?: Record<string, string>;
@@ -206,6 +213,10 @@ export const events = pgTable(
     cancelReason: text('cancel_reason'),
     publishedAt: ts('published_at'),
     remindersScheduledFor: ts('reminders_scheduled_for'),
+    /** Lifecycle emails: set once each batch has been sent so the scheduler never double-sends. */
+    reminderSentAt: ts('reminder_sent_at'),
+    startingSentAt: ts('starting_sent_at'),
+    thanksSentAt: ts('thanks_sent_at'),
     createdBy: text('created_by'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

@@ -1,0 +1,20 @@
+# Shared by every Dockerfile built with the repo root as context (apps/api, apps/web).
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/.mail-outbox
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+.git
+.github
+.vscode
+.idea
+**/.DS_Store
+**/*.log
+playwright-report
+test-results
+apps/api/.tmp

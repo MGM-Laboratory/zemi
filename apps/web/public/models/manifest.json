@@ -1,0 +1,792 @@
+{
+  "version": 1,
+  "description": "Zemi 3D props (\"soft toy clay on white\"). glTF 2.0 binary, +Y up, 1 unit = 1 m, origin at the bottom center of each model, front faces +Z. Meshopt compressed: load with a MeshoptDecoder (drei useGLTF does this by default).",
+  "units": "meters",
+  "up": "+Y",
+  "front": "+Z",
+  "compression": "EXT_meshopt_compression + KHR_mesh_quantization",
+  "palette": {
+    "clay": "#f4f4f2",
+    "paper": "#fbfbf8",
+    "ink": "#0e1116",
+    "blue": "#3a6dc5",
+    "red": "#f94141",
+    "yellow": "#f7bf33",
+    "green": "#0f8657"
+  },
+  "generatedBy": "scripts/blender/build.py + scripts/blender/optimize.mjs",
+  "models": [
+    {
+      "id": "coffee-cup",
+      "title": "Coffee cup and saucer",
+      "file": "/models/coffee-cup.glb",
+      "preview": "/models/previews/coffee-cup.webp",
+      "bytes": 69484,
+      "kilobytes": 67.9,
+      "rawBytes": 347436,
+      "triangles": 18876,
+      "rootNode": "coffee_cup",
+      "meshes": [
+        "coffee",
+        "cup",
+        "cup_handle",
+        "saucer"
+      ],
+      "gltfMeshNames": [
+        "coffee",
+        "cup",
+        "cup_handle",
+        "saucer"
+      ],
+      "nodes": [
+        "coffee",
+        "coffee_cup",
+        "cup",
+        "cup_handle",
+        "saucer"
+      ],
+      "materials": [
+        "blue",
+        "clay",
+        "coffee"
+      ],
+      "pivots": {},
+      "bbox": {
+        "min": [
+          -0.07767,
+          0,
+          -0.07665
+        ],
+        "max": [
+          0.07767,
+          0.09328,
+          0.07665
+        ],
+        "size": [
+          0.15534,
+          0.09328,
+          0.1533
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Ceramic cup, blue saucer, a flat coffee surface mesh."
+    },
+    {
+      "id": "idea-bubble",
+      "title": "Idea bubble",
+      "file": "/models/idea-bubble.glb",
+      "preview": "/models/previews/idea-bubble.webp",
+      "bytes": 39580,
+      "kilobytes": 38.7,
+      "rawBytes": 230708,
+      "triangles": 9120,
+      "rootNode": "idea_bubble",
+      "meshes": [
+        "bubble",
+        "question_mark"
+      ],
+      "gltfMeshNames": [
+        "bubble",
+        "question_mark"
+      ],
+      "nodes": [
+        "bubble",
+        "idea_bubble",
+        "question_mark"
+      ],
+      "materials": [
+        "blue",
+        "paper"
+      ],
+      "pivots": {},
+      "bbox": {
+        "min": [
+          -0.156,
+          0,
+          -0.0435
+        ],
+        "max": [
+          0.156,
+          0.331,
+          0.0435
+        ],
+        "size": [
+          0.312,
+          0.331,
+          0.087
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Blue speech bubble with a white Recursive question mark, standing on its tail."
+    },
+    {
+      "id": "laptop",
+      "title": "Laptop",
+      "file": "/models/laptop.glb",
+      "preview": "/models/previews/laptop.webp",
+      "bytes": 59116,
+      "kilobytes": 57.7,
+      "rawBytes": 205888,
+      "triangles": 9416,
+      "rootNode": "laptop",
+      "meshes": [
+        "laptop_base",
+        "laptop_keys",
+        "laptop_lid",
+        "laptop_screen",
+        "laptop_trackpad",
+        "screen_slide",
+        "slide_arch",
+        "slide_circle",
+        "slide_square",
+        "slide_subtitle",
+        "slide_title",
+        "slide_triangle"
+      ],
+      "gltfMeshNames": [
+        "laptop_base",
+        "laptop_keys",
+        "laptop_lid",
+        "laptop_screen",
+        "laptop_trackpad",
+        "screen_slide",
+        "slide_arch",
+        "slide_circle",
+        "slide_square",
+        "slide_subtitle",
+        "slide_title",
+        "slide_triangle"
+      ],
+      "nodes": [
+        "laptop",
+        "laptop_base",
+        "laptop_keys",
+        "laptop_lid",
+        "laptop_screen",
+        "laptop_trackpad",
+        "lid_hinge",
+        "screen_slide",
+        "slide_arch",
+        "slide_circle",
+        "slide_square",
+        "slide_subtitle",
+        "slide_title",
+        "slide_triangle"
+      ],
+      "materials": [
+        "blue",
+        "clay",
+        "green",
+        "grey",
+        "ink",
+        "ink_soft",
+        "line",
+        "red",
+        "screen_slide",
+        "yellow"
+      ],
+      "pivots": {
+        "lid_hinge": {
+          "position": [
+            0,
+            0.014,
+            -0.07648
+          ],
+          "rotation": [
+            -0.12186934798955917,
+            0,
+            0,
+            0.9925461411476135
+          ],
+          "parent": "laptop"
+        }
+      },
+      "bbox": {
+        "min": [
+          -0.155,
+          0,
+          -0.13252
+        ],
+        "max": [
+          0.155,
+          0.21208,
+          0.13252
+        ],
+        "size": [
+          0.31,
+          0.21208,
+          0.26504
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Open generic laptop. `lid_hinge` rotates about local X: -0.244 rad open (file default), about +1.54 rad closed.",
+      "hinge": {
+        "node": "lid_hinge",
+        "axis": "local +X",
+        "open": -0.2443,
+        "closed": 1.54
+      }
+    },
+    {
+      "id": "microphone",
+      "title": "Desk microphone",
+      "file": "/models/microphone.glb",
+      "preview": "/models/previews/microphone.webp",
+      "bytes": 51000,
+      "kilobytes": 49.8,
+      "rawBytes": 201444,
+      "triangles": 10768,
+      "rootNode": "microphone",
+      "meshes": [
+        "mic_base",
+        "mic_grille",
+        "mic_grille_band",
+        "mic_handle",
+        "mic_holder",
+        "mic_ring",
+        "mic_stem"
+      ],
+      "gltfMeshNames": [
+        "mic_base",
+        "mic_grille",
+        "mic_grille_band",
+        "mic_handle",
+        "mic_holder",
+        "mic_ring",
+        "mic_stem"
+      ],
+      "nodes": [
+        "mic_base",
+        "mic_grille",
+        "mic_grille_band",
+        "mic_handle",
+        "mic_head",
+        "mic_holder",
+        "mic_ring",
+        "mic_stem",
+        "microphone"
+      ],
+      "materials": [
+        "grey",
+        "ink",
+        "ink_soft",
+        "red",
+        "steel"
+      ],
+      "pivots": {
+        "mic_head": {
+          "position": [
+            0,
+            0.125,
+            -0.013
+          ],
+          "rotation": [
+            0.27563735842704773,
+            0,
+            0,
+            0.9612617492675781
+          ],
+          "parent": "microphone"
+        }
+      },
+      "bbox": {
+        "min": [
+          -0.06454,
+          0,
+          -0.07754
+        ],
+        "max": [
+          0.06454,
+          0.25549,
+          0.07754
+        ],
+        "size": [
+          0.12908,
+          0.25549,
+          0.15508
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Ink body with a red ring, tilted towards the front (+Z in glTF)."
+    },
+    {
+      "id": "paper-plane",
+      "title": "Paper plane",
+      "file": "/models/paper-plane.glb",
+      "preview": "/models/previews/paper-plane.webp",
+      "bytes": 17680,
+      "kilobytes": 17.3,
+      "rawBytes": 49612,
+      "triangles": 1768,
+      "rootNode": "paper_plane",
+      "meshes": [
+        "keel",
+        "sticker_hunch",
+        "sticker_q",
+        "wing_left",
+        "wing_right"
+      ],
+      "gltfMeshNames": [
+        "keel",
+        "sticker_hunch",
+        "sticker_q",
+        "wing_left",
+        "wing_right"
+      ],
+      "nodes": [
+        "keel",
+        "paper_plane",
+        "plane_body",
+        "sticker_hunch",
+        "sticker_q",
+        "wing_left",
+        "wing_right"
+      ],
+      "materials": [
+        "blue",
+        "paper",
+        "red"
+      ],
+      "pivots": {
+        "plane_body": {
+          "position": [
+            0.01743,
+            0.01712,
+            0.02354
+          ],
+          "rotation": [
+            -0.12164203822612762,
+            -0.007439946290105581,
+            0.06059349328279495,
+            0.9906948804855347
+          ],
+          "parent": "paper_plane"
+        }
+      },
+      "bbox": {
+        "min": [
+          -0.15807,
+          0,
+          -0.11151
+        ],
+        "max": [
+          0.15807,
+          0.11989,
+          0.11151
+        ],
+        "size": [
+          0.31614,
+          0.11989,
+          0.22302
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Nose points +X. Two tiny brand-shape stickers on the wings."
+    },
+    {
+      "id": "paper-stack",
+      "title": "Paper stack with binder clip",
+      "file": "/models/paper-stack.glb",
+      "preview": "/models/previews/paper-stack.webp",
+      "bytes": 31548,
+      "kilobytes": 30.8,
+      "rawBytes": 95592,
+      "triangles": 4292,
+      "rootNode": "paper_stack",
+      "meshes": [
+        "binder_clip",
+        "clip_handle_a",
+        "clip_handle_b",
+        "sheet_1",
+        "sheet_2",
+        "sheet_3",
+        "sheet_4",
+        "sheet_5",
+        "sheet_figure_bars",
+        "sheet_figure_dot",
+        "sheet_text",
+        "sheet_title"
+      ],
+      "gltfMeshNames": [
+        "binder_clip",
+        "clip_handle_a",
+        "clip_handle_b",
+        "sheet_1",
+        "sheet_figure_bars",
+        "sheet_figure_dot",
+        "sheet_text",
+        "sheet_title"
+      ],
+      "nodes": [
+        "binder_clip",
+        "clip_handle_a",
+        "clip_handle_b",
+        "paper_stack",
+        "sheet_1",
+        "sheet_2",
+        "sheet_3",
+        "sheet_4",
+        "sheet_5",
+        "sheet_figure_bars",
+        "sheet_figure_dot",
+        "sheet_text",
+        "sheet_title"
+      ],
+      "materials": [
+        "blue",
+        "grey",
+        "ink",
+        "paper",
+        "red",
+        "steel",
+        "yellow"
+      ],
+      "pivots": {},
+      "bbox": {
+        "min": [
+          -0.12287,
+          0,
+          -0.17081
+        ],
+        "max": [
+          0.12287,
+          0.0654,
+          0.17081
+        ],
+        "size": [
+          0.24574,
+          0.0654,
+          0.34162
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Five A4 sheets, slightly fanned. Top sheet has a title, text lines and a tiny chart."
+    },
+    {
+      "id": "seminar-table",
+      "title": "Round seminar table",
+      "file": "/models/seminar-table.glb",
+      "preview": "/models/previews/seminar-table.webp",
+      "bytes": 62424,
+      "kilobytes": 61,
+      "rawBytes": 329324,
+      "triangles": 18112,
+      "rootNode": "seminar_table",
+      "meshes": [
+        "table_column",
+        "table_foot",
+        "table_top"
+      ],
+      "gltfMeshNames": [
+        "table_column",
+        "table_foot",
+        "table_top"
+      ],
+      "nodes": [
+        "seminar_table",
+        "table_column",
+        "table_foot",
+        "table_top"
+      ],
+      "materials": [
+        "clay",
+        "ink"
+      ],
+      "pivots": {},
+      "bbox": {
+        "min": [
+          -0.55,
+          0,
+          -0.55
+        ],
+        "max": [
+          0.55,
+          0.75,
+          0.55
+        ],
+        "size": [
+          1.1,
+          0.75,
+          1.1
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "1.1 m round top at 0.75 m. Clay top and column, ink foot."
+    },
+    {
+      "id": "stool",
+      "title": "Stool",
+      "file": "/models/stool.glb",
+      "preview": "/models/previews/stool.webp",
+      "bytes": 44784,
+      "kilobytes": 43.7,
+      "rawBytes": 202896,
+      "triangles": 11488,
+      "rootNode": "stool",
+      "meshes": [
+        "stool_foot_1",
+        "stool_foot_2",
+        "stool_foot_3",
+        "stool_foot_4",
+        "stool_footrest",
+        "stool_leg_1",
+        "stool_leg_2",
+        "stool_leg_3",
+        "stool_leg_4",
+        "stool_seat",
+        "stool_seat_base"
+      ],
+      "gltfMeshNames": [
+        "stool_foot_1",
+        "stool_footrest",
+        "stool_leg_1",
+        "stool_seat",
+        "stool_seat_base"
+      ],
+      "nodes": [
+        "stool",
+        "stool_foot_1",
+        "stool_foot_2",
+        "stool_foot_3",
+        "stool_foot_4",
+        "stool_footrest",
+        "stool_leg_1",
+        "stool_leg_2",
+        "stool_leg_3",
+        "stool_leg_4",
+        "stool_seat",
+        "stool_seat_base"
+      ],
+      "materials": [
+        "clay",
+        "ink",
+        "yellow"
+      ],
+      "pivots": {},
+      "bbox": {
+        "min": [
+          -0.18107,
+          0,
+          -0.18107
+        ],
+        "max": [
+          0.18107,
+          0.47867,
+          0.18107
+        ],
+        "size": [
+          0.36214,
+          0.47867,
+          0.36214
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Seat is yellow in the file; recolor `stool_seat` per event accent (material `yellow`)."
+    },
+    {
+      "id": "wall-clock",
+      "title": "Wall clock",
+      "file": "/models/wall-clock.glb",
+      "preview": "/models/previews/wall-clock.webp",
+      "bytes": 85516,
+      "kilobytes": 83.5,
+      "rawBytes": 392404,
+      "triangles": 19696,
+      "rootNode": "wall_clock",
+      "meshes": [
+        "clock_face",
+        "clock_pin",
+        "clock_rim",
+        "hour_dots",
+        "hour_hand_mesh",
+        "marker_arch",
+        "marker_circle",
+        "marker_square",
+        "marker_triangle",
+        "minute_hand_mesh"
+      ],
+      "gltfMeshNames": [
+        "clock_face",
+        "clock_pin",
+        "clock_rim",
+        "hour_dots",
+        "hour_hand",
+        "marker_arch",
+        "marker_circle",
+        "marker_square",
+        "marker_triangle",
+        "minute_hand"
+      ],
+      "nodes": [
+        "clock_face",
+        "clock_pin",
+        "clock_rim",
+        "hour_dots",
+        "hour_hand",
+        "hour_hand_mesh",
+        "marker_arch",
+        "marker_circle",
+        "marker_square",
+        "marker_triangle",
+        "minute_hand",
+        "minute_hand_mesh",
+        "wall_clock"
+      ],
+      "materials": [
+        "blue",
+        "clay",
+        "green",
+        "ink",
+        "red",
+        "yellow"
+      ],
+      "pivots": {
+        "hour_hand": {
+          "position": [
+            0,
+            0.15965,
+            0.0131
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "parent": "wall_clock"
+        },
+        "minute_hand": {
+          "position": [
+            0,
+            0.15965,
+            0.0181
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "parent": "wall_clock"
+        }
+      },
+      "bbox": {
+        "min": [
+          -0.15965,
+          0,
+          -0.0254
+        ],
+        "max": [
+          0.15965,
+          0.3193,
+          0.0254
+        ],
+        "size": [
+          0.3193,
+          0.3193,
+          0.0508
+        ]
+      },
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_clearcoat",
+        "KHR_materials_sheen",
+        "KHR_mesh_quantization"
+      ],
+      "notes": "Rotate the empties `hour_hand` and `minute_hand` about their local Z axis (glTF). 0 rad = 12 o'clock, negative = clockwise seen from the front. 13:15 => minute -PI/2, hour -(1.25/12)*2PI.",
+      "hands": {
+        "pivotNodes": [
+          "hour_hand",
+          "minute_hand"
+        ],
+        "meshNodes": [
+          "hour_hand_mesh",
+          "minute_hand_mesh"
+        ],
+        "axis": "local +Z (towards the viewer)",
+        "zeroAt": "12 o'clock",
+        "clockwise": "negative rotation",
+        "example_13_15": {
+          "hour_hand": -0.6544985,
+          "minute_hand": -1.5707963
+        }
+      }
+    }
+  ]
+}
