@@ -1,16 +1,43 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Atkinson_Hyperlegible_Next, Recursive } from 'next/font/google';
 import type { ReactNode } from 'react';
 import './globals.css';
 import { Providers } from './providers';
 
+const recursive = Recursive({
+  subsets: ['latin', 'latin-ext'],
+  axes: ['CASL', 'MONO', 'slnt', 'CRSV'],
+  variable: '--font-recursive',
+  display: 'swap',
+});
+
+const atkinson = Atkinson_Hyperlegible_Next({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-atkinson',
+  display: 'swap',
+});
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3300';
+
 export const metadata: Metadata = {
-  title: 'Zemi',
-  description: 'Zemi application',
+  metadataBase: new URL(siteUrl),
+  title: { default: 'Zemi, the Friday seminar', template: '%s · Zemi' },
+  description:
+    'Every Friday at 13:15, postgrads share research in progress. Undergrads welcome. Free, hybrid, a little chaotic.',
+  applicationName: 'Zemi',
+  icons: { icon: '/brand/favicon.svg', apple: '/brand/apple-touch-icon.png' },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#ffffff',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${recursive.variable} ${atkinson.variable}`} suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>

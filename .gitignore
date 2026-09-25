@@ -8,3 +8,9 @@ coverage
 .env.local
 !.env.example
 
+.mail-outbox
+apps/api/.tmp
+playwright-report
+test-results
+.DS_Store
+*.log

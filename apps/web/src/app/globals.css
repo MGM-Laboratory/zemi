@@ -1,16 +1,186 @@
 @import 'tailwindcss';
 
+/*
+ * Zemi design tokens. See docs/DESIGN.md.
+ * Tailwind utilities are generated from @theme (bg-blue, text-ink-2, font-display, ...).
+ */
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f7f5;
+  --color-surface-inverse: #0e1116;
+
+  --color-blue: #3a6dc5;
+  --color-yellow: #f7bf33;
+  --color-red: #f94141;
+  --color-green: #0f8657;
+  --color-blue-50: #ecf1fa;
+  --color-yellow-50: #fef6e0;
+  --color-red-50: #fee5e5;
+  --color-green-50: #e2f1ea;
+  --color-blue-600: #2f5aa6;
+  --color-yellow-600: #d99e12;
+  --color-red-600: #d92f2f;
+  --color-green-600: #0b6b45;
+
+  --color-ink: #0e1116;
+  --color-ink-2: #3b4150;
+  --color-ink-3: #6b7280;
+  --color-ink-4: #9aa1ad;
+  --color-ink-inverse: #f5f6f8;
+
+  --color-line: #ececea;
+  --color-line-strong: #d8d8d2;
+  --color-graph: #eef1f6;
+  --color-focus: #3a6dc5;
+
+  --font-display: var(--font-recursive), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-recursive), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 28px;
+  --radius-cover: 24px;
+  --radius-input: 14px;
+
+  --shadow-1: 0 1px 2px rgba(14, 17, 22, 0.04), 0 1px 1px rgba(14, 17, 22, 0.03);
+  --shadow-2: 0 6px 24px -8px rgba(14, 17, 22, 0.1), 0 2px 6px -2px rgba(14, 17, 22, 0.05);
+  --shadow-3: 0 24px 60px -20px rgba(14, 17, 22, 0.18), 0 4px 12px -4px rgba(14, 17, 22, 0.06);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --breakpoint-xs: 380px;
+  --breakpoint-3xl: 1920px;
+}
+
 :root {
   color-scheme: light;
+  --page-margin: clamp(16px, 4vw, 64px);
+  --gutter: clamp(16px, 2.5vw, 40px);
+  --section-y: clamp(80px, 14vh, 200px);
+  --max-content: 1680px;
+  --nav-h: 72px;
 }
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  ::selection {
+    background: var(--color-yellow);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  img,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-variation-settings: 'CASL' 0, 'MONO' 0;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
 }
 
-main {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
+@layer utilities {
+  /* Recursive as a monospace utility face: times, codes, labels. */
+  .mono {
+    font-family: var(--font-mono);
+    font-variation-settings: 'MONO' 1, 'CASL' 0;
+    letter-spacing: 0;
+    font-feature-settings: 'ss01', 'tnum';
+  }
+  .label {
+    font-family: var(--font-mono);
+    font-variation-settings: 'MONO' 1, 'CASL' 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .display {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+  }
+  .text-display-xl {
+    font-size: clamp(3.25rem, 10.5vw, 11rem);
+    line-height: 0.88;
+  }
+  .text-display-l {
+    font-size: clamp(2.5rem, 7vw, 6.5rem);
+    line-height: 0.92;
+  }
+  .text-display-m {
+    font-size: clamp(2rem, 4.4vw, 4rem);
+    line-height: 0.98;
+  }
+  .text-title {
+    font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+    line-height: 1.1;
+  }
+  .text-body-l {
+    font-size: 1.25rem;
+    line-height: 1.5;
+  }
+  .graph-paper {
+    background-image:
+      linear-gradient(to right, var(--color-graph) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-graph) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .container-page {
+    width: 100%;
+    max-width: var(--max-content);
+    margin-inline: auto;
+    padding-inline: var(--page-margin);
+  }
+  .highlight {
+    background-image: linear-gradient(transparent 58%, var(--color-yellow) 58%, var(--color-yellow) 92%, transparent 92%);
+    background-repeat: no-repeat;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

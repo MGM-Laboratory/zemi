@@ -1,0 +1,52 @@
+# Local development infrastructure for Zemi.
+# Ports are offset so they don't collide with other local projects.
+name: zemi-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: zemi
+      POSTGRES_PASSWORD: zemi
+      POSTGRES_DB: zemi
+    ports:
+      - '55440:5432'
+    volumes:
+      - zemi-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U zemi']
+      interval: 5s
+      retries: 10
+
+  # The API creates the bucket on boot when S3_AUTO_CREATE_BUCKET=true.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: zemi
+      MINIO_ROOT_PASSWORD: zemi-secret
+    ports:
+      - '59000:9000'
+      - '59001:9001'
+    volumes:
+      - zemi-minio:/data
+
+  media:
+    build:
+      context: ./apps/media
+    environment:
+      ZEMI_API_INTERNAL_URL: http://host.docker.internal:4000
+      MEDIA_INTERNAL_SECRET: dev-media-secret
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '51935:1935'
+      - '58888:8888'
+      - '59997:9997'
+    volumes:
+      - zemi-recordings:/recordings
+
+volumes:
+  zemi-pg:
+  zemi-minio:
+  zemi-recordings:

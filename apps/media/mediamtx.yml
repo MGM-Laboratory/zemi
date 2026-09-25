@@ -1,0 +1,74 @@
+###############################################################################
+# Zemi media server (MediaMTX v1.21.1)
+#
+# Public surface: RTMP ingest only (Railway TCP proxy -> :1935).
+# Private surface (Railway private network): HLS :8888, control API :9997.
+#
+# Every publish/read is authorized by the Zemi API over HTTP. The API decides
+# whether OBS may publish (stream key + private key) and only lets the API's
+# own HLS proxy read. Viewers never talk to MediaMTX directly.
+#
+# MTX_AUTHHTTPADDRESS is injected by entrypoint.sh from ZEMI_API_INTERNAL_URL.
+###############################################################################
+
+logLevel: info
+logDestinations: [stdout]
+
+# OBS on flaky venue wifi stalls sometimes. 60s tolerates hiccups without
+# dropping the publisher, while still detecting a dead peer.
+readTimeout: 60s
+writeTimeout: 60s
+writeQueueSize: 1024
+
+authMethod: http
+authHTTPAddress: http://127.0.0.1:4000/api/v1/internal/media/auth
+authHTTPExclude:
+  - action: api
+  - action: metrics
+  - action: pprof
+
+api: true
+apiAddress: :9997
+
+metrics: false
+pprof: false
+playback: false
+
+rtsp: true
+rtspTransports: [tcp]
+rtspAddress: :8554
+
+rtmp: true
+rtmpAddress: :1935
+
+hls: true
+hlsAddress: :8888
+hlsAllowOrigins: ['*']
+hlsAlwaysRemux: true
+hlsVariant: fmp4
+hlsSegmentCount: 8
+hlsSegmentDuration: 2s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsMuxerCloseAfter: 60s
+
+webrtc: false
+moq: false
+srt: false
+
+pathDefaults:
+  source: publisher
+  record: false
+
+paths:
+  '~^live/[A-Za-z0-9_-]+$':
+    record: true
+    recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordFormat: fmp4
+    recordPartDuration: 1s
+    recordSegmentDuration: 60s
+    # Safety net only. Segments are deleted right after a successful upload.
+    recordDeleteAfter: 72h
+    runOnOnline: /zemi/hook.sh online
+    runOnOffline: /zemi/hook.sh offline
+    runOnRecordSegmentComplete: /zemi/upload-segment.sh

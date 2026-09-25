@@ -1,13 +1,22 @@
 packages:
   - apps/*
+  - packages/*
 
 allowBuilds:
   '@parcel/watcher': true
   '@scarf/scarf': true
   unrs-resolver: true
+  sharp: true
+  esbuild: true
+  '@swc/core': true
+  '@nestjs/core': true
+  protobufjs: true
+  '@tailwindcss/oxide': true
 
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@swc/core'
   - esbuild
   - sharp
+  - protobufjs
+  - '@tailwindcss/oxide'
