@@ -41,6 +41,8 @@ export interface ImageUploadCropProps {
   /** Short hint under the drop zone. */
   hint?: string;
   id?: string;
+  /** Override the crop aspect (width / height) for free-shape purposes, like 1.91 for a share image. */
+  aspect?: number | null;
 }
 
 type Phase =
@@ -60,10 +62,10 @@ const ACCEPT = { 'image/jpeg': [], 'image/png': [], 'image/webp': [], 'image/avi
  * @example
  * <ImageUploadCrop purpose="event-cover" value={field.value} initialImage={event?.cover} onChange={(id) => field.onChange(id)} />
  */
-export function ImageUploadCrop({ value, onChange, purpose, initialImage, alt, maxSize = 40 * 1024 * 1024, readOnly: ro, round: roundProp, className, hint, id }: ImageUploadCropProps) {
+export function ImageUploadCrop({ value, onChange, purpose, initialImage, alt, maxSize = 40 * 1024 * 1024, readOnly: ro, round: roundProp, className, hint, id, aspect: aspectProp }: ImageUploadCropProps) {
   const readOnly = useReadOnly(ro);
   const aria = useFieldControlProps({ id });
-  const aspect = PURPOSE_ASPECT[purpose];
+  const aspect = aspectProp !== undefined ? aspectProp : PURPOSE_ASPECT[purpose];
   const round = roundProp ?? purpose.endsWith('avatar');
   const [phase, setPhase] = useState<Phase>({ k: 'idle' });
   const [file, setFile] = useState<{ file: File; url: string } | null>(null);

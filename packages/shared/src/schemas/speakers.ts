@@ -49,7 +49,8 @@ export interface SpeakerPublic extends SpeakerRef {
   bio: Blocks;
   links: LinkItem[];
   talks: SpeakerTalk[];
-  publications: Array<{ slug: string; title: string; type: string; year: number | null }>;
+  /** `id` is optional (added for admin links); older payloads may omit it. */
+  publications: Array<{ id?: string; slug: string; title: string; type: string; year: number | null }>;
   talkCount: number;
 }
 
@@ -69,3 +70,42 @@ export const speakerListQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(24),
 });
+
+/** GET /public/speakers item: SpeakerRef + how many published talks and when the latest one was. */
+export interface SpeakerCard extends SpeakerRef {
+  /** Distinct published, not cancelled events this person is on. */
+  talkCount: number;
+  /** startsAt of their latest published talk (ISO), or null. */
+  latestTalkAt: string | null;
+}
+
+/** GET /admin/speakers row (lighter than SpeakerAdmin: no bio, talks or publications). */
+export interface SpeakerAdminRow extends SpeakerRef {
+  visibility: z.infer<typeof visibilitySchema>;
+  avatarAssetId: string | null;
+  /** Distinct events (any visibility) this person is on. */
+  talkCount: number;
+  latestTalkAt: string | null;
+  publicationCount: number;
+  createdAt: string;
+  updatedAt: string;
+  permissions: ContentAction[];
+}
+
+/**
+ * POST /admin/speakers body. Same as `speakerInput`, but `slug` may be left out: the API makes a unique
+ * one from `fullName` (handy for "add this person" from a picker).
+ */
+export const speakerCreateInput = speakerInput.extend({ slug: slugSchema.optional() });
+export type SpeakerCreateInput = z.infer<typeof speakerCreateInput>;
+
+/** DELETE /admin/speakers/:id result. Their talks are removed from events; paper authorships keep the name. */
+export interface SpeakerDeleteResult {
+  ok: true;
+  /** event_speakers rows removed (one per talk). */
+  affectedTalks: number;
+  /** Distinct events that lost this speaker. */
+  affectedEvents: number;
+  /** Publication author rows turned into manual authors (name, photo and organization copied over). */
+  authorshipsKept: number;
+}

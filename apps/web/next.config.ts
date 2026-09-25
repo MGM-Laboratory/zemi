@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-const apiInternal = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
+const apiInternal = process.env.API_INTERNAL_URL ?? 'http://localhost:4400';
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: new URL('../..', import.meta.url).pathname,

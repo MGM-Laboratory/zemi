@@ -22,7 +22,7 @@ import {
 } from '@zemi/shared';
 import { cacheTags } from './tags';
 
-const API_BASE = (process.env.API_INTERNAL_URL ?? 'http://localhost:4000').replace(/\/+$/, '');
+const API_BASE = (process.env.API_INTERNAL_URL ?? 'http://localhost:4400').replace(/\/+$/, '');
 const DEFAULT_REVALIDATE = 30;
 const TIMEOUT_MS = 4000;
 

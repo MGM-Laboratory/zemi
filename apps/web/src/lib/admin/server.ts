@@ -8,7 +8,7 @@ import { ApiError, apiErrorFromBody, buildQuery, type QueryParams } from './api'
  * Do not import this file from client components: it reads request cookies.
  */
 
-const API_INTERNAL_URL = (process.env.API_INTERNAL_URL ?? 'http://localhost:4000').replace(/\/+$/, '');
+const API_INTERNAL_URL = (process.env.API_INTERNAL_URL ?? 'http://localhost:4400').replace(/\/+$/, '');
 
 export type MeResult =
   | { ok: true; me: Me }

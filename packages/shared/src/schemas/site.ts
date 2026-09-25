@@ -159,3 +159,45 @@ export interface PublicSite {
 }
 
 export type AboutStory = Blocks;
+
+/* ---------------------------------------------------------------- site CMS additions (site workstream) */
+
+export const faqUpdateInput = faqInput.partial();
+export const teamMemberUpdateInput = teamMemberInput.partial();
+
+export const CONTACT_STATUSES = ['new', 'read', 'replied', 'archived'] as const;
+export type ContactStatus = (typeof CONTACT_STATUSES)[number];
+
+/**
+ * GET /admin/inbox. `status`: one status, `open` (everything except archived) or `all` (default).
+ * The nav badge calls `?status=new&pageSize=1` and reads `.total`.
+ */
+export const inboxListQuery = z.object({
+  status: z.enum([...CONTACT_STATUSES, 'open', 'all']).default('all'),
+  search: z.string().max(200).optional(),
+  topic: z.string().max(60).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type InboxListQuery = z.infer<typeof inboxListQuery>;
+
+/** GET /admin/inbox/unread-count */
+export interface InboxUnreadCount {
+  count: number;
+}
+
+/** POST /admin/system/reset-content (superadmin). The phrase must be typed exactly. */
+export const RESET_CONTENT_PHRASE = 'delete everything' as const;
+export const resetContentInput = z.object({
+  confirm: z.literal(RESET_CONTENT_PHRASE, { error: `Type "${RESET_CONTENT_PHRASE}" to confirm.` }),
+});
+
+export interface ResetContentResult {
+  ok: true;
+  /** Rows removed per table. */
+  deleted: Record<string, number>;
+  /** Objects removed from the bucket. */
+  bucketObjects: number;
+  /** Admins whose per-item grants were pruned (wildcard grants stay). */
+  adminsPruned: number;
+}

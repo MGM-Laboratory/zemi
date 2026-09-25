@@ -16,4 +16,5 @@ export * from './schemas/events.js';
 export * from './schemas/registrations.js';
 export * from './schemas/stream.js';
 export * from './schemas/site.js';
+export * from './site-defaults.js';
 export * from './schemas/overview.js';

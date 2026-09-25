@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
+import { SpeakersModule } from '../speakers/speakers.module.js';
+import { AdminPublicationsController, PublicPublicationsController } from './publications.controller.js';
+import { PublicationsService } from './publications.service.js';
 
 /**
- * Feature module stub, owned by the publications workstream. Fill in controllers and providers here.
- * Cross-cutting services (DB, AppConfig, AuditService, StorageService, JobsService, RealtimeService,
- * MailService, RevalidateService, PermissionsService, SlugService, AssetRefsService, ...) are global:
- * inject them without importing their modules. See docs/foundation/api-core.md.
+ * Publications (api-content workstream): admin CRUD, lookup, quick stubs, Crossref DOI prefill,
+ * public list and detail. Exports PublicationsService for event pages:
+ *
+ *   imports: [PublicationsModule]
+ *   const cards = await this.publications.cardsByIds(ids, { publicOnly: true });   // Map<id, PublicationCard>
  */
-@Module({})
+@Module({
+  imports: [SpeakersModule],
+  controllers: [AdminPublicationsController, PublicPublicationsController],
+  providers: [PublicationsService],
+  exports: [PublicationsService],
+})
 export class PublicationsModule {}

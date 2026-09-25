@@ -82,3 +82,29 @@ export const mediaPathHook = z.object({
   sourceType: z.string().optional().default(''),
   sourceId: z.string().optional().default(''),
 });
+
+/** GET /admin/events/:id/stream/preview-token */
+export interface StreamPreviewToken {
+  token: string;
+  expiresAt: string;
+  /** Absolute HLS URL with `?pt=` already appended (plays in preview and live). */
+  hlsUrl: string;
+}
+
+/** Stream state without the OBS keys (what the admin SSE pushes). */
+export type StreamStatusSnapshot = Omit<StreamConfig, 'obs'>;
+
+/**
+ * Admin SSE on GET /admin/events/:id/stream/events (channel `event:<id>:stream`).
+ * `state` on every change, `health` every few seconds while someone watches, `viewers` every 5s
+ * while live, `recording` when a session's recording status changes, `keys-rotated` after a rotate
+ * (refetch GET /admin/events/:id/stream for the new keys).
+ */
+export type StreamAdminEvent =
+  | { type: 'state'; stream: StreamStatusSnapshot }
+  | { type: 'health'; health: StreamHealth }
+  | { type: 'viewers'; viewers: number; peakViewers: number }
+  | { type: 'recording'; session: StreamSessionAdmin }
+  | { type: 'recording-removed'; sessionId: string }
+  | { type: 'keys-rotated'; at: string; streamKeyChanged: boolean }
+  | { type: 'ping'; t: string };

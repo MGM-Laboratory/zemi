@@ -1,10 +1,22 @@
 import { Module } from '@nestjs/common';
+import { EventsAdminController } from './events.admin.controller.js';
+import { EventsAdminService } from './events.admin.service.js';
+import { EventsLoader } from './events.loader.js';
+import { EventsMediaService } from './events.media.service.js';
+import { EventsPublicController } from './events.public.controller.js';
+import { EventsPublicService } from './events.public.service.js';
 
 /**
- * Feature module stub, owned by the events workstream. Fill in controllers and providers here.
- * Cross-cutting services (DB, AppConfig, AuditService, StorageService, JobsService, RealtimeService,
- * MailService, RevalidateService, PermissionsService, SlugService, AssetRefsService, ...) are global:
- * inject them without importing their modules. See docs/foundation/api-core.md.
+ * Events: admin CMS (/admin/events...), public pages (/public/events...), documentation media.
+ * Cross-cutting services (DB, AppConfig, AuditService, JobsService, RevalidateService, PermissionsService,
+ * SlugService, AssetRefsService) are global. `EventsLoader` (EventCard / EventAdminRow / EventDetail builders)
+ * and `EventsAdminService` are exported for other modules (overview, registrations...).
+ * Pure rules (status, registration open/closed, chapters, Fridays) live in `event-logic.ts`; the calendar
+ * file builder in `ics.ts`. Both are plain functions you can import without this module.
  */
-@Module({})
+@Module({
+  controllers: [EventsAdminController, EventsPublicController],
+  providers: [EventsLoader, EventsAdminService, EventsPublicService, EventsMediaService],
+  exports: [EventsLoader, EventsAdminService, EventsPublicService],
+})
 export class EventsModule {}

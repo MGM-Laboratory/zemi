@@ -20,7 +20,7 @@ export const adminRoutes = {
   publication: (id: string) => `/admin/publications/${id}`,
   venues: '/admin/venues',
   media: '/admin/media',
-  site: (section?: 'general' | 'home' | 'about' | 'contact' | 'faq' | 'team') =>
+  site: (section?: 'general' | 'seo' | 'home' | 'about' | 'contact' | 'emails' | 'faq' | 'team') =>
     section ? `/admin/site/${section}` : '/admin/site',
   inbox: '/admin/inbox',
   audience: '/admin/audience',
@@ -134,10 +134,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         keywords: ['cms', 'pages', 'copy'],
         visible: (a) => a.has('site.edit'),
         children: [
-          { key: 'site-general', label: 'General', href: adminRoutes.site('general'), visible: (a) => a.has('site.edit'), keywords: ['seo', 'settings', 'announcement'] },
+          { key: 'site-general', label: 'General', href: adminRoutes.site('general'), visible: (a) => a.has('site.edit'), keywords: ['settings', 'announcement', 'footer'] },
+          { key: 'site-seo', label: 'SEO and sharing', href: adminRoutes.site('seo'), visible: (a) => a.has('site.edit'), keywords: ['seo', 'google', 'og image', 'meta'] },
           { key: 'site-home', label: 'Home', href: adminRoutes.site('home'), visible: (a) => a.has('site.edit'), keywords: ['hero', 'landing'] },
           { key: 'site-about', label: 'About', href: adminRoutes.site('about'), visible: (a) => a.has('site.edit') },
           { key: 'site-contact', label: 'Contact', href: adminRoutes.site('contact'), visible: (a) => a.has('site.edit') },
+          { key: 'site-emails', label: 'Emails', href: adminRoutes.site('emails'), visible: (a) => a.has('site.edit'), keywords: ['reply-to', 'signature', 'reminders'] },
           { key: 'site-faq', label: 'FAQ', href: adminRoutes.site('faq'), visible: (a) => a.has('site.edit'), keywords: ['questions'] },
           { key: 'site-team', label: 'Team', href: adminRoutes.site('team'), visible: (a) => a.has('site.edit'), keywords: ['organizers', 'crew'] },
         ],

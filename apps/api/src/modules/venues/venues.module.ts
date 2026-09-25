@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { VenuesController } from './venues.controller.js';
+import { VenuesService } from './venues.service.js';
 
-/**
- * Feature module stub, owned by the venues workstream. Fill in controllers and providers here.
- * Cross-cutting services (DB, AppConfig, AuditService, StorageService, JobsService, RealtimeService,
- * MailService, RevalidateService, PermissionsService, SlugService, AssetRefsService, ...) are global:
- * inject them without importing their modules. See docs/foundation/api-core.md.
- */
-@Module({})
+/** Rooms: GET /admin/venues (any admin), POST/PATCH/DELETE (venues.manage). */
+@Module({
+  controllers: [VenuesController],
+  providers: [VenuesService],
+  exports: [VenuesService],
+})
 export class VenuesModule {}

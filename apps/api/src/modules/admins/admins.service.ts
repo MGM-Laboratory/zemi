@@ -9,7 +9,7 @@ import {
   type Principal,
   type SessionSummary,
 } from '@zemi/shared';
-import { and, count, desc, eq, ilike, inArray, isNull, or, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ilike, inArray, isNull, lt, or, type SQL } from 'drizzle-orm';
 import { notFound } from '../../common/errors.js';
 import { pageToLimitOffset, paginated, searchPattern } from '../../common/pagination.js';
 import { PassphraseService } from '../../auth/passphrase.service.js';
@@ -32,6 +32,10 @@ export interface AuditQuery {
   resourceType?: string;
   resourceId?: string;
   action?: string;
+  /** ISO instant, inclusive. */
+  from?: string;
+  /** ISO instant, exclusive. */
+  to?: string;
   page: number;
   pageSize: number;
 }
@@ -268,6 +272,8 @@ export class AdminsService {
     if (q.resourceType) where.push(eq(auditLogs.resourceType, q.resourceType));
     if (q.resourceId) where.push(eq(auditLogs.resourceId, q.resourceId));
     if (q.action) where.push(q.action.endsWith('.') || !q.action.includes('.') ? ilike(auditLogs.action, `${q.action.replace(/\.$/, '')}.%`) : eq(auditLogs.action, q.action));
+    if (q.from) where.push(gte(auditLogs.createdAt, new Date(q.from)));
+    if (q.to) where.push(lt(auditLogs.createdAt, new Date(q.to)));
     const cond = where.length ? and(...where) : undefined;
     const { limit, offset } = pageToLimitOffset(q);
     const [rows, [total]] = await Promise.all([

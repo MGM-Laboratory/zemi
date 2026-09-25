@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { EventsModule } from '../events/events.module.js';
+import { OverviewController } from './overview.controller.js';
+import { OverviewService } from './overview.service.js';
 
-/**
- * Feature module stub, owned by the overview workstream. Fill in controllers and providers here.
- * Cross-cutting services (DB, AppConfig, AuditService, StorageService, JobsService, RealtimeService,
- * MailService, RevalidateService, PermissionsService, SlugService, AssetRefsService, ...) are global:
- * inject them without importing their modules. See docs/foundation/api-core.md.
- */
-@Module({})
+/** GET /admin/overview. Builds its event rows with the EventsLoader from EventsModule. */
+@Module({
+  imports: [EventsModule],
+  controllers: [OverviewController],
+  providers: [OverviewService],
+})
 export class OverviewModule {}

@@ -154,5 +154,54 @@ export const publicationListQuery = z.object({
 
 /** Result of GET /admin/publications/doi?doi= (Crossref). Partial input to prefill the form. */
 export type DoiLookupResult = Partial<PublicationInput> & {
-  authorsRaw: Array<{ fullName: string; organization: string | null; orcid: string | null }>;
+  authorsRaw: Array<{
+    fullName: string;
+    organization: string | null;
+    orcid: string | null;
+    /** A speaker in the directory with the same name (case and accent insensitive), when there is exactly one. */
+    speaker?: SpeakerRef | null;
+  }>;
 };
+
+/** GET /admin/publications row. */
+export interface PublicationAdminRow extends PublicationCard {
+  visibility: z.infer<typeof visibilitySchema>;
+  /** Events (any visibility) that reference it. */
+  eventCount: number;
+  createdAt: string;
+  updatedAt: string;
+  permissions: ContentAction[];
+}
+
+/** GET /admin/publications/lookup item and POST /admin/publications/quick result (the web's PublicationRef). */
+export interface PublicationLookupItem {
+  id: string;
+  slug: string;
+  title: string;
+  type: PublicationType;
+  publishedYear: number | null;
+  containerTitle: string | null;
+  visibility: z.infer<typeof visibilitySchema>;
+}
+
+/**
+ * POST /admin/publications body. Same as `publicationInput`, but `slug` may be left out: the API makes a
+ * unique one from the title.
+ */
+export const publicationCreateInput = publicationInput.extend({ slug: slugSchema.optional() });
+export type PublicationCreateInput = z.infer<typeof publicationCreateInput>;
+
+export const doiLookupQuery = z.object({
+  doi: z
+    .string({ error: 'Paste a DOI first, like 10.1038/nature14539.' })
+    .trim()
+    .min(1, 'Paste a DOI first, like 10.1038/nature14539.')
+    .max(300, 'That DOI is way too long. Mind checking it?'),
+});
+
+/** DELETE /admin/publications/:id result. */
+export interface PublicationDeleteResult {
+  ok: true;
+  /** Events that listed this publication (their event_publications rows are gone). */
+  affectedEvents: number;
+}

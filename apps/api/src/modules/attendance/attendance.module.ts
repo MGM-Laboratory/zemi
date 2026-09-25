@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
+import { RegistrationsModule } from '../registrations/registrations.module.js';
+import { AttendanceController } from './attendance.controller.js';
+import { AttendanceService } from './attendance.service.js';
 
 /**
- * Feature module stub, owned by the attendance workstream. Fill in controllers and providers here.
- * Cross-cutting services (DB, AppConfig, AuditService, StorageService, JobsService, RealtimeService,
- * MailService, RevalidateService, PermissionsService, SlugService, AssetRefsService, ...) are global:
- * inject them without importing their modules. See docs/foundation/api-core.md.
+ * The door: QR scan, manual check-in/undo, summary, masked roster, SSE feed. Check-in state changes come from
+ * RegistrationsModule's CheckinService (shared with walk-ins and bulk actions). See docs/features/api-people.md.
  */
-@Module({})
+@Module({
+  imports: [RegistrationsModule],
+  controllers: [AttendanceController],
+  providers: [AttendanceService],
+})
 export class AttendanceModule {}

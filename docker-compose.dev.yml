@@ -35,7 +35,7 @@ services:
     build:
       context: ./apps/media
     environment:
-      ZEMI_API_INTERNAL_URL: http://host.docker.internal:4000
+      ZEMI_API_INTERNAL_URL: http://host.docker.internal:4400
       MEDIA_INTERNAL_SECRET: dev-media-secret
     extra_hosts:
       - 'host.docker.internal:host-gateway'

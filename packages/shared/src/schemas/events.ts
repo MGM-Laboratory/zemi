@@ -72,6 +72,17 @@ export const eventUpdateInput = z.object({
 });
 export type EventUpdateInput = z.infer<typeof eventUpdateInput>;
 
+/**
+ * POST /admin/events. Everything is optional: the API fills in the next free Friday (13:15 to 15:15 WIB),
+ * `number` = max + 1, a unique slug from the title, a rotating accent, the default room/capacity from
+ * site settings, and `visibility: 'draft'`. A full `eventInput` body is accepted too.
+ */
+export const eventCreateInput = eventUpdateInput.extend({
+  title: z.string().min(1).max(200).optional(),
+  visibility: visibilitySchema.optional(),
+});
+export type EventCreateInput = z.infer<typeof eventCreateInput>;
+
 export const eventPublishInput = z.object({ visibility: visibilitySchema });
 export const eventCancelInput = z.object({
   reason: z.string().max(500).optional().nullable(),
@@ -147,6 +158,18 @@ export interface EventMediaItem {
   image: ImageRef | null;
   video: VideoRef | null;
   createdAt: string;
+}
+
+/**
+ * Documentation item as the admin sees it (GET /admin/events/:id/media and EventAdmin.media):
+ * includes items whose asset is still processing (image/video null until ready).
+ */
+export interface EventMediaAdminItem extends EventMediaItem {
+  assetId: string;
+  status: 'processing' | 'ready' | 'failed';
+  error: string | null;
+  originalFilename: string;
+  sortOrder: number;
 }
 
 export interface RecordingChapter {
@@ -232,6 +255,11 @@ export interface EventAdmin extends Omit<EventDetail, 'prev' | 'next'> {
   createdAt: string;
   permissions: EventAction[];
   counts: { registrations: number; checkedIn: number; inPerson: number; online: number };
+  /**
+   * True once OBS keys exist for this event (the lazily created `event_streams` row).
+   * Optional: the admin readiness checklist shows "not sure yet" when it is missing.
+   */
+  streamConfigured?: boolean;
 }
 
 export interface EventAdminRow {
@@ -251,6 +279,8 @@ export interface EventAdminRow {
   checkedIn: number;
   capacity: number | null;
   speakers: string[];
+  /** Optional speaker photos for the admin list, same order as `speakers`. Names fall back to initials. */
+  speakerAvatars?: Array<{ fullName: string; avatar: ImageRef | null }>;
   permissions: EventAction[];
 }
 

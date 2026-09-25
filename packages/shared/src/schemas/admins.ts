@@ -73,6 +73,10 @@ export const auditQuery = z.object({
   resourceType: z.string().optional(),
   resourceId: z.string().optional(),
   action: z.string().optional(),
+  /** Inclusive lower bound on createdAt (ISO instant). Added by admin-site-access for the date range filter. */
+  from: isoDate.optional(),
+  /** Exclusive upper bound on createdAt (ISO instant). */
+  to: isoDate.optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
 });
