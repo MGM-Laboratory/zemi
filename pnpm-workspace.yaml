@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@scarf/scarf': true
+  unrs-resolver: true
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@swc/core'
+  - esbuild
+  - sharp
