@@ -47,6 +47,8 @@ COPY --from=build /repo/packages/shared/dist ./packages/shared/dist
 COPY --from=build /repo/apps/api/package.json ./apps/api/package.json
 COPY --from=build /repo/apps/api/dist ./apps/api/dist
 COPY --from=build /repo/apps/api/drizzle ./apps/api/drizzle
+# Runtime assets (fonts for the attendance sheet PDF).
+COPY --from=build /repo/apps/api/assets ./apps/api/assets
 USER node
 EXPOSE 4000
 ENTRYPOINT ["/usr/bin/tini", "--"]
