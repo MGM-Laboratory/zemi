@@ -5,7 +5,7 @@ import { AppError } from '../../common/errors.js';
 import { RateLimitService } from '../../common/rate-limit.service.js';
 import { canUpload, UPLOAD_RATE, UploadGuard } from './upload.guard.js';
 
-const admin: Principal = { kind: 'admin', id: '00000000-0000-4000-8000-000000000001', name: 'Test admin' };
+const admin: Principal = { kind: 'admin', id: '00000000-0000-4000-8000-000000000001', name: 'Test admin', expiresAt: null };
 const EVENT = '00000000-0000-4000-8000-0000000000e1';
 const ability = (policy: Policy) => createAbility(admin, policy);
 const zero = ability({ capabilities: [], grants: [] });

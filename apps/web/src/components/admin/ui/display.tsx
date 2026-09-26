@@ -283,7 +283,7 @@ export function StatCard({ label, value, delta, deltaInverse, deltaLabel, chart,
       {delta != null || hint ? (
         <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem]">
           {delta != null ? (
-            <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold tabular-nums', good == null ? 'bg-surface-muted text-ink-2' : good ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600')}>
+            <span className={cn('inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold tabular-nums', good == null ? 'bg-surface-muted text-ink-2' : good ? 'bg-green-50 text-green-600' : 'bg-red-50 text-[#b42525]')}>
               {up == null ? null : up ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
               {numeric != null ? `${numeric > 0 ? '+' : ''}${Math.round(numeric * 100)}%` : delta}
             </span>

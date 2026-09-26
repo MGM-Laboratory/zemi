@@ -336,7 +336,7 @@ const PILL: Record<StreamStatus, { label: string; cls: string; dot: string }> = 
   open: { label: 'Live', cls: 'bg-green-50 text-green-600', dot: 'bg-green zemi-live-dot text-green' },
   connecting: { label: 'Connecting', cls: 'bg-surface-muted text-ink-3', dot: 'bg-ink-4' },
   reconnecting: { label: 'Reconnecting', cls: 'bg-yellow-50 text-ink-2', dot: 'bg-yellow zemi-live-dot text-yellow' },
-  forbidden: { label: 'No live access', cls: 'bg-red-50 text-red-600', dot: 'bg-red' },
+  forbidden: { label: 'No live access', cls: 'bg-red-50 text-[#b42525]', dot: 'bg-red' },
   closed: { label: 'Paused', cls: 'bg-surface-muted text-ink-3', dot: 'bg-ink-4' },
 };
 

@@ -43,7 +43,7 @@ export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps
   { className, icon, shortcut, destructive, href, external, children, ...props },
   ref,
 ) {
-  const cls = cn(itemBase, destructive && 'text-red-600 data-[highlighted]:bg-red-50 [&_svg]:text-red-600', className);
+  const cls = cn(itemBase, destructive && 'text-red-600 data-[highlighted]:bg-red-50 data-[highlighted]:text-[#b42525] [&_svg]:text-red-600', className);
   const inner = (
     <>
       {icon}

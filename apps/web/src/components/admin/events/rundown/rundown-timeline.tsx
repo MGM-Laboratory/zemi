@@ -12,7 +12,7 @@ import type { RundownRow } from './rundown-editor';
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const TONES = [
   { bg: 'bg-blue', text: 'text-white', shape: 'circle' as const },
-  { bg: 'bg-red', text: 'text-white', shape: 'triangle' as const },
+  { bg: 'bg-red', text: 'text-ink', shape: 'triangle' as const },
   { bg: 'bg-yellow', text: 'text-ink', shape: 'square' as const },
   { bg: 'bg-green', text: 'text-white', shape: 'arch' as const },
 ];
@@ -107,7 +107,14 @@ export function RundownTimeline({
   const laneH = 44;
 
   return (
-    <div className="-mx-1 overflow-x-auto px-1 pb-1" data-lenis-prevent>
+    // Focusable so keyboard users can scroll the timeline sideways on narrow screens.
+    <div
+      className="-mx-1 overflow-x-auto rounded-2xl px-1 pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      data-lenis-prevent
+      tabIndex={0}
+      role="region"
+      aria-label="Timeline preview"
+    >
       <div
         className="relative min-w-[36rem]"
         role="img"
@@ -153,7 +160,8 @@ export function RundownTimeline({
                 'absolute flex origin-left items-center gap-1.5 overflow-hidden rounded-[10px] px-2 text-[0.75rem] leading-tight font-medium shadow-[0_1px_0_rgba(14,17,22,0.08)] transition-[filter,transform] duration-150 hover:z-10 hover:-translate-y-0.5 hover:brightness-105',
                 b.tone.bg,
                 b.tone.text,
-                b.open && 'bg-[length:8px_8px] opacity-80',
+                // Open-ended: fade only the tail. Fading the whole block took the label under 4.5:1.
+                b.open && '[mask-image:linear-gradient(to_right,#000_calc(100%_-_1.5rem),transparent)]',
               )}
               style={{
                 left: `calc(${pct(b.start)}% + 1px)`,

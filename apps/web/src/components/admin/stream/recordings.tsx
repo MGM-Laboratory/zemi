@@ -422,7 +422,7 @@ function PipelineArt({ rec }: { rec: StreamSessionAdmin }) {
 
       <div className="relative flex items-center justify-between gap-2">
         {s === 'recording' ? (
-          <span className="mono inline-flex items-center gap-1.5 rounded-full bg-red px-2.5 py-1 text-xs font-semibold tabular-nums">
+          <span className="mono inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold tabular-nums">
             <span className="size-1.5 animate-pulse rounded-full bg-white motion-reduce:animate-none" aria-hidden="true" />
             REC {clock(secondsSince(rec.startedAt, now))}
           </span>

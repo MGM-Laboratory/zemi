@@ -165,7 +165,7 @@ function LiveBanner({ row }: { row: EventAdminRow }) {
       aria-label="Happening now"
       initial={reduce ? false : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-hidden rounded-[24px] bg-red text-white"
+      className="relative overflow-hidden rounded-[24px] bg-red-600 text-white"
     >
       {!reduce ? (
         <motion.span
@@ -195,7 +195,7 @@ function LiveBanner({ row }: { row: EventAdminRow }) {
             <p className="mt-1 truncate font-display text-[clamp(1.25rem,2.4vw,1.75rem)] leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.5]">
               {row.title}
             </p>
-            <p className="mt-0.5 text-sm text-white/85">
+            <p className="mt-0.5 text-sm text-white">
               <DateText
                 value={row.startsAt}
                 end={row.endsAt}

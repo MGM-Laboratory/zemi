@@ -44,13 +44,13 @@ export function StateBanner({ className }: { className?: string }) {
                   <DateText
                     value={event.cancelledAt}
                     format="relative"
-                    className="font-normal text-ink-3"
+                    className="font-normal text-ink-2"
                   />
                 </>
               ) : null}
               .
             </p>
-            <p className="text-sm text-ink-3">
+            <p className="text-sm text-ink-2">
               {event.cancelReason ? `Reason: ${event.cancelReason}` : 'No reason given.'} The page
               stays up with a cancelled note, and registration is closed.
             </p>
@@ -85,7 +85,7 @@ export function StateBanner({ className }: { className?: string }) {
         role="status"
         initial={reduce ? false : { opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn(base, 'border-red bg-red text-white', className)}
+        className={cn(base, 'border-red-600 bg-red-600 text-white', className)}
       >
         <div className="flex min-w-0 items-center gap-3">
           <LiveDot tone="white" />
@@ -93,7 +93,7 @@ export function StateBanner({ className }: { className?: string }) {
             <p className="font-display text-lg leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.4]">
               Happening now
             </p>
-            <p className="text-sm text-white/85">
+            <p className="text-sm text-white">
               {event.stream.state === 'live'
                 ? 'The stream is live.'
                 : event.mode === 'offline'
@@ -144,13 +144,13 @@ export function StateBanner({ className }: { className?: string }) {
           <div className="min-w-0">
             <p className="font-semibold text-ink">
               Wrapped{' '}
-              <DateText value={event.endsAt} format="relative" className="font-normal text-ink-3" />
+              <DateText value={event.endsAt} format="relative" className="font-normal text-ink-2" />
               .{' '}
-              <span className="font-normal text-ink-3">
+              <span className="font-normal text-ink-2">
                 {event.counts.checkedIn} of {reg} showed up.
               </span>
             </p>
-            <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-3">
+            <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-2">
               <span className="inline-flex items-center gap-1.5">
                 <Film className="size-3.5" aria-hidden="true" />
                 {recordings.length
@@ -211,7 +211,7 @@ export function StateBanner({ className }: { className?: string }) {
               fallback={<DateText value={event.startsAt} format="relative" />}
             />
           </p>
-          <p className="text-sm text-ink-3">
+          <p className="text-sm text-ink-2">
             <DateText value={event.startsAt} format="date-long" />,{' '}
             <DateText
               value={event.startsAt}

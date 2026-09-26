@@ -113,7 +113,7 @@ type Health = 'ok' | 'warn' | 'down';
 
 function StatusCard({ icon: Icon, title, health, headline, children, index }: { icon: LucideIcon; title: string; health: Health; headline: ReactNode; children?: ReactNode; index: number }) {
   const reduce = useReducedMotion();
-  const tone = { ok: 'bg-green-50 text-green-600', warn: 'bg-yellow-50 text-[#7a5600]', down: 'bg-red-50 text-red-600' }[health];
+  const tone = { ok: 'bg-green-50 text-green-600', warn: 'bg-yellow-50 text-[#7a5600]', down: 'bg-red-50 text-[#b42525]' }[health];
   const word = { ok: 'Healthy', warn: 'Heads up', down: 'Down' }[health];
   return (
     <motion.li

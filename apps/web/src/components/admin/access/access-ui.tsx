@@ -60,7 +60,7 @@ export function NoAccess({ title, description }: { title: ReactNode; description
 const STATUS_STYLE: Record<AdminSummary['status'], { label: string; cls: string; dot: string }> = {
   active: { label: 'Active', cls: 'bg-green-50 text-green-600', dot: 'bg-green' },
   expired: { label: 'Expired', cls: 'bg-surface-muted text-ink-3', dot: 'bg-ink-4' },
-  disabled: { label: 'Switched off', cls: 'bg-red-50 text-red-600', dot: 'bg-red' },
+  disabled: { label: 'Switched off', cls: 'bg-red-50 text-[#b42525]', dot: 'bg-red' },
 };
 
 export function AdminStatusChip({ status, className }: { status: AdminSummary['status']; className?: string }) {

@@ -275,7 +275,7 @@ export function PreviewPlayer({
       {/* Top-left badge: who can see this. */}
       <div className="pointer-events-none absolute top-3 left-3 flex flex-wrap items-center gap-2 sm:top-4 sm:left-4">
         {room === 'live' || room === 'lost' ? (
-          <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-red px-3 text-xs font-bold tracking-[0.08em] text-white uppercase shadow-sm">
+          <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-red-600 px-3 text-xs font-bold tracking-[0.08em] text-white uppercase shadow-sm">
             <span className="relative flex size-2" aria-hidden="true">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-white/80 motion-reduce:animate-none" />
               <span className="relative inline-flex size-2 rounded-full bg-white" />

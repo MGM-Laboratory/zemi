@@ -65,7 +65,7 @@ see (existing or not). The superadmin gets 404 for unknown ids.
 |---|---|
 | `GET /public/events?when&search&tag&speaker&year&page&pageSize` | `Paginated<EventCard>`, published only |
 | `GET /public/events/next` | `EventCard` or a JSON `null` (literal `null` body, not empty) |
-| `GET /public/events/:slug` | `EventDetail`, or `{ redirect: slug }` (200) for an old or differently cased slug, else 404 |
+| `GET /public/events/:slug` | `EventDetail`, or `{ redirect: slug }` (200) for an old or differently cased slug, else 404. `EventDetail.visibility` is `published` or `unlisted` here (drafts 404): send `noindex` for `unlisted` |
 | `GET /public/events/:id/calendar.ics` | `text/calendar`, `attachment; filename="zemi-12.ics"`, `Cache-Control: public, max-age=300` |
 
 ### Overview

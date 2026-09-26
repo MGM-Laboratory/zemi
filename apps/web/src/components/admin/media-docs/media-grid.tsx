@@ -404,7 +404,7 @@ function TileMedia({ item, preview }: { item: EventMediaAdminItem; preview: stri
     return (
       <Placeholder className="bg-red-50">
         <Character shape="triangle" mood="oops" size={40} />
-        <span className="mt-1 max-w-[12rem] truncate px-3 text-xs text-red-600">{item.originalFilename}</span>
+        <span className="mt-1 max-w-[12rem] truncate px-3 text-xs text-[#b42525]">{item.originalFilename}</span>
       </Placeholder>
     );
   }

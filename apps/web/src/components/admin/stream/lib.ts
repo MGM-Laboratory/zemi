@@ -104,7 +104,7 @@ export const RECORDING_STATUS: Record<RecordingStatus, RecordingStatusMeta> = {
   recording: {
     label: 'Recording',
     hint: 'Rolling. Every minute of the stream lands here.',
-    cls: 'bg-red text-white',
+    cls: 'bg-red-600 text-white',
     glyph: 'live',
   },
   waiting: {
@@ -128,7 +128,7 @@ export const RECORDING_STATUS: Record<RecordingStatus, RecordingStatusMeta> = {
   failed: {
     label: 'Failed',
     hint: 'Something broke while stitching. Try reprocessing.',
-    cls: 'bg-red-50 text-red-600',
+    cls: 'bg-red-50 text-[#b42525]',
     glyph: 'triangle',
   },
   none: {

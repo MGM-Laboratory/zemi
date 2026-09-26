@@ -249,8 +249,9 @@ export function PublicationsList() {
       }
     />
   ) : noAccess ? (
+    // Rendered on its own (no table around it), so it always gets the frame.
     <EmptyState
-      framed={!wide}
+      framed
       size="lg"
       title="No publications in your access."
       description="Your access covers other corners of the studio. Ask the superadmin if you need the shelf."
@@ -276,7 +277,8 @@ export function PublicationsList() {
     />
   );
 
-  const filterBar = (
+  // Nothing to search or sort for someone with no access; keep the bar if a stale URL filter needs clearing.
+  const filterBar = noAccess && !filtered ? null : (
     <FilterBar
       className={wide ? 'w-full' : 'mb-5'}
       search={
@@ -354,7 +356,10 @@ export function PublicationsList() {
 
       {wide && !(list.isError && !rows) ? null : filterBar}
 
-      {list.isError && !rows ? (
+      {noAccess && !filtered ? (
+        // Known from the policy alone, so it shows straight away instead of waiting on an empty list.
+        empty
+      ) : list.isError && !rows ? (
         <ErrorState error={list.error} onRetry={() => void list.refetch()} retrying={list.isFetching} />
       ) : wide ? (
         <DataTable

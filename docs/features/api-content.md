@@ -11,7 +11,7 @@ shared API (port 4400), Postgres and live Crossref.
 | route | who | returns |
 |---|---|---|
 | `GET /admin/speakers?search&visibility&sort=name\|recent\|talks&page&pageSize` | any admin, rows filtered to what they can `view` | `Paginated<SpeakerAdminRow>` |
-| `GET /admin/speakers/lookup?q&limit` | any admin (all speakers, drafts too, max 20, prefix matches first) | `SpeakerRef[]` |
+| `GET /admin/speakers/lookup?q&limit` | `assertCanLookup`: a create capability, `edit` on any event/speaker/publication, or `view` on some speaker; else 403. Max 20, prefix matches first, drafts only when the caller can view them | `SpeakerRef[]` |
 | `POST /admin/speakers` | `speakers.create` | `SpeakerAdmin` (201). `slug` optional: made unique from `fullName` |
 | `GET /admin/speakers/:id` | `view` | `SpeakerAdmin` (talks on published events plus drafts/unlisted the caller can view, all their publications, private email) |
 | `PATCH /admin/speakers/:id` | `edit`; changing `visibility` also needs `publish` | `SpeakerAdmin` |
@@ -36,7 +36,7 @@ shared API (port 4400), Postgres and live Crossref.
 | route | who | returns |
 |---|---|---|
 | `GET /admin/publications?search&type&year&tag&speaker&visibility&sort=year\|recent\|title&page&pageSize` | any admin, filtered to `view` | `Paginated<PublicationAdminRow>` (card + visibility, eventCount, dates, permissions) |
-| `GET /admin/publications/lookup?q&limit` | any admin (all, max 20) | `PublicationLookupItem[]` (the web's `PublicationRef`) |
+| `GET /admin/publications/lookup?q&limit` | `assertCanLookup` (as for speakers, with `view` on some publication); else 403. Max 20, drafts only when viewable | `PublicationLookupItem[]` (the web's `PublicationRef`) |
 | `GET /admin/publications/doi?doi=` | `publications.create` or `edit` on any publication | `DoiLookupResult` |
 | `POST /admin/publications/quick { title, url }` | `publications.create` | `PublicationLookupItem` (201): draft, type `other`, links `[{ kind: 'publisher', label: 'Link', url }]` |
 | `POST /admin/publications` | `publications.create` | `PublicationAdmin` (201). `slug` optional: made unique from the title |

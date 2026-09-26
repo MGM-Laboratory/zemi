@@ -92,7 +92,8 @@ export function Avatar({ name, image, size = 36, shape, variant = 'round', class
       </span>
     );
   }
-  const ink = s === 'square' ? '#0e1116' : '#ffffff';
+  // White on brand red is only 3.6:1, so the red triangle takes ink initials like yellow does (5.3:1).
+  const ink = s === 'square' || s === 'triangle' ? '#0e1116' : '#ffffff';
   if (variant === 'shape') {
     return (
       <span className={cn('relative inline-flex shrink-0 items-center justify-center', className)} style={{ width: size, height: size }} role="img" aria-label={name}>

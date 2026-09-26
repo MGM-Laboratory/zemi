@@ -150,6 +150,9 @@ describe('media keys and ranges', () => {
     expect(publicMediaKey('assets/a1/original.jpg\u0000.webp')).toBeNull();
     expect(publicMediaKey('assets/a1/w320\n.webp')).toBeNull();
     expect(publicMediaKey('assets/a1\\w320.webp')).toBeNull();
+    // An overlong segment made versitygw answer KeyTooLongError, a 500.
+    expect(publicMediaKey(`assets/a1/${'a'.repeat(300)}.webp`)).toBeNull();
+    expect(publicMediaKey(`assets/${'0'.repeat(36)}/${'b'.repeat(120)}.webp`)).not.toBeNull();
   });
   it('forwards a single well-formed range only', () => {
     expect(parseSingleRange('bytes=0-99')).toBe('bytes=0-99');

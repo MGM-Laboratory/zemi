@@ -73,9 +73,12 @@ function statusOf(err: unknown): number | undefined {
   return (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
 }
 
+/** Errors that mean "no object can live at that key". Reads treat them like a missing object. */
+const IMPOSSIBLE_KEY = new Set(['KeyTooLongError', 'InvalidURI', 'InvalidObjectName']);
+
 function isNotFound(err: unknown): boolean {
   const name = (err as { name?: string })?.name;
-  return name === 'NoSuchKey' || name === 'NotFound' || name === 'NoSuchBucket' || statusOf(err) === 404;
+  return name === 'NoSuchKey' || name === 'NotFound' || name === 'NoSuchBucket' || (!!name && IMPOSSIBLE_KEY.has(name)) || statusOf(err) === 404;
 }
 
 /**

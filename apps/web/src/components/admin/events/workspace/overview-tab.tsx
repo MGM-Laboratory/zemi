@@ -350,7 +350,7 @@ export function EventOverviewTab() {
 const TONE = {
   blue: 'bg-blue-50 text-blue-600',
   green: 'bg-green-50 text-green-600',
-  red: 'bg-red-50 text-red-600',
+  red: 'bg-red-50 text-[#b42525]',
   yellow: 'bg-yellow-50 text-[#7a5600]',
 } as const;
 

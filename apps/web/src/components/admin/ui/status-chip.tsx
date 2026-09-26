@@ -17,7 +17,7 @@ interface ChipStyle {
 
 const EVENT: Record<EventStatus, ChipStyle> = {
   scheduled: { label: EVENT_STATUS_LABEL.scheduled, cls: 'bg-blue-50 text-blue-600', glyph: 'circle' },
-  ongoing: { label: EVENT_STATUS_LABEL.ongoing, cls: 'bg-red text-white', glyph: 'live' },
+  ongoing: { label: EVENT_STATUS_LABEL.ongoing, cls: 'bg-red-600 text-white', glyph: 'live' },
   past: { label: EVENT_STATUS_LABEL.past, cls: 'bg-surface-muted text-ink-3', glyph: 'arch' },
   cancelled: { label: EVENT_STATUS_LABEL.cancelled, cls: 'bg-surface-muted text-ink-3 line-through decoration-ink-4', glyph: 'triangle' },
 };
@@ -31,14 +31,14 @@ const VISIBILITY: Record<Visibility, ChipStyle> = {
 const STREAM: Record<StreamState, ChipStyle> = {
   idle: { label: 'No signal', cls: 'bg-surface-muted text-ink-3', glyph: 'dot' },
   preview: { label: 'Preview', cls: 'bg-yellow-50 text-[#7a5600]', glyph: 'dot' },
-  live: { label: 'Live', cls: 'bg-red text-white', glyph: 'live' },
+  live: { label: 'Live', cls: 'bg-red-600 text-white', glyph: 'live' },
   ended: { label: 'Ended', cls: 'bg-surface-muted text-ink-2', glyph: 'square' },
 };
 
 const ASSET: Record<'processing' | 'ready' | 'failed', ChipStyle> = {
   processing: { label: 'Processing', cls: 'bg-blue-50 text-blue-600', glyph: 'spin' },
   ready: { label: 'Ready', cls: 'bg-green-50 text-green-600', glyph: 'arch' },
-  failed: { label: 'Failed', cls: 'bg-red-50 text-red-600', glyph: 'triangle' },
+  failed: { label: 'Failed', cls: 'bg-red-50 text-[#b42525]', glyph: 'triangle' },
 };
 
 const REGISTRATION: Record<'registered' | 'cancelled' | 'checked-in', ChipStyle> = {

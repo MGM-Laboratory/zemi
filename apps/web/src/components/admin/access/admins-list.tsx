@@ -54,7 +54,7 @@ function AccessCell({ admin }: { admin: AdminSummary }) {
         <span className={cn(c.empty && 'text-ink-3')}>{c.label}</span>
         {pii ? (
           <Tooltip content="Can see emails and phone numbers of registrants.">
-            <span className="inline-flex text-red-600" tabIndex={0} aria-label="Sees personal data">
+            <span className="inline-flex text-red-600" tabIndex={0} role="img" aria-label="Sees personal data">
               <ShieldAlert className="size-3.5" aria-hidden="true" />
             </span>
           </Tooltip>

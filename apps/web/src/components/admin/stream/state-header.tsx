@@ -308,7 +308,7 @@ function Controls({
         aria-describedby="go-live-hint"
         className={cn(
           'min-w-[11rem]',
-          ready ? 'bg-red text-white shadow-[0_10px_30px_-10px_rgba(249,65,65,0.8)] hover:bg-red-600' : 'bg-white text-ink',
+          ready ? 'bg-red-600 text-white shadow-[0_10px_30px_-10px_rgba(249,65,65,0.8)] hover:bg-[#c02525]' : 'bg-white text-ink',
           light && 'focus-visible:outline-white',
           ready && 'zemi-ready-pulse',
         )}

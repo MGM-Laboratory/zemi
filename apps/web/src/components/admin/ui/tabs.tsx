@@ -53,7 +53,14 @@ export function Tabs<V extends string = string>({ value, defaultValue, onValueCh
     >
       <RTabs.List aria-label={ariaLabel} className={cn('flex gap-6 overflow-x-auto border-b border-line no-scrollbar', listClassName)}>
         {visible.map((t) => (
-          <RTabs.Trigger key={t.value} value={t.value} disabled={t.disabled} className={cn(tabTrigger, 'data-[state=active]:text-ink')}>
+          <RTabs.Trigger
+            key={t.value}
+            value={t.value}
+            disabled={t.disabled}
+            // Filter-style tabs have no panel, so Radix's aria-controls would name a missing id. Passing the key as undefined drops it.
+            {...(t.content === undefined ? { 'aria-controls': undefined } : {})}
+            className={cn(tabTrigger, 'data-[state=active]:text-ink')}
+          >
             {t.icon}
             {t.label}
             {t.count != null ? <CountBadge count={t.count} tone="neutral" /> : null}

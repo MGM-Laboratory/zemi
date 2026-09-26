@@ -159,7 +159,7 @@ export function Field({
                   </span>
                 ) : null}
                 {required ? <span className="sr-only"> (required)</span> : null}
-                {optional && !required ? <span className="ml-1.5 text-xs font-normal text-ink-3">Optional</span> : null}
+                {optional && !required ? <span className="ml-1.5 text-xs font-normal text-ink-3"><span className="sr-only"> (</span>Optional<span className="sr-only">)</span></span> : null}
               </label>
             ) : (
               <span />

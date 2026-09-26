@@ -14,7 +14,7 @@ import type { HealthSample } from './use-stream';
 
 const VERDICT = {
   none: { label: 'No data', cls: 'bg-surface-muted text-ink-3' },
-  low: { label: 'Too low', cls: 'bg-red-50 text-red-600' },
+  low: { label: 'Too low', cls: 'bg-red-50 text-[#b42525]' },
   ok: { label: 'Healthy', cls: 'bg-green-50 text-green-600' },
   high: { label: 'Very high', cls: 'bg-yellow-50 text-[#7a5600]' },
 } as const;

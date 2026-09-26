@@ -119,7 +119,7 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
         <div className="space-y-7">
           <Preview asset={asset} />
           {asset.status === 'failed' && asset.error ? (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-600" role="alert">
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-[#b42525]" role="alert">
               {asset.error}
             </p>
           ) : null}
@@ -268,7 +268,7 @@ function DocumentPreview({ name, file }: { name: string; file: NonNullable<Asset
         <div className="graph-paper flex flex-col items-center gap-3 bg-white px-6 py-12 text-center">
           <span className="relative flex size-16 items-center justify-center rounded-2xl border border-line bg-white shadow-sm" aria-hidden="true">
             <FileText className="size-7 text-ink-3" />
-            {isPdf ? <span className="absolute -bottom-1.5 rounded bg-red px-1.5 text-[0.625rem] font-bold text-white">PDF</span> : null}
+            {isPdf ? <span className="absolute -bottom-1.5 rounded bg-red-600 px-1.5 text-[0.625rem] font-bold text-white">PDF</span> : null}
           </span>
           <p className="max-w-xs text-sm text-ink-3">{isPdf ? "This browser won't show PDFs inside the page. Open it in a new tab instead." : 'No preview for this kind of file. Open it to take a look.'}</p>
           <Button size="sm" variant="secondary" iconRight={<ExternalLink />} asChild>

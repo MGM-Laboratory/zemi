@@ -312,7 +312,7 @@ function TileVisual({ asset: a }: { asset: Asset }) {
     <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[repeating-linear-gradient(0deg,transparent,transparent_23px,var(--color-graph)_23px,var(--color-graph)_24px),repeating-linear-gradient(90deg,transparent,transparent_23px,var(--color-graph)_23px,var(--color-graph)_24px)] bg-white p-3 text-center">
       <span className="relative flex h-16 w-12 items-center justify-center rounded-lg border border-line-strong bg-white shadow-[var(--shadow-1)] transition-transform duration-300 group-hover:-rotate-3">
         <Icon className="size-5 text-ink-3" aria-hidden="true" />
-        <span className="mono absolute -bottom-2 rounded bg-red px-1 text-[0.625rem] font-bold text-white">{extLabel(a)}</span>
+        <span className="mono absolute -bottom-2 rounded bg-red-600 px-1 text-[0.625rem] font-bold text-white">{extLabel(a)}</span>
       </span>
       <span className="line-clamp-2 text-xs font-medium text-ink-2">{a.originalFilename}</span>
     </span>

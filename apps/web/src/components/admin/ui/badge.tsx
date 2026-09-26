@@ -3,11 +3,12 @@ import { cn } from '@/lib/admin/cn';
 
 export type BadgeTone = 'neutral' | 'blue' | 'yellow' | 'red' | 'green' | 'ink' | 'outline';
 
+// Text on the *-50 tints must reach 4.5:1. red-600 only gets 3.99:1 on red-50, so red uses a deeper red (5.4:1), like yellow uses #7a5600.
 const TONES: Record<BadgeTone, string> = {
   neutral: 'bg-surface-muted text-ink-2',
   blue: 'bg-blue-50 text-blue-600',
   yellow: 'bg-yellow-50 text-[#7a5600]',
-  red: 'bg-red-50 text-red-600',
+  red: 'bg-red-50 text-[#b42525]',
   green: 'bg-green-50 text-green-600',
   ink: 'bg-ink text-white',
   outline: 'border border-line-strong bg-white text-ink-2',
@@ -67,7 +68,7 @@ export function CountBadge({ count, tone = 'red', max = 99, className }: { count
     <span
       className={cn(
         'mono inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[0.6875rem] leading-none font-semibold tabular-nums',
-        tone === 'red' ? 'bg-red text-white' : tone === 'blue' ? 'bg-blue text-white' : 'bg-surface-muted text-ink-2',
+        tone === 'red' ? 'bg-red-600 text-white' : tone === 'blue' ? 'bg-blue text-white' : 'bg-surface-muted text-ink-2',
         className,
       )}
     >
