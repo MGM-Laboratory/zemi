@@ -30,6 +30,7 @@ import { api, errorMessage } from '@/lib/admin/api';
 import { useBreadcrumbs } from '@/lib/admin/breadcrumbs';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
 import { useAdminMutation } from '@/lib/admin/hooks';
+import { useLeaveGuard } from '@/lib/admin/leave-guard';
 import { adminRoutes } from '@/lib/admin/nav';
 import { adminKeys } from '@/lib/admin/query-keys';
 import { AdminStatusChip, ExpiryHint } from './access-ui';
@@ -305,6 +306,17 @@ function RotateDialog({ admin, open, onOpenChange }: { admin: AdminSummary; open
     setDone(null);
     setCopied(false);
   };
+
+  // Leaving the page (links, shortcuts, Back) while the new passphrase is shown and not copied.
+  useLeaveGuard(Boolean(open && done) && !copied, {
+    backButton: true,
+    confirm: {
+      title: 'Leave without copying the passphrase?',
+      description: 'The new passphrase disappears when you go, and their old one already stopped working.',
+      confirmLabel: 'Leave anyway',
+      cancelLabel: 'Stay and copy it',
+    },
+  });
 
   const close = async () => {
     if (done && !copied) {

@@ -136,10 +136,14 @@ export class LifecycleService implements OnModuleInit {
       .set({ [stage === 'reminder' ? 'reminderSentAt' : stage === 'starting' ? 'startingSentAt' : 'thanksSentAt']: now })
       .where(and(eq(events.id, event.row.id), or(isNull(col), lt(col, lifecycleStaleBefore(opens)))))
       .returning({ id: events.id });
+    // Claimed by someone else, or the event was deleted meanwhile (the UPDATE finds no row).
     if (!claimed) return null;
     const template = stage === 'reminder' ? TEMPLATES.reminder : stage === 'starting' ? TEMPLATES.starting : TEMPLATES.thanks;
-    // Dedupe against this schedule only: people reminded about the old date get the new one.
-    const since = new Date(Math.max(now.getTime() - 12 * HOUR, lifecycleStaleBefore(opens).getTime()));
+    // Dedupe against this schedule only: people reminded about the old date (or, after the start moved
+    // more than an hour later, the old time: `scheduleChangedAt`) get the new one.
+    const since = new Date(
+      Math.max(now.getTime() - 12 * HOUR, lifecycleStaleBefore(opens).getTime(), event.row.scheduleChangedAt?.getTime() ?? 0),
+    );
     const regs = await this.mailer.recipients(event.row.id, template, since);
     let counts: BatchCounts;
     if (stage === 'reminder') counts = await this.mailer.sendReminders(event, regs, now);

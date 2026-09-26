@@ -1,4 +1,5 @@
 import { SHAPE_ORDER, SITE_DEFAULTS, type PublicSite, type ShapeName, type SiteSettings, type TeamMember } from '@zemi/shared';
+import { isExternalHref, safeHref } from '../ui/safe-href';
 
 export type AboutSettings = SiteSettings['about'];
 export type Pillar = AboutSettings['pillars'][number];
@@ -15,8 +16,6 @@ export interface AboutData {
   isFallback: boolean;
 }
 
-const SAFE_URL = /^https?:\/\//i;
-
 /**
  * About settings with sensible fallbacks. API down: the rich shared defaults. Otherwise stored
  * values win; title and intro fall back when empty, and the four pillars are always four (a
@@ -29,6 +28,7 @@ export function resolveAbout(site: PublicSite & { isFallback?: boolean }): About
   for (const p of a.pillars ?? []) if (!byShape.has(p.shape)) byShape.set(p.shape, p);
   const pillars = SHAPE_ORDER.map((s) => byShape.get(s) ?? d.pillars.find((p) => p.shape === s)!);
   const general = site.isFallback ? SITE_DEFAULTS.general : site.settings.general;
+  const lab = safeHref(general.labUrl);
   return {
     about: {
       ...a,
@@ -38,7 +38,7 @@ export function resolveAbout(site: PublicSite & { isFallback?: boolean }): About
     },
     pillars,
     labName: general.labName?.trim() || 'MGM Laboratory',
-    labUrl: general.labUrl && SAFE_URL.test(general.labUrl) ? general.labUrl : 'https://labmgm.org',
+    labUrl: lab && isExternalHref(lab) ? (general.labUrl ?? '').trim() : 'https://labmgm.org',
     faqs: (site.faqs ?? []).filter((f) => f.visibility === 'published'),
     team: (site.team ?? []).filter((t) => t.visibility === 'published'),
     stats: site.stats,

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { isValidSlug, type EventCard, type EventDetail, type Paginated } from '@zemi/shared';
+import { isValidSlug, safeWebUrl, type EventCard, type EventDetail, type Paginated } from '@zemi/shared';
 import { and, asc, count, desc, eq, gt, isNull, sql } from 'drizzle-orm';
 import { notFound, pageToLimitOffset, paginated, SlugService } from '../../common/index.js';
 import { AppConfig } from '../../config/app-config.js';
@@ -133,7 +133,7 @@ export class EventsPublicService {
         endsAt: e.endsAt,
         mode: e.mode,
         roomNote: e.roomNote ?? null,
-        mapsUrl: e.mapsUrl ?? null,
+        mapsUrl: safeWebUrl(e.mapsUrl),
         onlineNote: e.onlineNote ?? null,
         tags: e.tags ?? [],
         cancelledAt: e.cancelledAt ?? null,
@@ -145,7 +145,7 @@ export class EventsPublicService {
               building: full.venue.building ?? null,
               floor: full.venue.floor ?? null,
               address: full.venue.address ?? null,
-              mapsUrl: full.venue.mapsUrl ?? null,
+              mapsUrl: safeWebUrl(full.venue.mapsUrl),
             }
           : null,
       },

@@ -1,4 +1,7 @@
 import {
+  safeLinkHref,
+  safeWebUrl,
+  sanitizeLinkList,
   SITE_DEFAULTS,
   SITE_SETTING_SCHEMAS,
   type PublicSite,
@@ -24,6 +27,26 @@ export function isSiteSettingKey(key: string): key is SiteSettingKey {
 const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 /**
+ * Links saved before the safe-link checks, cleaned item by item so one bad link can't reset a whole
+ * field to its default: unsafe socials are dropped, an unsafe announcement link or maps link becomes
+ * null (the banner text stays). `labUrl` falls back to the default through the schema.
+ */
+function sanitizeStoredLinks(key: SiteSettingKey, candidate: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...candidate };
+  if (key === 'contact') {
+    if (Array.isArray(out.socials)) out.socials = sanitizeLinkList(out.socials as Array<{ url: string; kind?: string }>);
+    if (typeof out.mapsUrl === 'string' && out.mapsUrl.trim() && !safeWebUrl(out.mapsUrl)) out.mapsUrl = null;
+  }
+  if (key === 'general' && isPlainObject(out.announcement)) {
+    const href = out.announcement.href;
+    if (typeof href === 'string' && href.trim() && !safeLinkHref(href, { relative: true })) {
+      out.announcement = { ...out.announcement, href: null };
+    }
+  }
+  return out;
+}
+
+/**
  * Stored value for one section merged over the rich defaults, then parsed with the section schema.
  *
  * The merge is shallow on purpose: a stored field replaces the default field as a whole, so an admin
@@ -34,7 +57,7 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeo
 export function mergeSetting<K extends SiteSettingKey>(key: K, stored: unknown): SiteSettings[K] {
   const schema = SITE_SETTING_SCHEMAS[key];
   const defaults = SITE_DEFAULTS[key] as Record<string, unknown>;
-  let candidate: Record<string, unknown> = { ...defaults, ...(isPlainObject(stored) ? stored : {}) };
+  let candidate: Record<string, unknown> = sanitizeStoredLinks(key, { ...defaults, ...(isPlainObject(stored) ? stored : {}) });
   for (let attempt = 0; attempt < 5; attempt++) {
     const parsed = schema.safeParse(candidate);
     if (parsed.success) return parsed.data as SiteSettings[K];

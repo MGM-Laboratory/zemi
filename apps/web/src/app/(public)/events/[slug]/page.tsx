@@ -1,8 +1,15 @@
 import type { Metadata } from 'next';
 import { formatJakarta, type EventDetail } from '@zemi/shared';
 import { EventExperience } from '@/components/public/events/detail/event-experience';
-import { eventLabel, siteUrl, venueLine } from '@/components/public/events/lib';
+import {
+  eventLabel,
+  eventTitle,
+  isUnlisted,
+  siteUrl,
+  venueLine,
+} from '@/components/public/events/lib';
 import { BlocksRenderer, hasBlocks } from '@/components/public/media/blocks-renderer';
+import { DEFAULT_SHARE_IMAGE, shareMeta } from '@/components/public/media/share-meta';
 import { ApiUnavailable } from '@/components/public/ui/empty-state';
 import { getEvent, unwrapLookup } from '@/lib/api/server';
 
@@ -13,32 +20,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const lookup = await getEvent(slug);
   if (lookup.kind !== 'found') return { title: 'Friday' };
   const e = lookup.data;
-  const title = `${e.title} (${eventLabel(e)})`;
+  const title = eventTitle(e);
   const description =
     e.summary ??
     `${eventLabel(e)} at Zemi, ${formatJakarta(e.startsAt, 'date-long')}, ${formatJakarta(e.startsAt, 'time')} WIB. Free, hybrid, bring questions.`;
   const url = `/events/${e.slug}`;
-  const images = e.cover
-    ? [
-        {
-          url: e.cover.src,
-          width: e.cover.width,
-          height: e.cover.height,
-          alt: e.cover.alt ?? e.title,
-        },
-      ]
-    : undefined;
+  const unlisted = isUnlisted(e);
   return {
-    title,
+    // Absolute: the number already carries the brand, so no " · Zemi" on top.
+    title: { absolute: title },
     description,
-    alternates: { canonical: url },
-    openGraph: { type: 'website', url, title, description, ...(images ? { images } : null) },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      ...(images ? { images: images.map((i) => i.url) } : null),
-    },
+    // Link-only Fridays still get a nice preview for whoever has the link, but no index entry.
+    ...(unlisted
+      ? { robots: { index: false, follow: false } }
+      : { alternates: { canonical: url } }),
+    // The share card comes from ./opengraph-image.tsx and ./twitter-image.tsx (1200x630 PNG).
+    ...shareMeta({ title, description, url, images: false }),
   };
 }
 
@@ -84,7 +81,7 @@ function jsonLd(e: EventDetail) {
     eventStatus: status,
     eventAttendanceMode: attendance,
     location: location ?? undefined,
-    image: e.cover ? [e.cover.src] : undefined,
+    image: [e.cover?.src ?? siteUrl(DEFAULT_SHARE_IMAGE.url)],
     isAccessibleForFree: true,
     inLanguage: 'en',
     organizer: { '@type': 'Organization', name: 'MGM Laboratory', url: 'https://labmgm.org' },
@@ -96,16 +93,21 @@ function jsonLd(e: EventDetail) {
         ? { affiliation: { '@type': 'Organization', name: s.organization } }
         : null),
     })),
-    offers: {
-      '@type': 'Offer',
-      price: 0,
-      priceCurrency: 'IDR',
-      url: `${url}#register`,
-      availability:
-        e.registration.open && (e.registration.spotsLeft ?? 1) > 0
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/SoldOut',
-    },
+    // Only Fridays you can still come to have an offer (a wrapped or cancelled one is not "sold out").
+    ...(e.status === 'scheduled' || e.status === 'ongoing'
+      ? {
+          offers: {
+            '@type': 'Offer',
+            price: 0,
+            priceCurrency: 'IDR',
+            url: `${url}#register`,
+            availability:
+              e.registration.open && (e.registration.spotsLeft ?? 1) > 0
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/SoldOut',
+          },
+        }
+      : null),
   };
 }
 
@@ -126,12 +128,12 @@ export default async function EventPage({ params }: Props) {
     );
   }
 
-  // `<` escaped so a title can never close the script tag.
-  const ld = JSON.stringify(jsonLd(event)).replace(/</g, '\\u003c');
+  // `<` escaped so a title can never close the script tag. Link-only Fridays get no structured data.
+  const ld = isUnlisted(event) ? null : JSON.stringify(jsonLd(event)).replace(/</g, '\\u003c');
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
+      {ld ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} /> : null}
       <EventExperience
         event={event}
         renderedAt={now}

@@ -75,7 +75,7 @@ export function LostPage() {
             <nav aria-label="Other places to go" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.9375rem]">
               <span className="label text-ink-3">Or try</span>
               {MORE.map((l) => (
-                <TextLink key={l.href} href={l.href} tone="ink">
+                <TextLink key={l.href} href={l.href} tone="ink" className="-mx-1.5 inline-flex min-h-11 items-center px-1.5">
                   {l.label}
                 </TextLink>
               ))}

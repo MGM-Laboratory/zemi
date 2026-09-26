@@ -3,6 +3,7 @@ import { ShapeIcon } from '@/components/brand/shape-icon';
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { CountUp } from '@/components/motion/count-up';
 import { Marquee } from '@/components/motion/marquee';
+import { shareMeta } from '@/components/public/media/share-meta';
 import { getAllSpeakers } from '@/components/public/speakers/data';
 import { Enter } from '@/components/public/speakers/enter';
 import { FrontRow } from '@/components/public/speakers/front-row';
@@ -21,11 +22,11 @@ export const metadata: Metadata = {
   description:
     'Everyone who has stood at the front of a Zemi Friday: postgrad researchers, lecturers and friends of MGM Laboratory. Find a person, see their talks and papers.',
   alternates: { canonical: '/speakers' },
-  openGraph: {
-    url: '/speakers',
+  ...shareMeta({
     title: 'Speakers at Zemi',
     description: 'People who sat at the front. Their talks, their papers, their nicknames.',
-  },
+    url: '/speakers',
+  }),
 };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -80,8 +81,10 @@ export default async function SpeakersPage({ searchParams }: Props) {
               <Enter delay={0.4} y={20}>
                 <dl className="grid grid-cols-3 gap-4 rounded-[28px] border border-line bg-white p-5 shadow-1 sm:p-6">
                   <div className="col-span-3 flex items-center justify-between gap-3 border-b border-line pb-4">
-                    <span className="label text-ink-3">Regulars</span>
-                    <AvatarStack people={front} size={40} max={5} />
+                    <dt className="label text-ink-3">Regulars</dt>
+                    <dd>
+                      <AvatarStack people={front} size={40} max={5} />
+                    </dd>
                   </div>
                   <div className="flex flex-col gap-1">
                     <dt className="label text-ink-3">People</dt>

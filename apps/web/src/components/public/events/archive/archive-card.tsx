@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/public/ui/chip';
 import { cn } from '@/lib/utils';
 import { CoverFrame } from '../cover-frame';
 import styles from '../events.module.css';
-import { ACCENT_SHAPE, accentVars, seeded } from '../lib';
+import { ACCENT_FRIEND, ACCENT_SHAPE, accentVars, seeded } from '../lib';
 
 /** One 4:5 cover in the archive: accent frame, tilt + depth, status and Watch badges. */
 export function ArchiveCard({ e, priority }: { e: EventCard; priority?: boolean }) {
@@ -54,11 +54,11 @@ export function ArchiveCard({ e, priority }: { e: EventCard; priority?: boolean 
           {e.number != null ? `#${e.number}` : 'Zemi'}
         </span>
         <span className={cn(styles.sticker, 'hidden sm:block')} aria-hidden="true">
+          {/* A friend in a second brand color: a white shape read as a broken blob on white paper. */}
           <ShapeIcon
-            shape={ACCENT_SHAPE[e.accent]}
+            shape={ACCENT_SHAPE[ACCENT_FRIEND[e.accent]]}
             size="clamp(28px, 2.6vw, 40px)"
-            color="#fff"
-            style={{ filter: 'drop-shadow(0 6px 10px rgb(14 17 22 / 0.3))' }}
+            style={{ filter: 'drop-shadow(0 6px 10px rgb(14 17 22 / 0.28))' }}
           />
         </span>
       </CoverFrame>

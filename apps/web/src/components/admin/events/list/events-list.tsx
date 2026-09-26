@@ -296,7 +296,7 @@ export function EventsList() {
               {row.original.venue}
             </span>
           ) : (
-            <span className="whitespace-nowrap text-ink-4">No room</span>
+            <span className="whitespace-nowrap text-ink-3">No room</span>
           ),
       },
       {
@@ -322,9 +322,9 @@ export function EventsList() {
           // Doors have not opened yet: a 0% here would read like nobody came.
           const notYet = rowStatus(row.original, now) === 'scheduled' && !row.original.checkedIn;
           return notYet ? (
-            <span className="whitespace-nowrap text-ink-4">Soon</span>
+            <span className="whitespace-nowrap text-ink-3">Soon</span>
           ) : rate == null ? (
-            <span className="whitespace-nowrap text-ink-4">None</span>
+            <span className="whitespace-nowrap text-ink-3">None</span>
           ) : (
             <Tooltip
               content={`${row.original.checkedIn} of ${row.original.registrations} checked in`}
@@ -351,7 +351,7 @@ export function EventsList() {
               max={3}
             />
           ) : (
-            <span className="whitespace-nowrap text-ink-4">Nobody</span>
+            <span className="whitespace-nowrap text-ink-3">Nobody</span>
           ),
       },
       {
@@ -623,14 +623,14 @@ function EventCardTile({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3.5 sm:gap-2 sm:p-4">
         <div className="flex flex-wrap gap-1.5 pr-10 sm:hidden">{chips}</div>
         <EventNumber number={row.number} className="text-[0.625rem]" />
-        <h3 className="line-clamp-2 font-display text-[1.0625rem] leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.3]">
+        <h2 className="line-clamp-2 font-display text-[1.0625rem] leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.3]">
           <Link
             href={adminRoutes.event(row.id)}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {row.title}
           </Link>
-        </h3>
+        </h2>
         <p className="text-[0.8125rem] text-ink-3">
           <DateText value={row.startsAt} format="date" className="text-ink-2" />
           <br />
@@ -664,7 +664,7 @@ function EventCardTile({
               />
             ) : null}
             {rate != null ? (
-              <p className="mono mt-1 text-[0.6875rem] text-ink-4">{formatPercent(rate)} in</p>
+              <p className="mono mt-1 text-[0.6875rem] text-ink-3">{formatPercent(rate)} in</p>
             ) : null}
           </div>
         </div>

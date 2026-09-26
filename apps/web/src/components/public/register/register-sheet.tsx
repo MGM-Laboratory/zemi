@@ -1,7 +1,7 @@
 'use client';
 
 import { MailCheck } from 'lucide-react';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import {
   formatJakarta,
   formatTimeRange,
@@ -49,6 +49,14 @@ export function RegisterSheet({
   const wide = useMediaQuery('(min-width: 768px)');
   const [view, setView] = useState<View>({ kind: 'form' });
   const headingId = useId();
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // A new view (success, already in) starts at its top, not where the submit button left the scroll.
+  useEffect(() => {
+    if (view.kind === 'form') return;
+    const scroller = bodyRef.current?.parentElement;
+    if (scroller) scroller.scrollTop = 0;
+  }, [view.kind]);
 
   // Back to the form a moment after closing (so the exit animation shows the same content).
   useEffect(() => {
@@ -63,7 +71,7 @@ export function RegisterSheet({
         ? 'Your ticket'
         : "You're in"
       : view.kind === 'already'
-        ? 'Already on the list'
+        ? "You're already in"
         : canRegister
           ? 'Save your seat'
           : 'Sign ups are closed';
@@ -76,30 +84,51 @@ export function RegisterSheet({
   if (view.kind === 'success') {
     body = <RegisterSuccess result={view.result} headingId={headingId} />;
   } else if (view.kind === 'already') {
+    // 409 already_registered: the email has a seat, but we never hand its ticket (and its cancel
+    // link) to whoever typed the address. The ticket goes to that inbox instead.
     body = (
       <div className="flex flex-col items-center gap-5 py-4 text-center">
         <div className="flex items-end gap-2" aria-hidden="true">
           <Character shape="square" mood="happy" size={72} seed={3} />
-          <Character shape="circle" mood="surprised" size={52} seed={5} />
+          <Character shape="circle" mood="happy" size={52} seed={5} />
         </div>
         <p
-          className="display text-title text-ink"
+          id={headingId}
+          className="display max-w-[22ch] text-balance text-title text-ink"
           style={{ fontVariationSettings: "'CASL' 0.7, 'MONO' 0" }}
         >
-          That email already has a seat.
+          You&apos;re already in. Check your inbox for the ticket.
         </p>
         <p className="max-w-[30rem] text-ink-2">
-          {view.details.emailSent
-            ? `We just sent the ticket to ${view.details.email} again. Check your inbox (and the spam folder, it gets hungry).`
-            : `The ticket went to ${view.details.email} when you signed up. Search your inbox for "Zemi".`}
+          {view.details.emailSent ? (
+            <>
+              We just sent it again to <strong className="text-ink">{view.details.email}</strong>.
+              Give it a minute, and peek in spam if it&apos;s being shy.
+            </>
+          ) : (
+            <>
+              It went to <strong className="text-ink">{view.details.email}</strong> a few minutes
+              ago. Search your inbox for &ldquo;Zemi&rdquo;.
+            </>
+          )}
         </p>
-        <p className="flex items-center gap-2 text-[0.9375rem] text-ink-3">
-          <MailCheck className="size-4" aria-hidden="true" />
-          For privacy, we only send tickets to the inbox they belong to.
-        </p>
-        <Button variant="secondary" shape={false} onClick={() => setView({ kind: 'form' })}>
-          Use a different email
-        </Button>
+        <div className="flex max-w-[30rem] items-start gap-3 rounded-[16px] bg-surface-muted px-4 py-3 text-left text-[0.9375rem] text-ink-2">
+          <MailCheck className="mt-0.5 size-5 flex-none text-ink-3" aria-hidden="true" />
+          <p>
+            {view.details.emailSent
+              ? "Still nothing after 10 minutes? Sign up again with the same email and we'll send it once more."
+              : "Nothing there? Wait 10 minutes, then sign up again with the same email and we'll resend it."}{' '}
+            Tickets only go to the inbox they belong to.
+          </p>
+        </div>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button shape="circle" onClick={() => onOpenChange(false)}>
+            Got it
+          </Button>
+          <Button variant="secondary" shape={false} onClick={() => setView({ kind: 'form' })}>
+            Use a different email
+          </Button>
+        </div>
       </div>
     );
   } else if (!canRegister) {
@@ -138,13 +167,17 @@ export function RegisterSheet({
 
   const content =
     view.kind === 'form' && canRegister ? (
-      <div className="graph-paper mt-2 rounded-[20px] border border-line p-4 sm:p-6">{body}</div>
+      <div ref={bodyRef} className="graph-paper mt-2 rounded-[20px] border border-line p-4 sm:p-6">
+        {body}
+      </div>
     ) : (
-      <div className="pt-2">{body}</div>
+      <div ref={bodyRef} className="pt-2">
+        {body}
+      </div>
     );
 
   // The success view has its own big heading; keep the dialog title for screen readers only.
-  const hideTitle = view.kind === 'success';
+  const hideTitle = view.kind === 'success' || view.kind === 'already';
   return wide ? (
     <Dialog
       open={open}

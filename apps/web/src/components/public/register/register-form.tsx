@@ -293,7 +293,7 @@ export function RegisterForm({ event, onSuccess, onAlready, spotsLeft }: Registe
           id="register-error"
           tabIndex={-1}
           role="alert"
-          className="flex items-start gap-3 rounded-[14px] border border-red/40 bg-red-50 p-4 text-[0.9375rem] font-semibold text-red-600 outline-none"
+          className="flex items-start gap-3 rounded-[14px] border border-red/40 bg-red-50 p-4 text-[0.9375rem] font-semibold text-[#b42323] outline-none"
         >
           <ShapeIcon shape="triangle" size="1em" className="mt-[0.2em]" />
           <span>{formError}</span>

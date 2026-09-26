@@ -67,7 +67,7 @@ Wrong or missing secret: 401 `unauthorized`.
 
 | route | permission | returns |
 |---|---|---|
-| `GET /admin/events/:id/stream` | `stream.view` | `StreamConfig`. Creates the row on first call: `streamKey = "zm" + 16 base62`, private key 32 base62, AES-GCM (`CryptoService.encrypt`, AAD = event id). `obs = { server: RTMP_PUBLIC_URL, streamKey, privateKey, obsStreamKey: "<streamKey>?key=<privateKey>" }`, `viewers`, `peakViewers` |
+| `GET /admin/events/:id/stream` | `stream.view` (keys: `stream.control`) | `StreamConfig`. Creates the row on first call: `streamKey = "zm" + 16 base62`, private key 32 base62, AES-GCM (`CryptoService.encrypt`, AAD = event id). `obs = { server: RTMP_PUBLIC_URL, streamKey, privateKey, obsStreamKey: "<streamKey>?key=<privateKey>" }` **only with `stream.control`** on the event (or the superadmin). With just `stream.view`, `obs` is `null` (the key is never decrypted): state, `viewers`, `peakViewers`, health, preview token, SSE and recordings still work. Least privilege: with the private key a view-only admin could push their own feed into the live stream. Live, end and rotate already needed `stream.control` and return the keys as before |
 | `POST /admin/events/:id/stream/rotate` | `stream.control` | `StreamConfig` with new keys, and the current publisher is kicked (`/v3/rtmpconns/kick/<id>`, or the rtsp/srt/webrtc equivalent). While **live** only the private key changes (same path, so the recording and viewers' playlist keep going; OBS reconnects with the new key). Otherwise both keys change, `ingestOnline` resets, `preview` goes back to `idle`. SSE `keys-rotated`. Audited |
 | `POST /admin/events/:id/stream/live` | `stream.control` | `StreamConfig`. 409 `no_signal` "We don't see OBS yet. Hit Start Streaming in OBS, wait for the preview, then go live." 409 `already_live`, 409 for cancelled events. Sets `live`, `liveStartedAt`, creates a `stream_sessions` row (`recording`), SSE, revalidate `events` + `event:<id>`, audit `stream.live` |
 | `POST /admin/events/:id/stream/end` | `stream.control` | `StreamConfig`. 409 `not_live`. `ended`, `liveEndedAt`, session `endedAt` + `waiting`, queues `recording.finalize {sessionId}` (10s delay), SSE, revalidate, audit `stream.end`. **Auto end**: the 10s reconcile also ends a stream that is still `live` with no signal for 20 minutes when the event's end time is 20+ minutes past (nobody pressed End). It runs as `system` (audit `stream.end`, `meta.auto: true`), and `liveEndedAt` + the session's `endedAt` are the moment the signal went away, not the moment we noticed. The dashboard should expect `ended` to arrive over SSE without anyone pressing the button |
@@ -278,6 +278,16 @@ and without `_HLS_msn=12&_HLS_skip=YES`, one segment `MISS` then `HIT` for `?x=1
 and `?_HLS_part=3&_HLS_skip=v2`; init + segment probe as h264 640x360. Heartbeat limit: 600 answers then 429 on the 601st from one `X-Real-IP`.
 Scratch events, assets, admin and raw segments were deleted afterwards. Not run directly: releasing the old asset
 when a session with raw segments is re-stitched (it goes through the same conditional delete).
+
+### 8g. Integration fixes (2026-09-26, fix-api)
+
+- `GET /admin/events/:id/stream` as a throwaway admin with `view` + `stream.view` on every event: `obs: null`, `state` present,
+  `health` 200, `preview-token` 200, SSE `state` + `health` events without keys, `rotate` 403. The superadmin still gets
+  `obs.server/streamKey/privateKey/obsStreamKey`. Spec: `stream-keys.spec.ts` (view vs control, a grant on another event,
+  superadmin, 403 without stream access, no decrypt without keys).
+- The shared recording asset (`9d7e7d29...`, 8 seeded sessions) attached to a throwaway event and that recording deleted:
+  204, audit `meta.assetDeleted: false`, the asset row, its `/media/.../video.mp4` (206) and all 8 seeded sessions intact.
+- The `stream.view` / `stream.control` hints in `rbac.ts` now say where the OBS keys live.
 
 ## 9. Known gaps
 

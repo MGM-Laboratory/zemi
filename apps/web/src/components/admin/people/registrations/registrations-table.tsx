@@ -239,8 +239,9 @@ export function RegistrationsTable({ eventId, perms, toolbarExtra }: { eventId: 
         cell: ({ row }) => {
           const r = row.original;
           return (
-            <div className="flex min-w-[12rem] items-center gap-2">
-              <span className={cn('font-medium text-ink', r.status === 'cancelled' && 'text-ink-3 line-through decoration-ink-4')}>{r.fullName}</span>
+            // The name stays on one line; on a tight table the badges drop under it.
+            <div className="flex min-w-[10rem] flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className={cn('font-medium whitespace-nowrap text-ink', r.status === 'cancelled' && 'text-ink-3 line-through decoration-ink-4')}>{r.fullName}</span>
               {r.otherEvents > 0 ? (
                 <Tooltip content={`Also registered for ${r.otherEvents} other ${r.otherEvents === 1 ? 'Friday' : 'Fridays'}`}>
                   <span>
@@ -253,7 +254,7 @@ export function RegistrationsTable({ eventId, perms, toolbarExtra }: { eventId: 
               {r.status === 'cancelled' ? <StatusChip kind="registration" value="cancelled" size="sm" /> : null}
               {r.notes ? (
                 <Tooltip content={r.notes}>
-                  <StickyNote className="size-3.5 shrink-0 text-ink-4" aria-label="Has notes" />
+                  <StickyNote className="size-3.5 shrink-0 text-ink-3" aria-label="Has notes" />
                 </Tooltip>
               ) : null}
             </div>
@@ -266,7 +267,7 @@ export function RegistrationsTable({ eventId, perms, toolbarExtra }: { eventId: 
         header: 'Checked in',
         cell: ({ row }) => {
           const r = row.original;
-          if (!r.checkedInAt) return <span className="text-sm text-ink-4">Not yet</span>;
+          if (!r.checkedInAt) return <span className="text-sm text-ink-3">Not yet</span>;
           return (
             <Tooltip content={`${r.checkInMethod === 'qr' ? 'Scanned' : 'Checked in by hand'}${r.checkedInBy ? ` by ${r.checkedInBy}` : ''}`}>
               <span className="inline-flex items-center gap-1.5 text-sm whitespace-nowrap text-green-600">
@@ -278,18 +279,24 @@ export function RegistrationsTable({ eventId, perms, toolbarExtra }: { eventId: 
         },
       },
       {
-        id: 'email',
+        // Email over phone in one column, so the list fits a laptop without scrolling sideways.
+        id: 'contact',
         accessorKey: 'email',
-        header: 'Email',
+        header: 'Contact',
         enableSorting: false,
-        cell: ({ getValue }) => <span className="text-ink-2">{getValue<string>()}</span>,
-      },
-      {
-        id: 'phone',
-        accessorKey: 'phone',
-        header: 'Phone',
-        enableSorting: false,
-        cell: ({ getValue }) => <span className="mono text-sm whitespace-nowrap text-ink-2">{formatPhone(getValue<string>()) || <span className="text-ink-4">None</span>}</span>,
+        meta: { label: 'Email and phone' },
+        cell: ({ row }) => {
+          const r = row.original;
+          const phone = formatPhone(r.phone);
+          return (
+            <div className="min-w-0 leading-snug">
+              <span className="block max-w-[17rem] truncate text-ink-2" title={r.email}>
+                {r.email}
+              </span>
+              <span className={cn('mono block text-[0.8125rem] whitespace-nowrap', phone ? 'text-ink-2' : 'text-ink-3')}>{phone || 'No phone'}</span>
+            </div>
+          );
+        },
       },
       {
         id: 'attendanceMode',
@@ -313,28 +320,27 @@ export function RegistrationsTable({ eventId, perms, toolbarExtra }: { eventId: 
         id: 'createdAt',
         accessorKey: 'createdAt',
         header: 'Registered',
-        // Compact ("25 Sept, 13:16 WIB") so the list fits a laptop; the full date is in the tooltip.
-        cell: ({ getValue }) => {
-          const v = getValue<string>();
+        meta: { label: 'Registered and source' },
+        // Compact ("25 Sept, 13:16 WIB") with the source under it, so the list fits a laptop;
+        // the full date is in the tooltip.
+        cell: ({ row }) => {
+          const v = row.original.createdAt;
           return (
-            <time dateTime={v} title={`${formatJakarta(v, 'datetime')} WIB`} className="text-sm whitespace-nowrap text-ink-2 tabular-nums">
-              {formatJakarta(v, 'date-short')}, {formatJakarta(v, 'time')} WIB
-            </time>
+            <div className="leading-snug whitespace-nowrap">
+              <time dateTime={v} title={`${formatJakarta(v, 'datetime')} WIB`} className="block text-sm text-ink-2 tabular-nums">
+                {formatJakarta(v, 'date-short')}, {formatJakarta(v, 'time')} WIB
+              </time>
+              <span className="block text-[0.8125rem] text-ink-3">{SOURCE_LABEL[row.original.source]}</span>
+            </div>
           );
         },
-      },
-      {
-        id: 'source',
-        accessorKey: 'source',
-        header: 'Source',
-        enableSorting: false,
-        cell: ({ row }) => <span className="text-sm whitespace-nowrap text-ink-2">{SOURCE_LABEL[row.original.source]}</span>,
       },
       {
         id: 'actions',
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
-        meta: { hideable: false, stopRowClick: true, width: '3.5rem', align: 'right' },
+        // Pinned right, so the row menu is always on screen even when the table scrolls.
+        meta: { hideable: false, stopRowClick: true, width: '3.5rem', align: 'right', pin: 'right' },
         cell: ({ row }) => rowMenu(row.original),
       },
     ],

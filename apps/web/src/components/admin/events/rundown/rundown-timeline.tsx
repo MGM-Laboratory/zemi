@@ -177,7 +177,7 @@ export function RundownTimeline({
             </div>
           ) : null}
           {!blocks.length ? (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-ink-4">
+            <p className="absolute inset-0 flex items-center justify-center text-sm text-ink-3">
               Rows show up here as you add them.
             </p>
           ) : null}
@@ -189,7 +189,7 @@ export function RundownTimeline({
             .map((m) => (
               <span
                 key={m}
-                className="mono absolute -translate-x-1/2 text-[0.6875rem] text-ink-4 tabular-nums first:translate-x-0 last:-translate-x-full"
+                className="mono absolute -translate-x-1/2 text-[0.6875rem] text-ink-3 tabular-nums first:translate-x-0 last:-translate-x-full"
                 style={{ left: `${pct(m)}%` }}
               >
                 {minutesToHhmm(m)}

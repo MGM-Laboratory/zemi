@@ -280,7 +280,7 @@ export function DoiFill({ doi, getValues, apply, disabled }: DoiFillProps) {
                           )}
                         </div>
                         <div className="grid grid-cols-1 gap-1.5 text-[0.875rem] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start sm:gap-3">
-                          <p className={cn('min-w-0 break-words', row.current ? (on ? 'text-ink-3 line-through decoration-red/60' : 'text-ink-2') : 'text-ink-4 italic')}>
+                          <p className={cn('min-w-0 break-words', row.current ? (on ? 'text-ink-3 line-through decoration-red/60' : 'text-ink-2') : 'text-ink-3 italic')}>
                             {row.current ? clip(row.current) : 'Nothing yet'}
                           </p>
                           <ArrowRight className="hidden size-4 text-ink-4 sm:mt-0.5 sm:block" aria-hidden="true" />

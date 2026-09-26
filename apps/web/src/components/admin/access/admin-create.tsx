@@ -11,6 +11,7 @@ import { cn } from '@/lib/admin/cn';
 import { useBreadcrumbs } from '@/lib/admin/breadcrumbs';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
 import { useAdminMutation, useHotkeys } from '@/lib/admin/hooks';
+import { useLeaveGuard } from '@/lib/admin/leave-guard';
 import { adminRoutes } from '@/lib/admin/nav';
 import { adminKeys } from '@/lib/admin/query-keys';
 import { AccessEditor, ExpiryFormField, FormBlock, PassphraseFormField, ProfileFields, adminCreateSchema, type AdminCreateValues } from './admin-form';
@@ -40,6 +41,17 @@ export function AdminCreate() {
   // The auto-rolled passphrase alone is not "unsaved work".
   const touched = Object.keys(form.formState.dirtyFields).some((k) => k !== 'passphrase');
   const guard = useDirtyGuard(touched && !created);
+  // The passphrase exists only in this tab until someone copies it: guard links, shortcuts,
+  // the palette, reload and the Back button while it is on screen and not copied yet.
+  const revealGuard = useLeaveGuard(Boolean(created) && !copied, {
+    backButton: true,
+    confirm: {
+      title: 'Leave without copying the passphrase?',
+      description: `Nobody can see it again once you go, you included. If ${created ? created.admin.name.trim().split(/\s+/)[0] : 'they'} never gets it, you will have to set a new one.`,
+      confirmLabel: 'Leave anyway',
+      cancelLabel: 'Stay and copy it',
+    },
+  });
   const [formKey, setFormKey] = useState(0);
   const name = form.watch('name');
 
@@ -86,8 +98,13 @@ export function AdminCreate() {
       if (!ok) return;
     }
     const id = created.admin.id;
+    // Not copied means the Back-button guard still has its extra history entry on top: replace
+    // it, so Back from their page lands on this form once, not twice.
+    const armed = !copied;
+    revealGuard.release();
     setCreated(null);
-    router.push(adminRoutes.admin(id));
+    if (armed) router.replace(adminRoutes.admin(id));
+    else router.push(adminRoutes.admin(id));
   };
 
   if (created) {

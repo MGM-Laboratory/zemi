@@ -264,7 +264,7 @@ function NextEventCard({ row }: { row: EventAdminRow }) {
         </Link>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="label text-ink-4">Next up</span>
+            <span className="label text-ink-3">Next up</span>
             <EventNumber number={row.number} />
             <StatusChip kind="event" value={status} size="sm" />
             {row.visibility !== 'published' ? (
@@ -434,7 +434,7 @@ function EmptyFridays({ fridays, canCreate }: { fridays: string[]; canCreate: bo
         </div>
       )}
       {fridays.length > shown.length ? (
-        <p className="mt-3 text-xs text-ink-4">
+        <p className="mt-3 text-xs text-ink-3">
           And {fridays.length - shown.length} more after that.
         </p>
       ) : null}
@@ -452,7 +452,7 @@ function PlanAhead({ plan }: { plan: ReturnType<typeof usePlanFriday> }) {
   if (!next) return null;
   return (
     <div className="border-t border-line pt-4">
-      <p className="label mb-2 text-ink-4">Planning ahead?</p>
+      <p className="label mb-2 text-ink-3">Planning ahead?</p>
       <ul>
         <FridayRow date={next} index={0} plan={plan} canCreate label="Plan ahead" />
       </ul>
@@ -489,7 +489,7 @@ function FridayRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[0.9375rem] font-medium text-ink">{fridayLabel(date, 'date')}</span>
-        <span className="mono block text-xs text-ink-4">13:15 to 15:15 WIB</span>
+        <span className="mono block text-xs text-ink-3">13:15 to 15:15 WIB</span>
       </span>
       {canCreate ? (
         <Button

@@ -2,11 +2,12 @@
 
 import { LINK_KINDS, type LinkItem, type LinkKind } from '@zemi/shared';
 import { Plus, Trash2 } from 'lucide-react';
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import { LinkIcon } from '@/components/icons/link-icon';
 import { detectLinkKind, LINK_KIND_LABELS, normalizeLinkUrl } from '@/components/icons/link-kinds';
 import { cn } from '@/lib/admin/cn';
 import { Button, IconButton } from '../ui/button';
+import { FieldIsolate, useFieldContext } from '../ui/field';
 import { Input } from '../ui/input';
 import { Select } from '../ui/select';
 import { useReadOnly } from './read-only';
@@ -40,9 +41,14 @@ const KIND_OPTIONS = LINK_KINDS.map((k) => ({ value: k, label: LINK_KIND_LABELS[
 /**
  * Sortable list of profile links (speakers, team, contact socials). Paste a URL and the kind
  * is detected (linkedin.com becomes LinkedIn). Emails become mailto: links on blur.
+ *
+ * Safe inside a `<Field>`: the Field names the group (its label and hint), and every row wires
+ * its own ids and error state instead of sharing the Field's one id.
  */
 export function LinksEditor({ value, onChange, max = 20, readOnly: ro, errors, addLabel = 'Add a link', className }: LinksEditorProps) {
   const readOnly = useReadOnly(ro);
+  const field = useFieldContext();
+  const base = `${field?.id ?? 'links'}-${useId().replace(/:/g, '')}`;
   const touchedKind = useRef(new WeakSet<LinkItem>());
   const update = (i: number, patch: Partial<LinkItem>) => {
     const next = value.slice();
@@ -54,11 +60,18 @@ export function LinksEditor({ value, onChange, max = 20, readOnly: ro, errors, a
     onChange(next);
   };
 
-  if (readOnly && !value.length) return <p className="text-sm text-ink-4">No links.</p>;
+  if (readOnly && !value.length) return <p className="text-sm text-ink-3">No links.</p>;
 
   return (
-    <div className={cn('space-y-2.5', className)}>
-      <SortableList
+    <div
+      role="group"
+      aria-labelledby={field?.labelId}
+      aria-describedby={field?.describedBy}
+      aria-label={field ? undefined : 'Links'}
+      className={cn('space-y-2.5', className)}
+    >
+      <FieldIsolate>
+        <SortableList
         items={value}
         getId={rowKey}
         onReorder={onChange}
@@ -67,14 +80,20 @@ export function LinksEditor({ value, onChange, max = 20, readOnly: ro, errors, a
         aria-label="Links"
         renderItem={(link, { index, handle }) => {
           const err = errors?.[index];
+          // DOM ids come from useId + the row index, never from rowKey: rowKey's counter is
+          // module-wide, so it runs ahead on the server and broke hydration where rows SSR.
+          const rid = `${base}-${index}`;
+          const label = LINK_KIND_LABELS[link.kind];
           return (
-            <div className="rounded-2xl border border-line bg-white p-2 sm:p-1.5">
-              <div className="flex flex-wrap items-center gap-1.5 sm:flex-nowrap">
+            // Container queries, not viewport ones: the same editor sits in a narrow Sheet on a wide screen.
+            <div className="@container rounded-2xl border border-line bg-white p-2">
+              <div className="flex flex-wrap items-center gap-1.5 @xl:flex-nowrap">
                 <DragHandle {...handle} disabled={readOnly} label={`Move ${LINK_KIND_LABELS[link.kind]} link`} />
                 <Select
                   size="sm"
-                  aria-label="Link type"
-                  className="w-[11rem] shrink-0 [&>span>span:last-child]:truncate"
+                  id={`${rid}-kind`}
+                  aria-label={`Link type, row ${index + 1}`}
+                  className="w-[11rem] max-w-[calc(100%-5rem)] shrink-0 [&>span>span:last-child]:truncate"
                   value={link.kind}
                   readOnly={readOnly}
                   onValueChange={(k) => {
@@ -86,12 +105,15 @@ export function LinksEditor({ value, onChange, max = 20, readOnly: ro, errors, a
                 />
                 <Input
                   size="sm"
-                  aria-label="URL"
+                  // The first URL takes the Field's id, so clicking the Field label lands in it.
+                  id={index === 0 && field ? field.id : `${rid}-url`}
+                  aria-label={`${label} URL`}
+                  aria-describedby={err?.url ? `${rid}-err` : undefined}
                   placeholder={link.kind === 'email' ? 'name@example.com' : 'https://'}
                   value={link.url}
                   readOnly={readOnly}
                   inputMode={link.kind === 'email' ? 'email' : 'url'}
-                  wrapperClassName="min-w-[12rem] flex-1 max-sm:order-last max-sm:basis-full"
+                  wrapperClassName="min-w-[12rem] flex-1 @max-xl:order-last @max-xl:basis-full"
                   aria-invalid={Boolean(err?.url) || undefined}
                   onChange={(e) => {
                     const url = e.target.value;
@@ -104,25 +126,33 @@ export function LinksEditor({ value, onChange, max = 20, readOnly: ro, errors, a
                 />
                 <Input
                   size="sm"
-                  aria-label="Label (optional)"
+                  id={`${rid}-label`}
+                  aria-label={`${label} label (optional)`}
+                  aria-invalid={Boolean(err?.label) || undefined}
                   placeholder="Label"
                   value={link.label ?? ''}
                   readOnly={readOnly}
                   maxLength={120}
-                  wrapperClassName="sm:w-36 max-sm:order-last max-sm:basis-full"
+                  wrapperClassName="@xl:w-36 @max-xl:order-last @max-xl:basis-full"
                   onChange={(e) => update(index, { label: e.target.value || null })}
                 />
                 {readOnly ? null : (
-                  <IconButton label="Remove link" size="sm" variant="danger" className="max-sm:ml-auto" onClick={() => onChange(value.filter((_, i) => i !== index))}>
+                  <IconButton label={`Remove ${label} link`} size="sm" variant="danger" className="@max-xl:ml-auto" onClick={() => onChange(value.filter((_, i) => i !== index))}>
                     <Trash2 />
                   </IconButton>
                 )}
               </div>
-              {err?.url ? <p className="px-2 pt-1.5 text-[0.8125rem] font-medium text-red-600">{err.url}</p> : null}
+              {err?.url ? (
+                <p id={`${rid}-err`} className="px-2 pt-1.5 text-[0.8125rem] font-medium text-red-600">
+                  {err.url}
+                </p>
+              ) : null}
+              {err?.label ? <p className="px-2 pt-1.5 text-[0.8125rem] font-medium text-red-600">{err.label}</p> : null}
             </div>
           );
         }}
       />
+      </FieldIsolate>
       {readOnly ? null : (
         <Button
           size="sm"

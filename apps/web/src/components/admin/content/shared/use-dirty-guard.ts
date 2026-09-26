@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { useConfirm } from '@/components/admin/ui';
+import { useRegisterLeaveGuard } from '@/lib/admin/leave-guard';
 
 /**
  * Warn before leaving a form with unsaved changes.
@@ -20,6 +21,22 @@ export function useDirtyGuard(dirty: boolean) {
   useEffect(() => {
     dirtyRef.current = dirty;
   }, [dirty]);
+
+  // Keyboard jumps and the command palette ask through the shared registry.
+  useRegisterLeaveGuard(
+    () => dirtyRef.current,
+    () =>
+      confirm({
+        title: 'Leave without saving?',
+        description: 'Your changes on this page are not saved yet. If you go now, they are gone.',
+        confirmLabel: 'Leave anyway',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      }),
+    () => {
+      dirtyRef.current = false;
+    },
+  );
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {

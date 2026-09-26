@@ -193,7 +193,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
         aria-valuenow={value ?? undefined}
       />
       <div className="absolute right-1.5 flex items-center gap-0.5">
-        {unit ? <span className="pointer-events-none mr-1 text-sm text-ink-4">{unit}</span> : null}
+        {unit ? <span className="pointer-events-none mr-1 text-sm text-ink-3">{unit}</span> : null}
         {steppers && !locked ? (
           <>
             <button

@@ -91,7 +91,7 @@ export function FaqManager() {
           <WithPreview previewLabel="On the about page" preview={<FaqPreview items={published} />}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CollectionCounts total={items.length} published={published.length} one="question" many="questions" />
-              <p className="hidden text-[0.8125rem] text-ink-4 sm:block">
+              <p className="hidden text-[0.8125rem] text-ink-3 sm:block">
                 Press <Kbd>n</Kbd> for a new one. Drag the handle, or focus it and use Space and the arrows.
               </p>
             </div>
@@ -160,7 +160,7 @@ function FaqRow({
     >
       <div className="flex flex-col items-center gap-1">
         {handle}
-        <span className="mono text-xs text-ink-4 tabular-nums" aria-hidden="true">
+        <span className="mono text-xs text-ink-3 tabular-nums" aria-hidden="true">
           {String(index + 1).padStart(2, '0')}
         </span>
       </div>

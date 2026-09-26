@@ -141,7 +141,7 @@ export function JakartaDateTimeInput({
               <X className="size-4" />
             </button>
           ) : (
-            <span className="label mr-3 text-[0.625rem] text-ink-4">WIB</span>
+            <span className="label mr-3 text-[0.625rem] text-ink-3">WIB</span>
           )
         }
       />

@@ -48,6 +48,14 @@
   opacity: 0;
 }
 
+/* LCP images: no opacity gate. The browser can paint them from the SSR HTML, before hydration sets
+   data-loaded (an opacity:0 image is not an LCP candidate until JS reveals it). */
+.eager .img {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 :global(html:not([data-zemi-js])) .img {
   opacity: 1;
   transform: none;

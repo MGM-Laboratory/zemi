@@ -6,6 +6,38 @@
  * emits theme variables that something in its own build uses.
  */
 
+/*
+ * Announcement bar layout contract (components/public/shell/announcement-bar.tsx).
+ * --announcement-h       the bar's height while it shows, 0px when there is none or it was dismissed
+ * --announcement-offset  the part of the bar still on screen (JS keeps it current while you scroll)
+ * Both are right before hydration: :has() sees the server-rendered bar, and a pre-paint script
+ * flags a bar this visitor already dismissed.
+ */
+:root {
+  --announcement-bar-h: 40px;
+  --announcement-h: 0px;
+  --announcement-offset: var(--announcement-h);
+}
+
+@media (pointer: coarse) {
+  :root {
+    /* Room for a 44px dismiss button on touch screens. */
+    --announcement-bar-h: 44px;
+  }
+}
+
+:root:has([data-announcement]) {
+  --announcement-h: var(--announcement-bar-h);
+}
+
+:root[data-announcement-dismissed] {
+  --announcement-h: 0px;
+}
+
+:root[data-announcement-dismissed] [data-announcement] {
+  display: none;
+}
+
 @layer base {
   html[data-zemi-public] {
     scroll-padding-top: calc(var(--nav-h, 72px) + 16px);

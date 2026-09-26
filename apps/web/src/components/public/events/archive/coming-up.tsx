@@ -12,7 +12,14 @@ import { SectionHeader } from '@/components/public/ui/section-header';
 import { useNow } from '@/lib/hooks/use-now';
 import { cn } from '@/lib/utils';
 import { CoverFrame } from '../cover-frame';
-import { ACCENT_SHAPE, accentVars, eventLabel, relativeDay, whenLine } from '../lib';
+import {
+  ACCENT_SHAPE,
+  accentVars,
+  chipToneFix,
+  eventLabel,
+  relativeDay,
+  whenLine,
+} from '../lib';
 
 function seats(e: EventCard): string | null {
   if (e.capacity == null || e.registrationCount == null)
@@ -39,13 +46,22 @@ function UpcomingCard({
   const seat = seats(e);
   const titleId = `up-${e.id}`;
   return (
-    <Reveal as="li" delay={stagger(index, 0.08)} className={cn(featured && 'md:col-span-2')}>
+    <Reveal
+      as="li"
+      delay={stagger(index, 0.08)}
+      // Rows always fill: the next Friday gets its own row, the rest share the next ones and grow
+      // into any gap (a lone card turns sideways instead of leaving half a row empty).
+      className={cn(
+        '@container min-w-0',
+        featured ? 'basis-full' : 'basis-full md:flex-[1_1_260px]',
+      )}
+    >
       <article
         className={cn(
           'group relative flex h-full flex-col gap-6 rounded-[28px] border border-line bg-white p-4 transition-[border-color,box-shadow,transform] duration-300 hover:border-[var(--accent)] hover:shadow-3 sm:p-6',
           featured
-            ? 'sm:flex-row sm:items-stretch'
-            : 'max-md:flex-row max-md:items-start max-md:gap-4',
+            ? 'sm:flex-row sm:items-stretch sm:gap-[clamp(24px,3vw,48px)]'
+            : 'max-md:flex-row max-md:items-start max-md:gap-4 @min-[34rem]:flex-row @min-[34rem]:items-start @min-[34rem]:gap-6',
         )}
         style={accentVars(e.accent)}
         aria-labelledby={titleId}
@@ -57,14 +73,14 @@ function UpcomingCard({
           className={cn(
             'relative z-10 block flex-none',
             featured
-              ? 'w-[min(62vw,260px)] sm:w-[clamp(200px,24vw,320px)]'
-              : 'w-[88px] md:w-[min(50vw,180px)]',
+              ? 'w-[min(62vw,260px)] sm:w-[clamp(200px,24vw,340px)]'
+              : 'w-[88px] md:w-[min(50vw,180px)] @min-[34rem]:w-[clamp(120px,22cqi,180px)]',
           )}
         >
           <CoverFrame
             cover={e.cover}
             accent={e.accent}
-            sizes={featured ? '(min-width: 640px) 320px, 62vw' : '(min-width: 768px) 180px, 88px'}
+            sizes={featured ? '(min-width: 640px) 340px, 62vw' : '(min-width: 768px) 180px, 88px'}
             rest={index % 2 ? 2 : -2}
             maxTilt={12}
             alt=""
@@ -72,7 +88,7 @@ function UpcomingCard({
         </Link>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip tone={e.accent} shape>
+            <Chip tone={e.accent} shape className={chipToneFix(e.accent)}>
               {rel}
             </Chip>
             <span className="mono text-[0.8125rem] text-ink-3">{eventLabel(e)}</span>
@@ -80,9 +96,9 @@ function UpcomingCard({
           <h3
             id={titleId}
             className={cn(
-              'display leading-[1] text-ink',
+              'display text-balance leading-[0.98] text-ink',
               featured
-                ? 'text-[clamp(1.5rem,2.4vw,2.375rem)]'
+                ? 'max-w-[18ch] text-[clamp(1.75rem,3.6vw,3.5rem)]'
                 : 'text-[clamp(1.375rem,2vw,1.75rem)]',
             )}
             style={{ fontVariationSettings: "'CASL' 0.3, 'MONO' 0" }}
@@ -94,7 +110,9 @@ function UpcomingCard({
               {e.title}
             </Link>
           </h3>
-          {featured && e.summary ? <p className="text-ink-2">{e.summary}</p> : null}
+          {featured && e.summary ? (
+            <p className="max-w-[44rem] text-body-l text-ink-2">{e.summary}</p>
+          ) : null}
           <p className="mono text-[0.875rem] text-ink-2">{whenLine(e)}</p>
           {e.venue ? (
             <p className="flex items-center gap-2 text-[0.9375rem] text-ink-3">
@@ -112,7 +130,7 @@ function UpcomingCard({
               {e.speakers.length ? (
                 <AvatarStack
                   people={e.speakers.map((s) => ({ name: s.fullName, image: s.avatar }))}
-                  size={30}
+                  size={featured ? 36 : 30}
                   max={3}
                 />
               ) : null}
@@ -120,7 +138,7 @@ function UpcomingCard({
             </div>
             {featured ? (
               <span className="relative z-20">
-                <Button href={`/events/${e.slug}#register`} size="md" cursor="register">
+                <Button href={`/events/${e.slug}#register`} size="lg" cursor="register">
                   Save my seat
                 </Button>
               </span>
@@ -158,7 +176,7 @@ export function ComingUp({
         size="m"
         description="Seats are free. Coffee is free. The questions cost nothing either."
       />
-      <ul className="mt-10 grid grid-cols-1 gap-[var(--gutter)] md:grid-cols-2 xl:grid-cols-4">
+      <ul className="mt-10 flex flex-wrap gap-[var(--gutter)]">
         {events.map((e, i) => (
           <UpcomingCard key={e.id} e={e} featured={i === 0} renderedAt={renderedAt} index={i} />
         ))}

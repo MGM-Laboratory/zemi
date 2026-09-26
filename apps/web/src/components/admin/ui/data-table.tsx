@@ -40,6 +40,11 @@ declare module '@tanstack/react-table' {
     width?: string;
     /** Clicking cells in this column does not trigger onRowClick (menus, buttons). */
     stopRowClick?: boolean;
+    /**
+     * Keep this column on screen while the table scrolls sideways (a row menu on the right).
+     * The cell stays opaque and follows the row's hover, selected and active tints.
+     */
+    pin?: 'right';
   }
 }
 
@@ -318,6 +323,7 @@ export function DataTable<T>({
                         compact ? 'h-9' : 'h-11',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
+                        meta?.pin === 'right' && 'sticky right-0 z-[1] bg-surface-muted shadow-[inset_1px_0_0_var(--color-line)]',
                         meta?.headerClassName,
                       )}
                       style={{ width: meta?.width }}
@@ -375,6 +381,7 @@ export function DataTable<T>({
                   <tr
                     key={row.id}
                     data-state={selected ? 'selected' : undefined}
+                    data-active={active || undefined}
                     onClick={onRowClick ? (e) => handleRowClick(row, e) : undefined}
                     onKeyDown={
                       onRowClick
@@ -406,6 +413,13 @@ export function DataTable<T>({
                             compact ? 'h-10 py-1.5 text-sm' : 'h-14 py-2.5',
                             meta?.align === 'right' && 'text-right tabular-nums',
                             meta?.align === 'center' && 'text-center',
+                            // Opaque twins of the row tints (hover, selected, active) so pinned cells match the row.
+                            meta?.pin === 'right' &&
+                              cn(
+                                'sticky right-0 bg-white shadow-[inset_1px_0_0_var(--color-line)]',
+                                onRowClick && 'group-hover/row:bg-[#f9f9f8]',
+                                'group-data-[state=selected]/row:bg-[#f3f6fc] group-data-[active]/row:bg-[#f2f5fb]',
+                              ),
                             meta?.className,
                           )}
                         >

@@ -333,7 +333,7 @@ export function FridayRibbon({
                 labels.some((o) => o.year && o.i > l.i && o.i - l.i < n * 0.16) &&
                 'max-sm:hidden',
               l.i === 0 ? '' : pct(l.i) > 96 ? '-translate-x-full' : '-translate-x-1/2',
-              l.year ? 'font-bold text-ink' : 'hidden text-ink-4 md:block',
+              l.year ? 'font-bold text-ink' : 'hidden text-ink-3 md:block',
             )}
             style={{ left: `${pct(l.i)}%` }}
             aria-hidden="true"

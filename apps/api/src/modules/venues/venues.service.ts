@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Principal, Venue, VenueInput } from '@zemi/shared';
+import { safeWebUrl, type Principal, type Venue, type VenueInput } from '@zemi/shared';
 import { and, asc, count, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import { conflict, notFound, searchPattern } from '../../common/index.js';
 import { DB, type Db } from '../../db/client.js';
@@ -36,7 +36,7 @@ export function toVenue(row: VenueRow, eventCount: number): Venue {
     floor: row.floor ?? null,
     capacity: row.capacity ?? null,
     address: row.address ?? null,
-    mapsUrl: row.mapsUrl ?? null,
+    mapsUrl: safeWebUrl(row.mapsUrl),
     notes: row.notes ?? null,
     eventCount,
     createdAt: row.createdAt.toISOString(),

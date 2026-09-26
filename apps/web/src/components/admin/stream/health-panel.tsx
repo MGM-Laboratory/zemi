@@ -145,7 +145,7 @@ function Fact({
         {label}
       </dt>
       <dd className={cn('mt-1 text-[0.9375rem] leading-snug font-semibold break-words text-ink tabular-nums', mono && 'mono', warn && !value && 'text-red-600')}>
-        {loading ? <Skeleton className="h-5 w-20" /> : (value ?? warn ?? <span className="font-normal text-ink-4">No data</span>)}
+        {loading ? <Skeleton className="h-5 w-20" /> : (value ?? warn ?? <span className="font-normal text-ink-3">No data</span>)}
       </dd>
     </div>
   );
@@ -196,7 +196,7 @@ function BitrateChart({ samples, online, verdict }: { samples: HealthSample[]; o
           <span className="absolute inset-0 animate-ping rounded-full opacity-60 motion-reduce:animate-none" style={{ background: color }} />
         </span>
       ) : null}
-      <span className="mono absolute top-0 right-0 -translate-y-full pb-0.5 text-[0.625rem] text-ink-4">4000 kbps</span>
+      <span className="mono absolute top-0 right-0 -translate-y-full pb-0.5 text-[0.625rem] text-ink-3">4000 kbps</span>
     </div>
   );
 }

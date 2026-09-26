@@ -161,7 +161,7 @@ export function FileUpload({ value, onChange, purpose, accept, maxSize, initialF
               </p>
             )}
             {phase.k === 'uploading' ? (
-              <p className="text-xs text-ink-4 tabular-nums">
+              <p className="text-xs text-ink-3 tabular-nums">
                 {formatBytes(phase.loaded)} of {formatBytes(phase.total)}
               </p>
             ) : null}
@@ -198,7 +198,7 @@ export function FileUpload({ value, onChange, purpose, accept, maxSize, initialF
           <input {...getInputProps()} />
         </div>
       ) : readOnly ? (
-        <p className="text-sm text-ink-4">No file.</p>
+        <p className="text-sm text-ink-3">No file.</p>
       ) : (
         <div
           {...getRootProps({ 'aria-describedby': aria['aria-describedby'] })}

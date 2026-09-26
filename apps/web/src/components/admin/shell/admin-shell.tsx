@@ -10,7 +10,8 @@ import { useCurrentBreadcrumbs, type Crumb } from '@/lib/admin/breadcrumbs';
 import { cn } from '@/lib/admin/cn';
 import { useHotkeys } from '@/lib/admin/hooks';
 import { useLogout } from '@/lib/admin/me';
-import { flattenNav, isActivePath, visibleNav, type AdminNavGroup } from '@/lib/admin/nav';
+import { ADMIN_NAV, flattenNav, isActivePath, visibleNav, type AdminNavGroup } from '@/lib/admin/nav';
+import { confirmLeave } from '@/lib/admin/leave-guard';
 import { ConfirmProvider } from '../ui/confirm-dialog';
 import { Dialog } from '../ui/dialog';
 import { Kbd } from '../ui/media';
@@ -79,7 +80,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const navShortcuts = useMemo(() => {
     const map: Record<string, () => void> = {};
-    for (const item of flattenNav(groups)) if (item.shortcut) map[item.shortcut] = () => router.push(item.href);
+    // Unsaved work or an uncopied passphrase gets a say first (confirmLeave), like a link click.
+    for (const item of flattenNav(groups)) if (item.shortcut) map[item.shortcut] = () => void confirmLeave().then((ok) => ok && router.push(item.href));
     return map;
   }, [groups, router]);
 
@@ -128,7 +130,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <RDialog.Portal>
             <RDialog.Overlay className="fixed inset-0 z-[60] bg-[rgba(14,17,22,0.32)] data-[state=open]:animate-[zemi-fade-in_180ms_var(--ease-out)] lg:hidden" />
             <RDialog.Content
-              className="fixed inset-y-0 left-0 z-[61] w-[min(20rem,86vw)] bg-white shadow-[var(--shadow-3)] outline-none data-[state=open]:animate-[zemi-slide-in-left_260ms_var(--ease-out)] lg:hidden"
+              className="fixed inset-y-0 left-0 z-[60] w-[min(20rem,86vw)] bg-white shadow-[var(--shadow-3)] outline-none data-[state=open]:animate-[zemi-slide-in-left_260ms_var(--ease-out)] lg:hidden"
               aria-describedby={undefined}
             >
               <RDialog.Title className="sr-only">Menu</RDialog.Title>
@@ -170,7 +172,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function Topbar({ groups, pathname, onMenu, onPalette, right }: { groups: AdminNavGroup[]; pathname: string; onMenu: () => void; onPalette: () => void; right: ReactNode }) {
   const custom = useCurrentBreadcrumbs();
-  const crumbs = custom ?? deriveCrumbs(groups, pathname);
+  // Pages outside your nav (a typed URL that lands on "not in your access") still get a title.
+  const derived = deriveCrumbs(groups, pathname);
+  const crumbs = custom ?? (derived.length ? derived : deriveCrumbs(ADMIN_NAV, pathname));
   return (
     <header className="sticky top-0 z-30 flex h-[var(--admin-topbar-h)] shrink-0 items-center gap-2 border-b border-line bg-white/85 px-3 backdrop-blur-md sm:gap-3 sm:px-6 lg:px-8">
       <button
@@ -241,7 +245,7 @@ function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
                   {c.label}
                 </span>
               )}
-              {!last ? <ChevronRight className="size-3.5 shrink-0 text-ink-4" aria-hidden="true" /> : null}
+              {!last ? <ChevronRight className="size-3.5 shrink-0 text-ink-3" aria-hidden="true" /> : null}
             </li>
           );
         })}
@@ -274,7 +278,7 @@ function ShortcutsDialog({ open, onOpenChange, groups }: { open: boolean; onOpen
         </ul>
         {nav.length ? (
           <div>
-            <div className="label mb-2 text-ink-4">Go to</div>
+            <div className="label mb-2 text-ink-3">Go to</div>
             <ul className="space-y-2.5">
               {nav.map((n) => (
                 <li key={n.key} className="flex items-center justify-between gap-4 text-[0.9375rem]">

@@ -46,6 +46,28 @@ export function visibleIds<T extends ResourceType>(ability: Ability, type: T, ac
 }
 
 /**
+ * Speaker and publication lookups (`GET /admin/<type>/lookup`) feed the pickers in the event and
+ * publication editors and the command palette. Allowed for anyone who can create or edit content
+ * (they need the full directory to link things) and for anyone who can view at least one of that
+ * type (the palette). Everyone else, like a zero-grant admin or door crew, gets a 403. Callers
+ * still filter drafts with `visibleIds`.
+ */
+export function assertCanLookup(ability: Ability, type: 'speaker' | 'publication'): void {
+  const picks =
+    ability.isSuperadmin ||
+    ability.has('events.create') ||
+    ability.has('speakers.create') ||
+    ability.has('publications.create') ||
+    ability.canAny('event', 'edit') ||
+    ability.canAny('speaker', 'edit') ||
+    ability.canAny('publication', 'edit');
+  if (picks || ability.canAny(type, 'view')) return;
+  throw forbidden(`Searching ${type === 'speaker' ? 'speakers' : 'publications'} needs access to some content first.`, {
+    details: { type, action: 'view' },
+  });
+}
+
+/**
  * RBAC helpers for feature modules. The pure functions above are also exported for use without DI.
  */
 @Injectable()

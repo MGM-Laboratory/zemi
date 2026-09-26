@@ -5,7 +5,7 @@ import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { useReducedMotion } from '@/lib/hooks/use-reduced-motion';
 import { cn } from '@/lib/utils';
 import styles from './motion.module.css';
-import { childrenKey, useSplitReveal, type SplitRevealOptions } from './split-reveal';
+import { childrenKey, splitMode, splitTargetProps, useSplitReveal, type SplitRevealOptions } from './split-reveal';
 
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'div' | 'span';
 export type DisplaySize = 'xl' | 'l' | 'm' | 'title';
@@ -36,7 +36,10 @@ export interface CaslHeadingProps {
   scroll?: boolean;
   /** Loosen on hover. Default true. */
   hover?: boolean;
-  /** Also run the masked line reveal. Pass true or SplitReveal options. */
+  /**
+   * Also run the masked line reveal. Pass true or SplitReveal options. As an `h1` it is the
+   * above-the-fold paint rise instead (visible at first paint), unless `paint: false`.
+   */
   reveal?: boolean | SplitRevealOptions;
 }
 
@@ -76,7 +79,10 @@ export function CaslHeading({
 
   const splitRef = useRef<HTMLSpanElement>(null);
   const textKey = childrenKey(children);
-  useSplitReveal(splitRef, reveal === true ? { textKey } : reveal === false ? { enabled: false } : { ...reveal, textKey });
+  const revealOpts = reveal === true ? {} : reveal === false ? null : reveal;
+  // An h1 is above the fold: it paints visible and rises in CSS (see SplitRevealOptions.paint).
+  const mode = splitMode(revealOpts, as);
+  useSplitReveal(splitRef, mode === 'split' ? { ...revealOpts, textKey } : { enabled: false });
 
   const MotionTag = motion[as] as typeof motion.h2;
   return (
@@ -90,7 +96,7 @@ export function CaslHeading({
     >
       {reveal ? (
         // Keyed by the text so new children remount instead of patching split DOM.
-        <span key={textKey} ref={splitRef} className={cn(styles.splitInner, styles.splitPending)} data-split-pending="">
+        <span key={textKey} ref={splitRef} {...splitTargetProps(mode, revealOpts ?? {})}>
           {children}
         </span>
       ) : (

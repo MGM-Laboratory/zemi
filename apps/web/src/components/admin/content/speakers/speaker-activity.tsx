@@ -41,7 +41,7 @@ export function SpeakerTalksCard({ talks }: { talks: SpeakerTalk[] }) {
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-xs text-ink-4">
+                  <span className="flex items-center gap-1.5 text-xs text-ink-3">
                     {t.eventNumber != null ? <span className="mono">Zemi #{t.eventNumber}</span> : null}
                     <DateText value={t.startsAt} format="date" />
                   </span>

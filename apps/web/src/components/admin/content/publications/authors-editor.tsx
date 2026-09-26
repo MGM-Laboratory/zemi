@@ -90,7 +90,7 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
                 <div className="flex items-start gap-2 sm:gap-3">
                   <div className="flex shrink-0 items-center gap-0.5 pt-1">
                     <DragHandle {...handle} disabled={readOnly} label={`Move ${name || 'author'}`} />
-                    <span className="mono w-5 text-center text-xs text-ink-4" aria-hidden="true">
+                    <span className="mono w-5 text-center text-xs text-ink-3" aria-hidden="true">
                       {index + 1}
                     </span>
                   </div>
@@ -175,7 +175,7 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
                             onChange={(e) => update(row.key, { url: e.target.value })}
                             trailing={
                               row.url && /^https?:\/\//.test(row.url) ? (
-                                <a href={row.url} target="_blank" rel="noopener noreferrer" aria-label="Open profile link" className="mr-2 flex text-ink-4 hover:text-blue">
+                                <a href={row.url} target="_blank" rel="noopener noreferrer" aria-label="Open profile link" className="mr-2 flex text-ink-3 hover:text-blue">
                                   <ExternalLink className="size-4" />
                                 </a>
                               ) : null

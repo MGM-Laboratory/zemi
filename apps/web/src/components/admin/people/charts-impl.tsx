@@ -82,7 +82,7 @@ export function TimelineChart({ data, capacity, eventDay, animate = true }: { da
           minTickGap={24}
           interval="preserveStartEnd"
         />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} tick={{ ...tickStyle, fill: 'var(--color-ink-4)' }} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} tick={{ ...tickStyle, fill: 'var(--color-ink-3)' }} />
         {showCapacity ? (
           <ReferenceLine
             y={capacity}
@@ -160,7 +160,7 @@ export function HourChart({ data, animate = true }: { data: Array<{ hour: number
           axisLine={{ stroke: CHART.axis }}
           tick={tickStyle}
         />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} tick={{ ...tickStyle, fill: 'var(--color-ink-4)' }} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} tick={{ ...tickStyle, fill: 'var(--color-ink-3)' }} />
         <Tooltip
           cursor={{ fill: 'var(--color-surface-muted)', radius: 6 }}
           content={(props) => {
@@ -214,7 +214,7 @@ export function ArrivalsChart({
       <BarChart data={data} margin={{ top: 18, right: 4, left: -22, bottom: 0 }} barCategoryGap={2} accessibilityLayer>
         <CartesianGrid vertical={false} stroke={CHART.grid} />
         <XAxis dataKey="time" tickLine={false} axisLine={{ stroke: CHART.axis }} tick={tickStyle} minTickGap={18} interval="preserveStartEnd" />
-        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} tick={{ ...tickStyle, fill: 'var(--color-ink-4)' }} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={40} tick={{ ...tickStyle, fill: 'var(--color-ink-3)' }} />
         {startBucket ? (
           <ReferenceLine x={startBucket} stroke="var(--color-ink-3)" label={{ value: `Starts ${startTime}`, position: 'insideTopLeft', fill: 'var(--color-ink-3)', fontSize: 11, dy: -16, dx: 4 }} />
         ) : null}

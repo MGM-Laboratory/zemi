@@ -238,7 +238,7 @@ export function WithPreview({ children, preview, previewLabel = 'Preview' }: { c
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-8">
       <div className="min-w-0 space-y-4">{children}</div>
       <div className="min-w-0">
-        <p className="label mb-2 text-ink-4">{previewLabel}</p>
+        <p className="label mb-2 text-ink-3">{previewLabel}</p>
         <div className="xl:sticky xl:top-[calc(var(--admin-topbar-h,60px)+6rem)]">{preview}</div>
       </div>
     </div>

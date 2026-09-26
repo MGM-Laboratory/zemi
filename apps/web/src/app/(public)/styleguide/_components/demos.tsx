@@ -255,7 +255,7 @@ export function ClockDemo() {
       </label>
       <div className="flex flex-wrap gap-3">
         <Button size="sm" variant={fixed ? 'primary' : 'secondary'} shape="square" onClick={() => setFixed((f) => !f)}>
-          {fixed ? 'Hide the sticky clock' : 'Show it sticky (bottom-left / top-center)'}
+          {fixed ? 'Hide the sticky clock' : 'Show it sticky'}
         </Button>
       </div>
       <FridayClock progress={fixed ? p : null} />

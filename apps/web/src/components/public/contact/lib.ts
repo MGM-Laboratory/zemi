@@ -1,9 +1,7 @@
 import { SITE_DEFAULTS, type LinkItem, type PublicSite } from '@zemi/shared';
+import { safeHref, safeLinkItems } from '../ui/safe-href';
 
 export type PublicContact = PublicSite['settings']['contact'];
-
-/** Only these schemes go into an href from admin free text. */
-export const SAFE_HREF = /^(https?:|mailto:)/i;
 
 /**
  * Contact settings with sensible fallbacks. When the API is down (`isFallback`), the rich shared
@@ -22,7 +20,8 @@ export function resolveContact(site: PublicSite & { isFallback?: boolean }): Pub
     intro: c.intro?.trim() || defaults.intro,
     email: c.email?.trim() || defaults.email,
     topics: c.topics?.filter((t) => t.trim()).length ? c.topics.filter((t) => t.trim()) : defaults.topics,
-    socials: (c.socials ?? []).filter((s) => SAFE_HREF.test(s.url)),
+    // Admin free text: only http(s), mailto and tel reach an href (normalized, deduped).
+    socials: safeLinkItems(c.socials),
   };
 }
 
@@ -57,11 +56,12 @@ export function whatsappHref(raw: string | null | undefined, text = 'Hi Zemi! ')
 
 /** The stored maps link when it's a real URL, else a Google Maps search for the address. */
 export function mapsHref(mapsUrl: string | null | undefined, address: string | null | undefined): string | null {
-  if (mapsUrl && /^https?:\/\//i.test(mapsUrl)) return mapsUrl;
+  const safe = safeHref(mapsUrl);
+  if (safe && /^https?:/i.test(safe)) return safe;
   if (address?.trim()) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.trim())}`;
   return null;
 }
 
 export function safeLinks(links: LinkItem[] | null | undefined): LinkItem[] {
-  return (links ?? []).filter((l) => SAFE_HREF.test(l.url));
+  return safeLinkItems(links);
 }

@@ -167,7 +167,7 @@ function AnnouncementPreview({ active, text, href }: { active: boolean; text: st
         <span className="size-2.5 rounded-full bg-red/70" />
         <span className="size-2.5 rounded-full bg-yellow/80" />
         <span className="size-2.5 rounded-full bg-green/70" />
-        <span className="mono ml-2 truncate text-[0.6875rem] text-ink-4">zemi.labmgm.org</span>
+        <span className="mono ml-2 truncate text-[0.6875rem] text-ink-3">zemi.labmgm.org</span>
       </div>
       <AnimatePresence initial={false}>
         {active && t ? (

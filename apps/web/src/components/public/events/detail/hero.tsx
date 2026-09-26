@@ -6,7 +6,6 @@ import { Character } from '@/components/brand/character';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { useSiteReady } from '@/components/brand/site-loader';
 import { CaslHeading } from '@/components/motion/casl-heading';
-import { Reveal } from '@/components/motion/reveal';
 import { useNextEvent } from '@/components/public/shell/site-context';
 import { Button } from '@/components/public/ui/button';
 import { Chip, StatusBadge } from '@/components/public/ui/chip';
@@ -15,7 +14,16 @@ import { useNow } from '@/lib/hooks/use-now';
 import { cn } from '@/lib/utils';
 import { CoverFrame } from '../cover-frame';
 import styles from '../events.module.css';
-import { ACCENT_HEX, ACCENT_SHAPE, ACCENT_TINT, accentVars, eventLabel, relativeDay } from '../lib';
+import {
+  ACCENT_FRIEND,
+  ACCENT_HEX,
+  ACCENT_SHAPE,
+  ACCENT_TINT,
+  accentVars,
+  chipToneFix,
+  eventLabel,
+  relativeDay,
+} from '../lib';
 import { CalendarButton, ShareButton } from './actions';
 import { Countdown } from './countdown';
 import { EventFacts } from './facts';
@@ -117,7 +125,7 @@ function HeroChips({ event, status }: { event: EventDetail; status: EventStatus 
         {eventLabel(event)}
       </Chip>
       {status === 'scheduled' && now ? (
-        <Chip tone={event.accent} size="md" shape>
+        <Chip tone={event.accent} size="md" shape className={chipToneFix(event.accent)}>
           {relativeDay(event.startsAt, now)}
         </Chip>
       ) : null}
@@ -188,8 +196,14 @@ export function ScheduledHero({
           ) : null}
         </div>
 
-        <div className="mx-auto w-[min(78vw,440px)] md:col-start-1 md:row-span-2 md:row-start-1 md:w-full md:max-w-[min(540px,calc((100svh-150px)*0.78))] md:self-start lg:sticky lg:top-[calc(var(--nav-h)+24px)]">
-          <Reveal y={40} scale={0.96}>
+        <div className="md:col-start-2 md:row-start-2">
+          {/* Phones: the button comes before the cover, so it is on screen without scrolling. */}
+          <RegisterCta event={event} reg={reg} ctaRef={ctaRef} />
+        </div>
+
+        <div className="mx-auto w-[min(78vw,440px)] md:col-start-1 md:row-span-3 md:row-start-1 md:w-full md:max-w-[min(540px,calc((100svh-150px)*0.78))] md:sticky md:top-[calc(var(--nav-h)+24px)] md:self-start">
+          {/* Not <Reveal>: its SSR opacity:0 kept the LCP cover hidden until hydration. */}
+          <div className={styles.heroCoverIn}>
             <CoverFrame
               cover={event.cover}
               accent={event.accent}
@@ -205,27 +219,24 @@ export function ScheduledHero({
               </span>
               <span className={styles.sticker} aria-hidden="true">
                 <Character
-                  shape={ACCENT_SHAPE[event.accent]}
+                  shape={ACCENT_SHAPE[ACCENT_FRIEND[event.accent]]}
                   mood="happy"
                   size="clamp(52px, 7vw, 84px)"
                   seed={event.number ?? 3}
                 />
               </span>
             </CoverFrame>
-          </Reveal>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-9 md:col-start-2 md:row-start-2">
-          <div className="flex flex-col gap-4">
-            <RegisterCta event={event} reg={reg} ctaRef={ctaRef} />
-            <div className="flex flex-wrap gap-2">
-              <CalendarButton eventId={event.id} size="md" />
-              <ShareButton
-                title={event.title}
-                text={event.summary ?? undefined}
-                path={`/events/${event.slug}`}
-              />
-            </div>
+        <div className="flex flex-col gap-9 md:col-start-2 md:row-start-3 md:-mt-4">
+          <div className="flex flex-wrap gap-2">
+            <CalendarButton eventId={event.id} size="md" />
+            <ShareButton
+              title={event.title}
+              text={event.summary ?? undefined}
+              path={`/events/${event.slug}`}
+            />
           </div>
           <EventFacts event={event} columns />
           {status === 'scheduled' ? (
@@ -404,7 +415,7 @@ export function CancelledHero({ event }: { event: EventDetail }) {
               {event.cancelReason ??
                 'Something came up and we had to call it off. Nobody is in trouble, promise.'}
             </p>
-            <p className="text-[0.9375rem] text-ink-3">
+            <p className="text-[0.9375rem] text-ink-2">
               If you had a seat, it is released. Nothing else to do.
             </p>
           </div>

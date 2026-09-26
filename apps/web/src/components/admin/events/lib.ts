@@ -162,7 +162,8 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
     visible: (p) => has(p, 'attendance.scan'),
   },
   { key: 'stream', label: 'Stream', path: 'stream', visible: (p) => has(p, 'stream.view') },
-  { key: 'media', label: 'Media', path: 'media', visible: (p) => has(p, 'media.manage', 'view') },
+  // Documentation is managed here; people who can only look see it on the public event page.
+  { key: 'media', label: 'Media', path: 'media', visible: (p) => has(p, 'media.manage') },
   { key: 'emails', label: 'Emails', path: 'emails', visible: (p) => has(p, 'emails.send') },
   { key: 'settings', label: 'Settings', path: 'settings', visible: (p) => has(p, 'view') },
 ];

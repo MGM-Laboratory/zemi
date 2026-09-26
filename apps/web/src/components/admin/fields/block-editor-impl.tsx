@@ -17,6 +17,13 @@ export interface BlockEditorImplProps {
   placeholder?: string;
   uploadPurpose?: AssetPurpose;
   onReady?: () => void;
+  /** Id of the visible (or sr-only) label that names the writing area. */
+  labelledBy?: string;
+  /** Fallback accessible name when there is no label element. */
+  label?: string;
+  /** Hint and error ids, kept in sync after mount. */
+  describedBy?: string;
+  invalid?: boolean;
 }
 
 /** Brand theme for BlockNote (Mantine). CSS in admin.css adds headings and links. */
@@ -42,7 +49,7 @@ const zemiTheme: Theme = {
   fontFamily: 'var(--font-atkinson), ui-sans-serif, system-ui, sans-serif',
 };
 
-export default function BlockEditorImpl({ value, onChange, readOnly, placeholder, uploadPurpose = 'editor', onReady }: BlockEditorImplProps) {
+export default function BlockEditorImpl({ value, onChange, readOnly, placeholder, uploadPurpose = 'editor', onReady, labelledBy, label, describedBy, invalid }: BlockEditorImplProps) {
   const changeRef = useRef(onChange);
   useEffect(() => {
     changeRef.current = onChange;
@@ -51,6 +58,14 @@ export default function BlockEditorImpl({ value, onChange, readOnly, placeholder
   const editor = useCreateBlockNote({
     initialContent: value && value.length ? (value as unknown as PartialBlock[]) : undefined,
     placeholders: placeholder ? { default: placeholder } : undefined,
+    // Name the contenteditable itself (axe: aria-input-field-name). Values must be strings.
+    domAttributes: {
+      editor: {
+        ...(labelledBy ? { 'aria-labelledby': labelledBy } : {}),
+        ...(!labelledBy && label ? { 'aria-label': label } : {}),
+        'aria-multiline': 'true',
+      },
+    },
     uploadFile: async (file: File) => {
       try {
         const asset = await uploadAsset(file, { purpose: uploadPurpose });
@@ -61,6 +76,21 @@ export default function BlockEditorImpl({ value, onChange, readOnly, placeholder
       }
     },
   });
+
+  // The hint and error ids change with validation, after the editor exists. ProseMirror only
+  // patches the attributes it owns, so setting these on its DOM directly is safe.
+  useEffect(() => {
+    const apply = () => {
+      const el = editor.domElement;
+      if (!el) return;
+      if (describedBy) el.setAttribute('aria-describedby', describedBy);
+      else el.removeAttribute('aria-describedby');
+      if (invalid) el.setAttribute('aria-invalid', 'true');
+      else el.removeAttribute('aria-invalid');
+    };
+    apply();
+    return editor.onMount(apply);
+  }, [editor, describedBy, invalid]);
 
   useEffect(() => {
     onReady?.();

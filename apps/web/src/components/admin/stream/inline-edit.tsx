@@ -85,7 +85,7 @@ export function InlineEdit({
 
   if (readOnly) {
     return (
-      <span className={cn('block min-w-0 truncate', !value && 'text-ink-4', textClassName, className)}>{value || emptyText || placeholder}</span>
+      <span className={cn('block min-w-0 truncate', !value && 'text-ink-3', textClassName, className)}>{value || emptyText || placeholder}</span>
     );
   }
 
@@ -119,7 +119,7 @@ export function InlineEdit({
             inputClassName,
           )}
         />
-        <span className="pointer-events-none absolute right-2.5 flex items-center text-[0.6875rem] text-ink-4">
+        <span className="pointer-events-none absolute right-2.5 flex items-center text-[0.6875rem] text-ink-3">
           {saving ? <Spinner size={14} label={null} /> : maxLength - draft.length <= 20 ? maxLength - draft.length : null}
         </span>
       </span>
@@ -142,7 +142,7 @@ export function InlineEdit({
         className,
       )}
     >
-      <span className={cn('min-w-0 truncate', !value && 'text-ink-4 italic', textClassName)}>{value || placeholder}</span>
+      <span className={cn('min-w-0 truncate', !value && 'text-ink-3 italic', textClassName)}>{value || placeholder}</span>
       <AnimatePresence mode="wait" initial={false}>
         {saved ? (
           <motion.span key="ok" initial={{ scale: 0.3, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ opacity: 0 }} className="flex shrink-0 text-green">

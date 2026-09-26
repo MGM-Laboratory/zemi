@@ -94,7 +94,7 @@ export function ManualEntry({
             error ? 'border-red-600' : 'border-line-strong',
           )}
         >
-          {!isLink ? <span className="mono mr-1 text-2xl font-semibold text-ink-4 select-none">ZM-</span> : <Keyboard className="mr-2 size-5 text-ink-4" aria-hidden="true" />}
+          {!isLink ? <span className="mono mr-1 text-2xl font-semibold text-ink-3 select-none">ZM-</span> : <Keyboard className="mr-2 size-5 text-ink-4" aria-hidden="true" />}
           <input
             ref={input}
             id="zemi-code-input"
@@ -118,7 +118,7 @@ export function ManualEntry({
             placeholder={isLink ? '' : '7K3F9Q'}
             className="mono min-w-0 flex-1 bg-transparent text-2xl font-semibold tracking-[0.12em] text-ink uppercase outline-none placeholder:text-ink-4/60"
           />
-          {!isLink ? <span className="mono ml-2 text-sm text-ink-4 tabular-nums">{code.length}/6</span> : null}
+          {!isLink ? <span className="mono ml-2 text-sm text-ink-3 tabular-nums">{code.length}/6</span> : null}
         </div>
         {error ? (
           <p id="zemi-code-error" className="mt-2 text-sm text-red-600" role="alert">

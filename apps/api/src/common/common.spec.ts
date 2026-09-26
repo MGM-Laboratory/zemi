@@ -5,11 +5,14 @@ import { sniffBuffer } from './mime.js';
 import { likeEscape, paginated, pageToLimitOffset } from './pagination.js';
 import { RateLimitService } from './rate-limit.service.js';
 import { AllExceptionsFilter } from './exception.filter.js';
-import { notFound, tooManyRequests } from './errors.js';
+import { AppError, notFound, tooManyRequests } from './errors.js';
 import { centeredCrop, clampCrop, targetWidths } from '../modules/assets/image-pipeline.js';
 import { parseSingleRange } from '../modules/media-serve/media-stream.js';
 import { publicMediaKey } from '../modules/media-serve/media-serve.controller.js';
 import { clientIp, configureClientIp } from './request.js';
+import { stripNul, ZodPipe } from './zod.pipe.js';
+import { paginationQuery, speakerListQuery, speakerInput } from '@zemi/shared';
+import { z } from 'zod';
 import type { Request } from 'express';
 
 describe('blocksToPlainText', () => {
@@ -44,6 +47,17 @@ describe('clientIp', () => {
     expect(clientIp(req({ 'x-real-ip': '203.0.113.7' }))).toBe('10.0.0.9');
     configureClientIp('x-real-ip');
   });
+  it('ignores a header value that is not an IP address', () => {
+    configureClientIp('x-real-ip');
+    for (const bad of ['203.0.113.11330', 'evil', '1.2.3', '', '   ', 'x'.repeat(80), '::ffff:999.1.1.1']) {
+      expect(clientIp(req({ 'x-real-ip': bad }))).toBe('10.0.0.9');
+    }
+    expect(clientIp(req({ 'x-real-ip': ' 198.18.3.4 , 10.1.1.1' }))).toBe('198.18.3.4');
+    expect(clientIp(req({ 'x-real-ip': '2001:db8::7' }))).toBe('2001:db8::7');
+    expect(clientIp(req({ 'x-real-ip': '::ffff:192.0.2.5' }))).toBe('192.0.2.5');
+    // A junk req.ip (misconfigured proxy chain) is refused too.
+    expect(clientIp(req({ 'x-real-ip': 'nope' }, 'garbage'))).toBeNull();
+  });
 });
 
 describe('pagination', () => {
@@ -70,6 +84,20 @@ describe('RateLimitService', () => {
     expect(() => {
       for (let i = 0; i < 5; i++) rl.consume('c', rule);
     }).toThrow();
+    rl.onModuleDestroy();
+  });
+  it('refund gives back one hit in the current window, never below zero', () => {
+    const rl = new RateLimitService();
+    const rule = { limit: 2, windowMs: 10_000 };
+    const t = 2_000_000;
+    rl.hit('r', rule, t);
+    rl.hit('r', rule, t);
+    rl.refund('r', t + 1);
+    expect(rl.hit('r', rule, t + 2)).toMatchObject({ allowed: true, count: 2 });
+    expect(rl.hit('r', rule, t + 3).allowed).toBe(false);
+    rl.refund('missing', t);
+    rl.refund('r', t + 20_000); // expired window: nothing to refund
+    expect(rl.peek('r', rule, t + 3).count).toBe(3);
     rl.onModuleDestroy();
   });
 });
@@ -117,6 +145,11 @@ describe('media keys and ranges', () => {
     expect(publicMediaKey('segments/x.mp4')).toBeNull();
     expect(publicMediaKey('assets/../secrets')).toBeNull();
     expect(publicMediaKey('assets//x')).toBeNull();
+    // NUL and control bytes are refused before S3 sees them (it answers those with a 500).
+    expect(publicMediaKey('assets/a1/w320.webp\u0000')).toBeNull();
+    expect(publicMediaKey('assets/a1/original.jpg\u0000.webp')).toBeNull();
+    expect(publicMediaKey('assets/a1/w320\n.webp')).toBeNull();
+    expect(publicMediaKey('assets/a1\\w320.webp')).toBeNull();
   });
   it('forwards a single well-formed range only', () => {
     expect(parseSingleRange('bytes=0-99')).toBe('bytes=0-99');
@@ -170,9 +203,59 @@ describe('AllExceptionsFilter', () => {
     expect(r.statusCode).toBe(409);
     expect(r.body).toMatchObject({ error: { code: 'conflict', details: { constraint: 'speakers_slug_unique' } } });
   });
+  it('maps NUL bytes (22021, 22P05) and numbers out of range (22003) to a 400', () => {
+    for (const code of ['22021', '22P05', '22003']) {
+      const pg = Object.assign(new Error('invalid byte sequence'), { name: 'PostgresError', code });
+      const r = run(Object.assign(new Error('Failed query'), { cause: pg }));
+      expect(r.statusCode).toBe(400);
+      expect(r.body).toMatchObject({ error: { code: 'validation' } });
+      expect(JSON.stringify(r.body)).not.toMatch(/[\u2013\u2014]/);
+    }
+  });
   it('hides unknown errors behind a 500', () => {
     const r = run(new Error('secret internals'));
     expect(r.statusCode).toBe(500);
     expect(JSON.stringify(r.body)).not.toContain('secret');
+  });
+});
+
+describe('NUL bytes in input', () => {
+  it('strips them from nested strings and keys, keeping untouched values as the same reference', () => {
+    const clean = { a: 'x', list: ['y'] };
+    expect(stripNul(clean)).toBe(clean);
+    const dirty = { search: 'a\u0000b', nested: { deep: ['c\u0000', 1, null, true] }, 'k\u0000ey': 'v' };
+    expect(stripNul(dirty)).toEqual({ search: 'ab', nested: { deep: ['c', 1, null, true] }, key: 'v' });
+    // The caller's object is not mutated.
+    expect(dirty.search).toBe('a\u0000b');
+    // Null-prototype objects (Express 5 query strings, multer bodies) are walked too.
+    const query = Object.assign(Object.create(null) as Record<string, unknown>, { search: '\u0000\u0000hi' });
+    expect(stripNul(query)).toEqual({ search: 'hi' });
+  });
+
+  it('leaves Dates, buffers and class instances alone', () => {
+    const d = new Date(0);
+    const buf = Buffer.from('a\u0000b');
+    class Thing {
+      label = 'x\u0000';
+    }
+    const t = new Thing();
+    expect(stripNul(d)).toBe(d);
+    expect(stripNul(buf)).toBe(buf);
+    expect(stripNul(t)).toBe(t);
+  });
+
+  it('ZodPipe parses searches with NUL instead of passing them to Postgres', () => {
+    const q = new ZodPipe(speakerListQuery).transform({ search: 'rin\u0000a', page: '2' });
+    expect(q.search).toBe('rina');
+    expect(q.page).toBe(2);
+    const body = new ZodPipe(speakerInput).transform({
+      slug: 'rina',
+      fullName: 'Rina\u0000 S',
+      bio: [{ type: 'paragraph', content: [{ type: 'text', text: 'hi\u0000' }] }],
+    });
+    expect(body.fullName).toBe('Rina S');
+    expect(JSON.stringify(body.bio)).not.toContain('\\u0000');
+    // Still a 400 for real validation problems.
+    expect(() => new ZodPipe(paginationQuery.extend({ q: z.string().min(2) })).transform({ q: '\u0000a' })).toThrow(AppError);
   });
 });

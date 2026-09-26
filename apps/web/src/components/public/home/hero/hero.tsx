@@ -95,8 +95,7 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
       ref={root}
       className={styles.hero}
       aria-labelledby="home-hero-title"
-      data-story-time="13:15"
-      data-story-label="doors open"
+      data-story-time={doors.time}
     >
       <SceneCanvas
         className={styles.scene}

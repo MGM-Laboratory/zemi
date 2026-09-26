@@ -19,7 +19,7 @@ export default function AdminNotFound() {
         <Character shape="triangle" mood="oops" size={40} />
       </div>
       <div className="max-w-md">
-        <p className="label text-ink-4">404</p>
+        <p className="label text-ink-3">404</p>
         <h1 className="mt-2 font-display text-[clamp(2rem,5vw,3rem)] leading-none font-black tracking-[-0.04em]">Nothing on this shelf.</h1>
         <p className="mt-3 text-ink-3">It may have been moved or deleted, or the link has a typo. Old slugs still redirect on the public site, but admin links use ids.</p>
       </div>

@@ -107,10 +107,10 @@ export function SpeakersList() {
           s.defaultOrganization || s.defaultPosition ? (
             <div className="min-w-0 text-sm">
               <p className="line-clamp-1 text-ink-2">{s.defaultOrganization}</p>
-              {s.defaultPosition ? <p className="line-clamp-1 text-ink-4">{s.defaultPosition}</p> : null}
+              {s.defaultPosition ? <p className="line-clamp-1 text-ink-3">{s.defaultPosition}</p> : null}
             </div>
           ) : (
-            <span className="text-ink-4">Not set</span>
+            <span className="text-ink-3">Not set</span>
           ),
       },
       {
@@ -155,6 +155,8 @@ export function SpeakersList() {
     ...(params.vis ? [{ key: 'vis', label: `Visibility: ${VIS_LABEL[params.vis]}`, onRemove: () => void setParams({ vis: null, page: null }) }] : []),
   ];
 
+  // Someone who can't see a single speaker (door crew who typed the URL) should not read "add the first one".
+  const noAccess = !ability.isSuperadmin && !ability.canAny('speaker', 'view') && !ability.has('speakers.create');
   const empty = filtered ? (
     <EmptyState
       framed={view === 'grid'}
@@ -169,6 +171,14 @@ export function SpeakersList() {
           Clear filters
         </Button>
       }
+    />
+  ) : noAccess ? (
+    <EmptyState
+      framed={view === 'grid'}
+      size="lg"
+      title="No speakers in your access."
+      description="Your access covers other corners of the studio. Ask the superadmin if you need the directory."
+      cast={[{ shape: 'arch', mood: 'look', size: 48, lookAt: { x: 0.7, y: -0.1 } }]}
     />
   ) : (
     <EmptyState
@@ -235,7 +245,13 @@ export function SpeakersList() {
       <PageHeader
         title="Speakers"
         description="Everyone who stood up on a Friday, and the ones about to. Talks show up here on their own once you add people to an event."
-        meta={list.data ? <Badge tone="outline">{total.toLocaleString('en-US')} in the directory</Badge> : null}
+        meta={
+          list.data && !noAccess ? (
+            <Badge tone="outline">
+              {total.toLocaleString('en-US')} {ability.canAll('speaker', 'view') ? 'in the directory' : 'in your access'}
+            </Badge>
+          ) : null
+        }
         actions={
           <Can cap="speakers.create">
             <Button variant="primary" icon={<Plus />} asChild>

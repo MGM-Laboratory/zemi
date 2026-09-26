@@ -1,18 +1,28 @@
 import { z } from 'zod';
-import { blocksSchema, idSchema, linkSchema, optionalUrl, type Blocks, type ImageRef, type LinkItem } from './common.js';
+import {
+  blocksSchema,
+  idSchema,
+  linkSchema,
+  optionalUrl,
+  safeHrefString,
+  safeWebUrlString,
+  type Blocks,
+  type ImageRef,
+  type LinkItem,
+} from './common.js';
 
 export const generalSettings = z.object({
   siteName: z.string().max(80).default('Zemi'),
   tagline: z.string().max(200).default('The Friday seminar for half-finished research.'),
   labName: z.string().max(120).default('MGM Laboratory'),
-  labUrl: z.string().max(300).default('https://labmgm.org'),
+  labUrl: safeWebUrlString(300).default('https://labmgm.org'),
   defaultWeekday: z.number().int().min(0).max(6).default(5),
   defaultStart: z.string().default('13:15'),
   defaultEnd: z.string().default('15:15'),
   defaultVenueId: idSchema.optional().nullable(),
   defaultCapacity: z.number().int().min(1).optional().nullable(),
   announcement: z
-    .object({ active: z.boolean().default(false), text: z.string().max(200).default(''), href: z.string().max(500).optional().nullable() })
+    .object({ active: z.boolean().default(false), text: z.string().max(200).default(''), href: safeHrefString(500).optional().nullable() })
     .default({ active: false, text: '' }),
   footerNote: z.string().max(300).default('Made with too much coffee at MGM Lab.'),
 });

@@ -36,16 +36,22 @@ export interface CardHeaderProps {
   actions?: ReactNode;
   /** Small icon or shape before the title. */
   icon?: ReactNode;
+  /**
+   * Heading level. Default 2: most cards sit right under the page h1. Use 3 for a card
+   * that lives inside a titled Section (h2).
+   */
+  level?: 2 | 3;
   className?: string;
 }
 
-export function CardHeader({ title, description, actions, icon, className }: CardHeaderProps) {
+export function CardHeader({ title, description, actions, icon, level = 2, className }: CardHeaderProps) {
+  const Heading = level === 3 ? 'h3' : 'h2';
   return (
     <div className={cn('mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2', className)}>
       <div className="flex min-w-0 items-start gap-3">
         {icon ? <div className="mt-0.5 shrink-0">{icon}</div> : null}
         <div className="min-w-0">
-          <h3 className="font-display text-[1.0625rem] leading-tight font-extrabold tracking-[-0.015em] [font-variation-settings:'CASL'_0.2]">{title}</h3>
+          <Heading className="font-display text-[1.0625rem] leading-tight font-extrabold tracking-[-0.015em] [font-variation-settings:'CASL'_0.2]">{title}</Heading>
           {description ? <p className="mt-1 text-sm text-ink-3">{description}</p> : null}
         </div>
       </div>
@@ -104,7 +110,7 @@ export function Divider({ className, label }: { className?: string; label?: Reac
   return (
     <div className={cn('flex items-center gap-3', className)} role="separator">
       <span className="h-px flex-1 bg-line" />
-      <span className="label text-ink-4">{label}</span>
+      <span className="label text-ink-3">{label}</span>
       <span className="h-px flex-1 bg-line" />
     </div>
   );

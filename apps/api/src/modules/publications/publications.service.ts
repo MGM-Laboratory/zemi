@@ -1,5 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import {
+  sanitizeLinkList,
+  safeWebUrl,
   CONTENT_ACTIONS,
   type Ability,
   makeCitationKey,
@@ -34,6 +36,7 @@ import { SlugService } from '../../common/slug.service.js';
 import { DB, type Db, type DbOrTx } from '../../db/client.js';
 import { eventPublications, events, publicationAuthors, publications, speakers } from '../../db/schema.js';
 import { AuditService } from '../audit/audit.service.js';
+import { backfillCitationKeys, pickCitationKey } from './citation-keys.js';
 import { RevalidateService, tags } from '../revalidate/revalidate.service.js';
 import {
   assertAssets,
@@ -89,7 +92,7 @@ function authorInput(x: LoadedAuthor): PublicationAuthorInput {
     fullName: x.a.fullName ?? 'Unnamed author',
     avatarAssetId: x.a.avatarAssetId ?? null,
     organization: x.a.organization ?? null,
-    url: x.a.url ?? null,
+    url: safeWebUrl(x.a.url),
     isCorresponding: x.a.isCorresponding,
   };
 }
@@ -107,7 +110,9 @@ function lookupItem(r: PublicationRow): PublicationLookupItem {
 }
 
 @Injectable()
-export class PublicationsService {
+export class PublicationsService implements OnApplicationBootstrap {
+  private readonly logger = new Logger('Publications');
+
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly refs: AssetRefsService,
@@ -117,6 +122,15 @@ export class PublicationsService {
     private readonly revalidate: RevalidateService,
     private readonly speakers: SpeakersService,
   ) {}
+
+  /** Publications saved without a citation key (older seeds) get one on boot. Idempotent, and quick when none are missing. */
+  onApplicationBootstrap(): void {
+    void backfillCitationKeys(this.db)
+      .then((n) => {
+        if (n) this.logger.log(`Gave ${n} publication${n === 1 ? '' : 's'} a citation key`);
+      })
+      .catch((err: unknown) => this.logger.error(`Could not backfill citation keys: ${(err as Error).message}`));
+  }
 
   /* ------------------------------------------------------------------ loading + mapping */
 
@@ -151,7 +165,7 @@ export class PublicationsService {
       fullName: x.s?.fullName ?? x.a.fullName ?? 'Unnamed author',
       avatar: avatars.get(authorAvatarId(x) ?? '') ?? null,
       organization: x.a.organization ?? x.s?.defaultOrganization ?? null,
-      url: x.s ? null : (x.a.url ?? null),
+      url: x.s ? null : safeWebUrl(x.a.url),
       isCorresponding: x.a.isCorresponding,
     };
   }
@@ -235,8 +249,8 @@ export class PublicationsService {
       isbn: row.isbn ?? null,
       issn: row.issn ?? null,
       arxivId: row.arxivId ?? null,
-      url: row.url ?? null,
-      links: row.links ?? [],
+      url: safeWebUrl(row.url),
+      links: sanitizeLinkList(row.links),
       language: row.language ?? null,
       license: row.license ?? null,
       citationKey: row.citationKey ?? null,
@@ -402,11 +416,7 @@ export class PublicationsService {
       .select({ key: publications.citationKey })
       .from(publications)
       .where(and(like(publications.citationKey, `${likeEscape(root)}%`), excludeId ? ne(publications.id, excludeId) : undefined));
-    const used = new Set(rows.map((r) => r.key));
-    if (!used.has(root)) return root;
-    for (const c of 'bcdefghijklmnopqrstuvwxyz') if (!used.has(`${root}${c}`)) return `${root}${c}`;
-    for (let n = 2; n < 1000; n++) if (!used.has(`${root}-${n}`)) return `${root}-${n}`;
-    return `${root}-${Date.now().toString(36)}`;
+    return pickCitationKey(root, new Set(rows.map((r) => r.key)));
   }
 
   /** Tags for pages that show this publication. */
@@ -465,14 +475,27 @@ export class PublicationsService {
     return paginated(items, total, q);
   }
 
-  /** Picker search over every publication (any admin). Title prefix matches first, then newest. */
-  async lookup(q: string | undefined, limit = LOOKUP_LIMIT): Promise<PublicationLookupItem[]> {
+  /**
+   * Picker search. Title prefix matches first, then newest. Drafts only when the caller can view
+   * them (the controller checks `assertCanLookup` first).
+   */
+  async lookup(q: string | undefined, limit = LOOKUP_LIMIT, ability: ContentCtx['ability']): Promise<PublicationLookupItem[]> {
     const term = (q ?? '').trim();
     const prefix = term ? `${likeEscape(term)}%` : null;
+    const ids = visibleIds(ability, 'publication');
     const rows = await this.db
       .select()
       .from(publications)
-      .where(this.searchWhere(term))
+      .where(
+        and(
+          this.searchWhere(term),
+          ids === 'all'
+            ? undefined
+            : ids.length
+              ? or(ne(publications.visibility, 'draft'), inArray(publications.id, ids))
+              : ne(publications.visibility, 'draft'),
+        ),
+      )
       .orderBy(
         ...(prefix ? [asc(sql`case when ${publications.title} ilike ${prefix} then 0 else 1 end`)] : []),
         sql`${publications.publishedYear} desc nulls last`,

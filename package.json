@@ -15,7 +15,9 @@
     "format:check": "prettier --check .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "e2e": "playwright test",
+    "e2e:quick": "playwright test --grep-invert \"@stream|@camera\""
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

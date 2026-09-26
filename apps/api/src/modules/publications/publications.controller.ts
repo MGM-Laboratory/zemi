@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { CurrentAuth, Public, RequireCapability } from '../../auth/decorators.js';
 import { Ip, type RequestAuth } from '../../common/request.js';
 import { parseOrThrow, UuidParam, ZodBody, ZodParam, ZodQuery } from '../../common/zod.pipe.js';
+import { assertCanLookup } from '../../auth/permissions.service.js';
 import { presentOnly } from '../speakers/content.util.js';
 import { PublicationsService } from './publications.service.js';
 
@@ -41,10 +42,11 @@ export class AdminPublicationsController {
     return this.publications.list(q, auth.ability);
   }
 
-  /** Any signed-in admin: every publication, max 20, for pickers. */
+  /** Pickers and the command palette (see assertCanLookup): max 20, drafts only when viewable. */
   @Get('lookup')
-  lookup(@ZodQuery(lookupQuery) q: z.infer<typeof lookupQuery>): Promise<PublicationLookupItem[]> {
-    return this.publications.lookup(q.q, q.limit);
+  lookup(@ZodQuery(lookupQuery) q: z.infer<typeof lookupQuery>, @CurrentAuth() auth: RequestAuth): Promise<PublicationLookupItem[]> {
+    assertCanLookup(auth.ability, 'publication');
+    return this.publications.lookup(q.q, q.limit, auth.ability);
   }
 
   /** Crossref prefill: GET /admin/publications/doi?doi=10.1038/nature14539 */

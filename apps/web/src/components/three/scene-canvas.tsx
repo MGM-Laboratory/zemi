@@ -9,6 +9,29 @@ import { hasWebGL } from './webgl';
 
 const noopSubscribe = () => () => {};
 
+/**
+ * Frame budget shared by every SceneCanvas on the page: at most MAX_RUNNING render loops at once.
+ * Canvases near the viewport compete by how much of them is on screen; the rest hold their last
+ * frame (frameloop "never") until they win a slot back.
+ */
+const MAX_RUNNING = 2;
+type BudgetEntry = { ratio: number; order: number; set: (on: boolean) => void; on: boolean };
+const budget = new Map<symbol, BudgetEntry>();
+let budgetOrder = 0;
+function rebalance() {
+  const ranked = [...budget.values()]
+    .filter((e) => e.ratio > 0)
+    .sort((a, b) => b.ratio - a.ratio || a.order - b.order)
+    .slice(0, MAX_RUNNING);
+  for (const e of budget.values()) {
+    const on = ranked.includes(e);
+    if (on !== e.on) {
+      e.on = on;
+      e.set(on);
+    }
+  }
+}
+
 const SceneCanvasImpl = dynamic(() => import('./scene-canvas-impl'), { ssr: false, loading: () => null });
 
 export interface SceneCanvasProps {
@@ -47,7 +70,9 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
 /**
  * Lazy R3F canvas for one section (DESIGN.md section 9).
  * - three/R3F load only when the wrapper nears the viewport (never on the server)
- * - frameloop pauses offscreen, dpr [1, 1.75], PerformanceMonitor drops quality on slow devices
+ * - frameloop pauses offscreen, and at most two canvases on the page render at once (the ones
+ *   most on screen win); `data-scene-running` on the wrapper says which
+ * - dpr [1, 1.75], PerformanceMonitor drops quality on slow devices
  * - prefers-reduced-motion renders a still frame
  * - no WebGL or a crash: renders `fallback` (use a 2D Character or an image)
  *
@@ -92,12 +117,25 @@ export function SceneCanvas({
       },
       { rootMargin },
     );
-    const visIo = new IntersectionObserver(([e]) => setVisible(!!e?.isIntersecting), { rootMargin: '10% 0px' });
+    const id = Symbol('scene');
+    budget.set(id, { ratio: 0, order: budgetOrder++, set: setVisible, on: false });
+    const visIo = new IntersectionObserver(
+      (entries) => {
+        const e = entries[entries.length - 1];
+        const entry = budget.get(id);
+        if (!entry) return;
+        entry.ratio = e?.isIntersecting ? Math.max(0.001, e.intersectionRatio) : 0;
+        rebalance();
+      },
+      { rootMargin: '10% 0px', threshold: [0, 0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 1] },
+    );
     nearIo.observe(el);
     visIo.observe(el);
     return () => {
       nearIo.disconnect();
       visIo.disconnect();
+      budget.delete(id);
+      rebalance();
     };
   }, [rootMargin]);
 
@@ -113,7 +151,13 @@ export function SceneCanvas({
   const hold = placeholder === undefined ? fallback : placeholder;
 
   return (
-    <div ref={ref} className={cn('relative', className)} style={style} data-scene="">
+    <div
+      ref={ref}
+      className={cn('relative', className)}
+      style={style}
+      data-scene=""
+      data-scene-running={showCanvas && visible && !reduced ? 'true' : 'false'}
+    >
       {supported === false ? (
         <div className="absolute inset-0 grid place-items-center">{fallback}</div>
       ) : (

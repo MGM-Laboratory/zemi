@@ -10,14 +10,18 @@ import { EventsHero } from '@/components/public/events/archive/events-hero';
 import { FridayRibbon } from '@/components/public/events/archive/friday-ribbon';
 import { LiveStrip } from '@/components/public/events/archive/live-strip';
 import { toRibbonEvent } from '@/components/public/events/lib';
+import { shareMeta } from '@/components/public/media/share-meta';
 import { ApiUnavailable } from '@/components/public/ui/empty-state';
 import { getEvents, type EventListParams } from '@/lib/api/server';
 
+const DESCRIPTION =
+  'Every Zemi Friday since the first one: talks, recordings, photos and the papers behind them. Plus what is coming up next.';
+
 export const metadata: Metadata = {
   title: 'The Friday archive',
-  description:
-    'Every Zemi Friday since the first one: talks, recordings, photos and the papers behind them. Plus what is coming up next.',
+  description: DESCRIPTION,
   alternates: { canonical: '/events' },
+  ...shareMeta({ title: 'The Friday archive', description: DESCRIPTION, url: '/events' }),
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

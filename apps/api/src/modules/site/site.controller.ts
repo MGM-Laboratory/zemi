@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { CurrentAuth, Public, RequireCapability, RequireSuperadmin } from '../../auth/decorators.js';
 import { notFound } from '../../common/errors.js';
 import { Ip, UserAgent, type RequestAuth } from '../../common/request.js';
-import { UuidParam, ZodBody, ZodQuery } from '../../common/zod.pipe.js';
+import { stripNul, UuidParam, ZodBody, ZodQuery } from '../../common/zod.pipe.js';
 import { ContentResetService } from './content-reset.service.js';
 import { InboxService } from './inbox.service.js';
 import { isSiteSettingKey } from './site-settings.js';
@@ -63,7 +63,8 @@ export class AdminSiteController {
   /** Body: the section (whole, or only the fields that changed). Returns the saved section. */
   @Put('settings/:key')
   updateSetting(@Param('key') key: string, @Body() body: unknown, @CurrentAuth() auth: RequestAuth, @Ip() ip: string | null) {
-    return this.site.updateSetting(settingKey(key), body, { principal: auth.principal, ip });
+    // Parsed in the service (merged over the stored section), so strip NUL bytes here like ZodPipe does.
+    return this.site.updateSetting(settingKey(key), stripNul(body), { principal: auth.principal, ip });
   }
 
   /* FAQ */

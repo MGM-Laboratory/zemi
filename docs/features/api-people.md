@@ -212,3 +212,16 @@ Throwaway events and admins created through the admin API, deleted afterwards.
 - `/tickets/[token]?cancel=1` (the email's "Cancel my seat" link) should open the cancel confirmation right away.
 - Event page anchors `#recording` and `#photos` (the thank you email links to them).
 - Admin resend buttons: 422 `event_cancelled` on a cancelled event.
+
+## 11. Integration fixes (2026-09-26, fix-api)
+
+- **`checkins.actor_id`** (text, nullable: an admin uuid or `superadmin`), migration `0002_checkin_actor_schedule_change`. Every
+  check-in and undo stores it. The scan-only filters (`GET /admin/events/:id/attendance` `recent`, and the attendance SSE) now match
+  on `actor_id` instead of the display name, so two admins called the same thing no longer see each other's scans. Rows from
+  before the column fall back to the name (`actor_id is null and actor_name = me`). `CheckinFeedItem.actorId` is new (optional).
+  Verified: two scan-only admins both named "fixapi door" each saw only their own scan; the SSE sent `item: null` for the
+  superadmin's check-in and the full item for the door admin's own scan.
+- **Stats split.** `RegistrationStats.checkedInInPerson` and `checkedInOnline` (active registrations with a check-in, by mode).
+  Verified: 2 in person + 1 online checked in gave `{ checkedIn: 3, checkedInInPerson: 2, checkedInOnline: 1 }`.
+- **Lifecycle after a reschedule.** `runStage` dedupes recipients against emails sent after `events.schedule_changed_at` too
+  (set by the events PATCH when the start moves more than an hour later, together with a reset of the three `*_sent_at`).

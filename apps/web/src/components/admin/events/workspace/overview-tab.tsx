@@ -257,7 +257,7 @@ export function EventOverviewTab() {
       {/* Side: site preview + lineup */}
       <aside className="min-w-0 space-y-6" aria-label="Summary">
         <Card padding="sm" className="group">
-          <p className="label mb-3 px-1 text-ink-4">On the site</p>
+          <p className="label mb-3 px-1 text-ink-3">On the site</p>
           <div className="flex gap-4">
             <CoverThumb
               image={event.cover}
@@ -277,7 +277,7 @@ export function EventOverviewTab() {
               {event.summary ? (
                 <p className="mt-1.5 line-clamp-3 text-[0.8125rem] text-ink-2">{event.summary}</p>
               ) : (
-                <p className="mt-1.5 text-[0.8125rem] text-ink-4">No summary yet.</p>
+                <p className="mt-1.5 text-[0.8125rem] text-ink-3">No summary yet.</p>
               )}
             </div>
           </div>
@@ -288,13 +288,13 @@ export function EventOverviewTab() {
 
         <Card padding="sm">
           <div className="mb-3 flex items-center justify-between px-1">
-            <p className="label text-ink-4">Lineup</p>
+            <p className="label text-ink-3">Lineup</p>
             {tabVisible('speakers') ? (
               <Link
                 href={adminRoutes.event(id, 'speakers')}
                 className="text-sm font-medium text-blue hover:underline"
               >
-                Edit
+                {perms.has('edit') ? 'Edit' : 'See all'}
               </Link>
             ) : null}
           </div>
@@ -322,7 +322,7 @@ export function EventOverviewTab() {
           )}
           {event.rundown.length ? (
             <div className="mt-4 border-t border-line px-1 pt-3">
-              <p className="label mb-2 text-ink-4">Rundown</p>
+              <p className="label mb-2 text-ink-3">Rundown</p>
               <ol className="space-y-1">
                 {event.rundown.slice(0, 6).map((r) => (
                   <li key={r.id} className="flex gap-3 text-sm">
@@ -331,14 +331,14 @@ export function EventOverviewTab() {
                   </li>
                 ))}
                 {event.rundown.length > 6 ? (
-                  <li className="text-xs text-ink-4">and {event.rundown.length - 6} more</li>
+                  <li className="text-xs text-ink-3">and {event.rundown.length - 6} more</li>
                 ) : null}
               </ol>
             </div>
           ) : null}
         </Card>
 
-        <p className="flex items-center gap-2 px-1 text-xs text-ink-4">
+        <p className="flex items-center gap-2 px-1 text-xs text-ink-3">
           <Clock3 className="size-3.5" aria-hidden="true" />
           Last edited <DateText value={event.updatedAt} format="relative" />
         </p>

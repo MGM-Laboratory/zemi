@@ -100,7 +100,7 @@ export function TeamManager() {
           <WithPreview previewLabel="On the about page" preview={<TeamPreview items={published} />}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CollectionCounts total={items.length} published={published.length} one="person" many="people" />
-              <p className="hidden text-[0.8125rem] text-ink-4 sm:block">
+              <p className="hidden text-[0.8125rem] text-ink-3 sm:block">
                 Press <Kbd>n</Kbd> to add someone.
               </p>
             </div>

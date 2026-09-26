@@ -12,6 +12,8 @@ import { cn } from '@/lib/admin/cn';
 export interface FieldContextValue {
   id: string;
   labelId: string;
+  /** True when the Field renders a <label> (so `labelId` points at a real element). */
+  hasLabel: boolean;
   hintId: string;
   errorId: string;
   invalid: boolean;
@@ -31,6 +33,15 @@ export const ReadOnlyScopeContext = createContext(false);
 
 export function useFieldContext(): FieldContextValue | null {
   return useContext(FieldContext);
+}
+
+/**
+ * Cuts the enclosing `<Field>` off for the controls inside. Composite editors (link rows, author
+ * rows) use it so every row does not get the Field's one id and its invalid state; they wire
+ * their own ids and errors per row. Resolve read-only (`useReadOnly`) before this boundary.
+ */
+export function FieldIsolate({ children }: { children: ReactNode }) {
+  return <FieldContext.Provider value={null}>{children}</FieldContext.Provider>;
 }
 
 export interface ControlAriaProps {
@@ -116,6 +127,7 @@ export function Field({
   const ctx: FieldContextValue = {
     id,
     labelId: `${id}-label`,
+    hasLabel: Boolean(label),
     hintId: `${id}-hint`,
     errorId: `${id}-error`,
     invalid: hasError || over,
@@ -147,7 +159,7 @@ export function Field({
                   </span>
                 ) : null}
                 {required ? <span className="sr-only"> (required)</span> : null}
-                {optional && !required ? <span className="ml-1.5 text-xs font-normal text-ink-4">Optional</span> : null}
+                {optional && !required ? <span className="ml-1.5 text-xs font-normal text-ink-3">Optional</span> : null}
               </label>
             ) : (
               <span />
@@ -175,7 +187,7 @@ export function Field({
               {count ? (
                 <span
                   id={`${id}-count`}
-                  className={cn('mono shrink-0 text-xs tabular-nums', over ? 'font-semibold text-red-600' : count.value > count.max * 0.9 ? 'text-ink-2' : 'text-ink-4')}
+                  className={cn('mono shrink-0 text-xs tabular-nums', over ? 'font-semibold text-red-600' : count.value > count.max * 0.9 ? 'text-ink-2' : 'text-ink-3')}
                   aria-live={count.value > count.max * 0.9 ? 'polite' : 'off'}
                 >
                   <span className="sr-only">Characters used: </span>

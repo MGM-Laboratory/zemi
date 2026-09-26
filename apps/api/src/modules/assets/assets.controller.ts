@@ -1,5 +1,5 @@
 import { rm } from 'node:fs/promises';
-import { Controller, Delete, Get, HttpCode, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Patch, Post, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import {
@@ -24,6 +24,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { dispositionFor, streamObject } from '../media-serve/media-stream.js';
 import { AssetsService } from './assets.service.js';
+import { UPLOAD_KIND_MAX_BYTES, UploadGuard } from './upload.guard.js';
 
 /** The multer file shape we rely on (disk storage). */
 interface UploadedDiskFile {
@@ -79,14 +80,18 @@ export class AssetsController {
   /**
    * POST /api/v1/admin/assets (multipart: file, purpose, crop?, adjust?, alt?, caption?, credit?)
    * Returns the Asset right away with status 'processing'; poll GET /admin/assets/:id.
+   * Needs a reason to upload (`canUpload`) and stays under 150 uploads per 10 minutes per admin,
+   * both checked before the body is read. Photos and PDFs over 100 MB get a 413.
    */
   @Post()
   @HttpCode(201)
+  @UseGuards(UploadGuard)
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile() file: UploadedDiskFile | undefined,
     @Req() req: Request,
     @CurrentPrincipal() principal: Principal,
+    @CurrentAbility() ability: Ability,
     @Ip() ip: string | null,
   ): Promise<Asset> {
     try {
@@ -102,6 +107,7 @@ export class AssetsController {
         alt: fields.alt ?? null,
         caption: fields.caption ?? null,
         credit: fields.credit ?? null,
+        maxBytesByKind: UPLOAD_KIND_MAX_BYTES,
       });
       await this.audit.log({
         principal,
@@ -112,7 +118,7 @@ export class AssetsController {
         meta: { purpose: row.purpose, kind: row.kind, mime: row.mime, sizeBytes: row.sizeBytes },
         ip,
       });
-      return this.assets.dto(row);
+      return this.assets.dto(row, { ability, principal });
     } finally {
       if (file?.path) await rm(file.path, { force: true });
     }
@@ -130,18 +136,19 @@ export class AssetsController {
   ): Promise<Paginated<Asset>> {
     const all = ability.isSuperadmin || ability.has('media.library');
     if (!q.mine && !all) throw forbidden('Browsing the media library needs the "Browse media library" permission.');
-    return this.assets.list({ ...q, createdBy: q.mine ? principal.id : undefined });
+    return this.assets.list({ ...q, createdBy: q.mine ? principal.id : undefined }, { ability, principal });
   }
 
   /** GET /api/v1/admin/assets/:id (any signed-in admin; used to poll processing). */
   @Get(':id')
-  async get(@UuidParam() id: string): Promise<Asset> {
-    return this.assets.dto(await this.assets.get(id));
+  async get(@UuidParam() id: string, @CurrentAbility() ability: Ability, @CurrentPrincipal() principal: Principal): Promise<Asset> {
+    return this.assets.dto(await this.assets.get(id), { ability, principal });
   }
 
   /**
    * GET /api/v1/admin/assets/:id/original: the private original (EXIF and GPS intact), for the re-crop tool.
-   * Same rule as re-cropping: the uploader, media librarians and the superadmin.
+   * Same rule as re-cropping: the uploader, media librarians, the superadmin, and site editors for
+   * `site` and `team-avatar` files.
    */
   @Get(':id/original')
   async original(
@@ -170,7 +177,7 @@ export class AssetsController {
   ): Promise<Asset> {
     const row = await this.assets.get(id);
     this.assets.assertCanMutate(ability, principal, row);
-    return this.assets.dto(await this.assets.updateMeta(row, body, { principal, ip }));
+    return this.assets.dto(await this.assets.updateMeta(row, body, { principal, ip }), { ability, principal });
   }
 
   /** POST /api/v1/admin/assets/:id/recrop { crop, adjust } -> Asset (status 'processing') */
@@ -185,7 +192,7 @@ export class AssetsController {
   ): Promise<Asset> {
     const row = await this.assets.get(id);
     this.assets.assertCanMutate(ability, principal, row);
-    return this.assets.dto(await this.assets.recrop(row, body, { principal, ip }));
+    return this.assets.dto(await this.assets.recrop(row, body, { principal, ip }), { ability, principal });
   }
 
   /** DELETE /api/v1/admin/assets/:id: removes the row and every file under assets/<id>/. */

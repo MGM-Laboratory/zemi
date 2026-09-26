@@ -73,8 +73,8 @@ export const EVENT_ACTION_META: Record<EventAction, { label: string; group: stri
   'registrations.export': { label: 'Export & print', group: 'People', hint: 'CSV/XLSX export and the attendance paper PDF.' },
   'attendance.scan': { label: 'Scan tickets', group: 'Door', hint: 'Open the QR scanner. Only sees the scanned person.' },
   'attendance.manage': { label: 'Manual check-in', group: 'Door', hint: 'Check-in list, undo, walk-ins.' },
-  'stream.view': { label: 'See stream setup', group: 'Stream', hint: 'OBS keys, preview and health.' },
-  'stream.control': { label: 'Control stream', group: 'Stream', hint: 'Go live, end, rotate keys, recordings.' },
+  'stream.view': { label: 'See stream setup', group: 'Stream', hint: 'Stream state, preview, health and recordings.' },
+  'stream.control': { label: 'Control stream', group: 'Stream', hint: 'OBS keys, go live, end, rotate keys, recordings.' },
   'media.manage': { label: 'Documentation', group: 'Media', hint: 'Upload and arrange photos and videos.' },
   'emails.send': { label: 'Email registrants', group: 'People', hint: 'Send updates to everyone who registered.' },
 };

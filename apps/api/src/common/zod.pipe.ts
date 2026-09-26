@@ -17,6 +17,42 @@ export function describeZodError(
   return { message, details: error.issues };
 }
 
+// eslint-disable-next-line no-control-regex
+const NUL = /\u0000/g;
+
+/**
+ * Input with every NUL byte (\u0000) removed from its strings, in nested plain objects and arrays
+ * too. Postgres can't store NUL in text or jsonb (22021 / 22P05), so without this a search like
+ * `?search=a%00b` would be a 500. Other values (Dates, class instances, files) pass through as is.
+ * Returns the same reference when nothing changed.
+ */
+export function stripNul<T>(value: T, depth = 0): T {
+  if (typeof value === 'string') return (value.includes('\u0000') ? value.replace(NUL, '') : value) as T;
+  if (depth > 64 || !value || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    const list = value as unknown[];
+    let out: unknown[] | null = null;
+    list.forEach((item, i) => {
+      const next = stripNul(item, depth + 1);
+      if (next !== item) (out ??= [...list])[i] = next;
+    });
+    return (out ?? value) as T;
+  }
+  const proto = Object.getPrototypeOf(value) as unknown;
+  if (proto !== Object.prototype && proto !== null) return value;
+  let out: Record<string, unknown> | null = null;
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    const cleanKey = key.includes('\u0000') ? key.replace(NUL, '') : key;
+    const next = stripNul(item, depth + 1);
+    if (next !== item || cleanKey !== key) {
+      out ??= { ...(value as Record<string, unknown>) };
+      if (cleanKey !== key) delete out[key];
+      out[cleanKey] = next;
+    }
+  }
+  return (out ?? value) as T;
+}
+
 /**
  * Validate and transform input with a zod schema (usually one from `@zemi/shared`).
  * Throws 400 `{ error: { code: 'validation', message, details: issues } }`.
@@ -34,7 +70,7 @@ export class ZodPipe<S extends z.ZodType> implements PipeTransform<unknown, z.ou
   ) {}
 
   transform(value: unknown): z.output<S> {
-    const parsed = this.schema.safeParse(value);
+    const parsed = this.schema.safeParse(stripNul(value));
     if (parsed.success) return parsed.data;
     const { message, details } = describeZodError(parsed.error, this.opts);
     throw validationError(message, details);

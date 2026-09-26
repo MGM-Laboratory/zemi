@@ -217,6 +217,11 @@ export const events = pgTable(
     reminderSentAt: ts('reminder_sent_at'),
     startingSentAt: ts('starting_sent_at'),
     thanksSentAt: ts('thanks_sent_at'),
+    /**
+     * Set when `startsAt` moved more than an hour later (the `*_sent_at` columns are reset at the same
+     * time). Lifecycle recipient dedupe only counts emails sent after it, so people hear the new time.
+     */
+    scheduleChangedAt: ts('schedule_changed_at'),
     createdBy: text('created_by'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -404,6 +409,9 @@ export const checkins = pgTable(
       .references(() => events.id, { onDelete: 'cascade' }),
     action: text('action', { enum: ['check-in', 'undo'] }).notNull(),
     method: text('method', { enum: ['qr', 'manual'] }).notNull(),
+    /** Principal id (admin uuid or 'superadmin'). Null on rows from before it was kept. */
+    actorId: text('actor_id'),
+    /** Display name at the time, for the feed. Filters use `actorId`. */
     actorName: text('actor_name').notNull(),
     device: text('device'),
     createdAt: createdAt(),

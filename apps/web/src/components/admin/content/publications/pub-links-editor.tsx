@@ -53,7 +53,7 @@ export function PubLinksEditor({ value, onChange, errors, readOnly: ro, max = 30
   latest.current = value;
   const update = (key: string, patch: Partial<LinkRow>) => onChange(latest.current.map((r) => (r.key === key ? { ...r, ...patch } : r)));
 
-  if (readOnly && !value.length) return <p className="text-sm text-ink-4">No extra links.</p>;
+  if (readOnly && !value.length) return <p className="text-sm text-ink-3">No extra links.</p>;
 
   return (
     <div className="space-y-2.5">

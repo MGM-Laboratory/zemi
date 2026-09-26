@@ -78,7 +78,7 @@ export function ProgressRing({ value, size = 56, stroke = 5, tone = 'blue', chil
       className={cn('relative inline-flex shrink-0 items-center justify-center', className)}
       style={{ width: size, height: size }}
     >
-      <svg width={size} height={size} className={cn('-rotate-90', value == null && !reduce && 'animate-spin [animation-duration:1.1s]')} aria-hidden="true">
+      <svg width={size} height={size} className={cn('-rotate-90', value == null && 'motion-safe:animate-spin motion-safe:[animation-duration:1.1s]')} aria-hidden="true">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-line)" strokeWidth={stroke} />
         <motion.circle
           cx={size / 2}
@@ -142,7 +142,7 @@ export function Stepper({ steps, current, onStepClick, orientation = 'horizontal
                 'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors',
                 state === 'done' && 'bg-ink text-white',
                 state === 'current' && cn(STEP_COLORS[i % 4], i % 4 === 2 ? 'text-ink' : 'text-white'),
-                state === 'todo' && 'border border-line-strong bg-white text-ink-4',
+                state === 'todo' && 'border border-line-strong bg-white text-ink-3',
               )}
               data-shape={STEP_SHAPES[i % 4]}
             >

@@ -158,6 +158,7 @@ export function LonelyBeat({
     let started = false;
     let lastMood: CharacterMood = 'sleepy';
     let wasLit = false;
+    let written = false;
 
     const frame = () => {
       raf = 0;
@@ -194,12 +195,22 @@ export function LonelyBeat({
         started = true;
       }
       const f = reduced ? 1 : 0.14;
-      cur.x += (tx - cur.x) * f;
-      cur.y += (ty - cur.y) * f;
-      cur.r += (radius - cur.r) * 0.1;
-      el.style.setProperty('--sx', `${cur.x.toFixed(1)}px`);
-      el.style.setProperty('--sy', `${cur.y.toFixed(1)}px`);
-      el.style.setProperty('--sr', `${cur.r.toFixed(1)}px`);
+      const dx = (tx - cur.x) * f;
+      const dy = (ty - cur.y) * f;
+      const dr = (radius - cur.r) * 0.1;
+      cur.x += dx;
+      cur.y += dy;
+      cur.r += dr;
+      // Only touch styles while the light is actually moving: a still spotlight costs nothing.
+      if (Math.abs(dx) + Math.abs(dy) + Math.abs(dr) > 0.15 || !written) {
+        written = true;
+        el.style.setProperty('--sx', `${cur.x.toFixed(1)}px`);
+        el.style.setProperty('--sy', `${cur.y.toFixed(1)}px`);
+        el.style.setProperty('--sr', `${cur.r.toFixed(1)}px`);
+        // The beam moves with transforms only (no layout, no repaint of its blur).
+        el.style.setProperty('--beam-k', (cur.r / 260).toFixed(3));
+        el.style.setProperty('--beam-h', (Math.max(0, cur.y) / Math.max(1, r.height)).toFixed(4));
+      }
 
       const lights = p > 0.8;
       const d = Math.hypot(cur.x - qx, cur.y - qy);
@@ -234,6 +245,7 @@ export function LonelyBeat({
     io.observe(el);
     const onRefresh = () => {
       started = false;
+      written = false;
     };
     ScrollTrigger.addEventListener('refresh', onRefresh);
     return () => {

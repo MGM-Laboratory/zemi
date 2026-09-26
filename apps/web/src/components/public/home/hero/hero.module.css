@@ -1,8 +1,12 @@
 /* Home hero: 13:15, doors open. */
 
 .hero {
-  /* Height of the announcement bar above the nav (0 when there is none), see below. */
-  --hero-bar: 0px;
+  /*
+   * The shell's announcement bar sits in flow above the nav and pushes the hero down. Its height
+   * (0px when there is none or it was dismissed) comes from the shell (styles/public.css), so the
+   * hero fills exactly one screen from the first paint.
+   */
+  --hero-bar: var(--announcement-h, 0px);
   position: relative;
   isolation: isolate;
   display: flex;
@@ -14,16 +18,6 @@
     radial-gradient(60% 55% at 78% 30%, rgb(58 109 197 / 0.07), transparent 70%),
     radial-gradient(40% 40% at 12% 80%, rgb(247 191 51 / 0.08), transparent 70%),
     var(--color-bg, #fff);
-}
-
-/*
- * The shell's announcement bar (components/public/shell/announcement-bar.tsx, 40px, in flow above
- * the nav) pushes the hero down. Without this the hero is one bar taller than the screen and the
- * CTAs slide under the Friday clock. Keyed to the bar's role + aria-label; if those change, the
- * hero simply goes back to a full 100svh.
- */
-:global(body:has([role='region'][aria-label='Announcement'])) .hero {
-  --hero-bar: 40px;
 }
 
 .scene {

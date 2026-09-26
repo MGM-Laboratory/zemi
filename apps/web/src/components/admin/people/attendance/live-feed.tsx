@@ -93,7 +93,7 @@ export function LiveFeed({
               </div>
               <div className="shrink-0 text-right">
                 <p className="mono text-[0.8125rem] font-semibold text-ink tabular-nums">{formatJakarta(it.createdAt, 'time')}</p>
-                <p className="text-[0.75rem] text-ink-4" suppressHydrationWarning>
+                <p className="text-[0.75rem] text-ink-3" suppressHydrationWarning>
                   {formatRelative(it.createdAt, now)}
                 </p>
               </div>

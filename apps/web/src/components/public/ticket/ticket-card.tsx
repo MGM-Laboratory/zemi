@@ -5,7 +5,7 @@ import { formatJakarta, formatTimeRange, type Ticket } from '@zemi/shared';
 import { ZemiMark } from '@/components/brand/zemi-mark';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { cn } from '@/lib/utils';
-import { ACCENT_SHAPE, accentVars, asAccent, eventLabel } from '../events/lib';
+import { ACCENT_SHAPE, accentVars, asAccent, eventLabel, labelAndTitle } from '../events/lib';
 import styles from './ticket.module.css';
 
 export interface TicketCardProps {
@@ -56,7 +56,10 @@ export function TicketCard({
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2">
             <ZemiMark size={26} decorative />
-            <span className="label text-ink-2">{eventLabel(e)}</span>
+            {/* Titles like "Zemi #100: the big one" already carry the number. */}
+            {labelAndTitle(e) === e.title ? null : (
+              <span className="label text-ink-2">{eventLabel(e)}</span>
+            )}
           </span>
           <span className="label rounded-full bg-ink px-2.5 py-1 text-white">Admit one</span>
         </div>

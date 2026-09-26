@@ -20,6 +20,9 @@ const WAVES: Array<{ shape: ShapeName; color: string; rest: number }> = [
   { shape: 'arch', color: 'var(--color-green, #0f8657)', rest: 0.07 },
 ];
 
+/** Who waves goodbye once the ink is in, left to right. */
+const GOODBYE: ShapeName[] = ['circle', 'triangle', 'square', 'arch'];
+
 /**
  * Scale the drink so the top wave settles just under the copy: tall tablets get a taller drink,
  * phones with long copy a shorter one.
@@ -45,14 +48,24 @@ function WaveEdge({ color }: { color: string }) {
 
 /**
  * 15:15, see you next Friday. The four colors pour up like a layered drink, each character riding
- * its own wave, then the ink floods in and hands the page to the footer. The Friday clock hits
- * 15:15 at the end of this pin, celebrates, and rewinds for next week.
+ * its own wave, then the ink floods in and hands the page to the footer. The Friday clock reads
+ * 15:15 as soon as this copy comes in (its stamp is the story's last anchor), celebrates once and
+ * holds there until the footer takes over.
+ *
+ * - The heading and body blend with `difference`, so they stay readable while the ink passes
+ *   behind them. The buttons and the stamp switch to their paper versions the moment the ink
+ *   reaches them, not at a global threshold.
+ * - The ink layer is marked `data-nav-theme="dark"`: the nav flips exactly when the ink reaches it.
+ * - Once flooded, the four friends pop up at the bottom and wave (tap them).
  */
 export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | null }) {
   const root = useRef<HTMLElement>(null);
   const riders = useRef<Array<CharacterHandle | null>>([]);
+  const friends = useRef<Array<CharacterHandle | null>>([]);
   const [flooded, setFlooded] = useState(false);
+  const [inked, setInked] = useState({ stamp: false, actions: false });
   const floodedRef = useRef(false);
+  const inkedRef = useRef({ stamp: false, actions: false });
 
   useGSAP(
     () => {
@@ -64,6 +77,8 @@ export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | nul
         const layers = gsap.utils.toArray<HTMLElement>('[data-wave]', el);
         const content = el.querySelector<HTMLElement>('[data-closing-copy]');
         const ink = el.querySelector<HTMLElement>('[data-ink]');
+        const stamp = el.querySelector<HTMLElement>('[data-closing-stamp]');
+        const actions = el.querySelector<HTMLElement>('[data-closing-actions]');
         if (c.reduced) {
           const k = restScale(el, content);
           layers.forEach((l, i) => gsap.set(l, { y: 0, yPercent: (1 - WAVES[i]!.rest * k) * 100 }));
@@ -71,13 +86,36 @@ export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | nul
           return;
         }
         const end = pinEnd(c, 1.6, 1.0);
+        const goodbye = el.querySelector<HTMLElement>('[data-goodbye]');
         const setFlood = (on: boolean) => {
           if (floodedRef.current === on) return;
           floodedRef.current = on;
           setFlooded(on);
-          if (on) el.setAttribute('data-nav-theme', 'dark');
-          else el.removeAttribute('data-nav-theme');
+          // Once the waves are gone the copy settles into the middle of the dark screen, so tall
+          // screens don't end on a big empty band between the buttons and the friends.
+          if (content) {
+            const free =
+              el.offsetHeight - (content.offsetTop + content.offsetHeight) - (goodbye?.offsetHeight ?? 0);
+            content.style.setProperty('--settle', on ? `${Math.max(0, Math.round(free * 0.42))}px` : '0px');
+          }
           if (on) riders.current.forEach((r, i) => setTimeout(() => r?.cheer(), i * 90));
+          if (on) friends.current.forEach((f, i) => setTimeout(() => f?.cheer(), 520 + i * 110));
+        };
+        // Flip each control when the ink's flat top passes its middle.
+        const syncInk = () => {
+          if (!ink) return;
+          const top = ink.getBoundingClientRect().top;
+          const covers = (node: HTMLElement | null) => {
+            if (!node) return false;
+            const r = node.getBoundingClientRect();
+            return top < r.top + r.height * 0.5;
+          };
+          const next = { stamp: covers(stamp), actions: covers(actions) };
+          const prev = inkedRef.current;
+          if (next.stamp !== prev.stamp || next.actions !== prev.actions) {
+            inkedRef.current = next;
+            setInked(next);
+          }
         };
         const tl = gsap.timeline({
           defaults: { ease: 'none' },
@@ -87,8 +125,9 @@ export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | nul
             end: end ?? 'bottom 40%',
             pin: !!end,
             scrub: 0.8,
-            onUpdate: (self) => setFlood(self.progress > 0.78),
+            onUpdate: (self) => setFlood(self.progress > 0.9),
           },
+          onUpdate: syncInk,
         });
         const k = restScale(el, content);
         layers.forEach((l, i) => {
@@ -116,84 +155,99 @@ export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | nul
   const nextHref = next ? `/events/${next.slug}#register` : '/events';
 
   return (
-    <>
-      <section
-        ref={root}
-        className={cn(styles.closing, flooded && styles.flooded)}
-        data-story-time="15:05"
-        aria-labelledby="closing-title"
-      >
-        <div className={styles.pool} aria-hidden="true">
-          {WAVES.map((w, i) => (
-            <div
-              key={w.shape}
-              className={styles.wave}
-              style={{
-                zIndex: i + 1,
-                ['--wave' as string]: w.color,
-                ['--rest' as string]: w.rest,
-                ['--speed' as string]: `${7 + i * 1.7}s`,
-              }}
-              data-wave=""
-            >
-              <WaveEdge color={w.color} />
-              <div className={styles.rider} style={{ left: `${14 + i * 22}%` }}>
-                <Character
-                  ref={(h) => void (riders.current[i] = h)}
-                  shape={w.shape}
-                  size="clamp(48px, 6vw, 96px)"
-                  seed={i + 20}
-                  mood={flooded ? 'happy' : 'idle'}
-                />
-              </div>
-            </div>
-          ))}
+    <section
+      ref={root}
+      className={cn(styles.closing, flooded && styles.flooded)}
+      aria-labelledby="closing-title"
+    >
+      <div className={styles.pool} aria-hidden="true">
+        {WAVES.map((w, i) => (
           <div
-            className={cn(styles.wave, styles.ink)}
+            key={w.shape}
+            className={styles.wave}
             style={{
-              zIndex: 9,
-              ['--wave' as string]: 'var(--color-surface-inverse, #0e1116)',
-              ['--speed' as string]: '9s',
+              zIndex: i + 1,
+              ['--wave' as string]: w.color,
+              ['--rest' as string]: w.rest,
+              ['--speed' as string]: `${7 + i * 1.7}s`,
             }}
-            data-ink=""
+            data-wave=""
           >
-            <WaveEdge color="var(--color-surface-inverse, #0e1116)" />
+            <WaveEdge color={w.color} />
+            <div className={styles.rider} style={{ left: `${14 + i * 22}%` }}>
+              <Character
+                ref={(h) => void (riders.current[i] = h)}
+                shape={w.shape}
+                size="clamp(48px, 6vw, 96px)"
+                seed={i + 20}
+                mood={flooded ? 'happy' : 'idle'}
+              />
+            </div>
           </div>
+        ))}
+        <div
+          className={cn(styles.wave, styles.ink)}
+          style={{
+            zIndex: 9,
+            ['--wave' as string]: 'var(--color-surface-inverse, #0e1116)',
+            ['--speed' as string]: '9s',
+          }}
+          data-ink=""
+          // The nav flips to paper tone exactly when this layer reaches it (see use-nav-theme).
+          data-nav-theme="dark"
+        >
+          <WaveEdge color="var(--color-surface-inverse, #0e1116)" />
         </div>
+      </div>
 
-        <div className={cn('container-page', styles.content)} data-closing-copy="">
-          <BeatStamp time={beat.time} label="see you next week" inverse={flooded} />
-          <CaslHeading as="h2" id="closing-title" size="xl" reveal className={styles.title}>
-            {beat.title}
-          </CaslHeading>
-          <p className={styles.body}>{beat.body}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              href={nextHref}
-              size="lg"
-              variant={flooded ? 'paper' : 'primary'}
-              cursor="register"
-            >
-              Save me a seat
-            </Button>
-            <Button
-              href="/events?when=past"
-              size="lg"
-              variant={flooded ? 'outlinePaper' : 'secondary'}
-              shape="arch"
-            >
-              Catch up on past Fridays
-            </Button>
-          </div>
-        </div>
-      </section>
-      {/* The clock reads 15:15 when this marker reaches the bottom of the screen: the end of the pin. */}
+      {/* The story's last anchor: the clock lands on 15:15 as this copy comes in. */}
       <div
-        aria-hidden="true"
-        data-story-time="15:15"
-        data-story-at="end"
-        className={styles.endMark}
-      />
-    </>
+        className={cn('container-page', styles.content)}
+        data-closing-copy=""
+        data-story-time={beat.time}
+        data-story-at="top 82%"
+      >
+        <div data-closing-stamp="">
+          <BeatStamp time={beat.time} label="see you next week" inverse={inked.stamp} />
+        </div>
+        <CaslHeading as="h2" id="closing-title" size="xl" reveal className={styles.title}>
+          {beat.title}
+        </CaslHeading>
+        <p className={styles.body}>{beat.body}</p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3" data-closing-actions="">
+          <Button
+            href={nextHref}
+            size="lg"
+            variant={inked.actions ? 'paper' : 'primary'}
+            cursor="register"
+          >
+            Save me a seat
+          </Button>
+          <Button
+            href="/events?when=past"
+            size="lg"
+            variant={inked.actions ? 'outlinePaper' : 'secondary'}
+            shape="arch"
+          >
+            Catch up on past Fridays
+          </Button>
+        </div>
+      </div>
+
+      {/* Decorative: the four friends pop up and wave once the ink is in. Poke them. */}
+      <ul className={styles.goodbye} aria-hidden="true" data-on={flooded ? 'true' : 'false'} data-goodbye="">
+        {GOODBYE.map((shape, i) => (
+          <li key={shape} className={styles.friend} style={{ ['--i' as string]: i }}>
+            <Character
+              ref={(h) => void (friends.current[i] = h)}
+              shape={shape}
+              size="clamp(56px, 7vw, 150px)"
+              seed={i + 40}
+              mood={flooded ? 'happy' : 'sleepy'}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

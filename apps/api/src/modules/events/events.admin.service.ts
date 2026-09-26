@@ -59,6 +59,7 @@ import {
   sessionOn,
   shiftToDate,
   sortRundown,
+  startMovedLater,
 } from './event-logic.js';
 import { EventsLoader, selectEventList, type EventRow } from './events.loader.js';
 import {
@@ -297,6 +298,9 @@ export class EventsAdminService {
     }
     if (patch.showRegistrantCount !== undefined)
       set.showRegistrantCount = patch.showRegistrantCount;
+    // Moved more than an hour later: reminders, "starting now" and thank you go out again for the new
+    // time. Emails from before the change stop counting for the lifecycle dedupe (schedule_changed_at).
+    const rescheduled = patch.startsAt !== undefined && startMovedLater(current.startsAt, startsAt);
 
     const fields = Object.keys(set).filter((k) => k !== 'descriptionText');
     if (!fields.length) return this.get(id, ability);
@@ -307,7 +311,14 @@ export class EventsAdminService {
         await this.slugs.ensureUniqueSlug('event', set.slug, id, tx);
         await this.slugs.recordSlugChange('event', id, current.slug, set.slug, tx);
       }
-      await tx.update(events).set(set).where(eq(events.id, id));
+      await tx
+        .update(events)
+        .set(
+          rescheduled
+            ? { ...set, reminderSentAt: null, startingSentAt: null, thanksSentAt: null, scheduleChangedAt: new Date() }
+            : set,
+        )
+        .where(eq(events.id, id));
     });
 
     const title = set.title ?? current.title;
@@ -319,7 +330,11 @@ export class EventsAdminService {
       summary: set.slug
         ? `Updated "${title}" and moved it to /events/${set.slug}`
         : `Updated "${title}"`,
-      meta: { fields, ...(set.slug ? { fromSlug: current.slug, toSlug: set.slug } : {}) },
+      meta: {
+        fields,
+        ...(set.slug ? { fromSlug: current.slug, toSlug: set.slug } : {}),
+        ...(rescheduled ? { lifecycleEmailsReset: true } : {}),
+      },
       ip: actor.ip,
     });
     void this.revalidateEvent(id);
@@ -554,6 +569,12 @@ export class EventsAdminService {
       await this.permissions.removeResourceGrants('event', id, tx);
       await this.slugs.forgetResource('event', id, tx);
     });
+    // A queued cancellation notice has nobody left to tell. (Its worker also skips missing events.)
+    await this.jobs
+      .cancelByKey(EVENT_CANCELLED_QUEUE, `event-cancelled:${id}`)
+      .catch((err: unknown) =>
+        this.logger.warn(`Could not drop queued jobs for deleted event ${id}: ${(err as Error).message}`),
+      );
     await this.audit.log({
       principal,
       action: 'event.delete',

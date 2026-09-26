@@ -440,6 +440,45 @@ export default function StyleguidePage() {
         </div>
       </Block>
 
+      <Block
+        id="shell-contracts"
+        eyebrow="components/public/shell"
+        title="Shell contracts"
+        description="Two things any page can lean on without touching the shell."
+      >
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-[28px] border border-line p-6 sm:p-8">
+            <p className="label text-ink-3">Nav theme</p>
+            <ul className="mt-4 flex list-disc flex-col gap-2 pl-5 text-ink-2">
+              <li>
+                <code className="mono text-ink">data-nav-theme=&quot;dark&quot;</code> on any dark surface: a section, a hero,
+                a layer that moves. The nav flips to paper tone while it sits under the middle of the nav.
+              </li>
+              <li>
+                <code className="mono text-ink">data-nav-theme=&quot;light&quot;</code> inside a dark one flips it back for that
+                part. The innermost mark wins.
+              </li>
+              <li>Rects are read live: transforms, GSAP pins and fixed layers count. Anything clipped away by an overflow hidden parent does not.</li>
+              <li>Works before hydration too: a page that opens on a dark hero never flashes an ink nav.</li>
+            </ul>
+          </div>
+          <div className="rounded-[28px] border border-line p-6 sm:p-8">
+            <p className="label text-ink-3">Announcement bar</p>
+            <ul className="mt-4 flex list-disc flex-col gap-2 pl-5 text-ink-2">
+              <li>
+                <code className="mono text-ink">--announcement-h</code>: the bar&apos;s height while it shows, 0px when there is
+                none or it was dismissed. Right from the first paint. Use it to size a full screen hero:{' '}
+                <code className="mono text-ink">min-height: calc(100svh - var(--announcement-h))</code>.
+              </li>
+              <li>
+                <code className="mono text-ink">--announcement-offset</code>: how much of the bar is still on screen right now.
+                For fixed things that sit under the nav.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </Block>
+
       <section data-nav-theme="dark" className="-mx-[var(--page-margin)] rounded-[28px] bg-surface-inverse px-[var(--page-margin)] py-24 text-white">
         <Eyebrow inverse shape="arch">
           data-nav-theme=&quot;dark&quot;
@@ -447,6 +486,10 @@ export default function StyleguidePage() {
         <CaslHeading size="l" className="mt-4 max-w-[16ch] text-white">
           Scroll the nav over me: it flips to paper.
         </CaslHeading>
+        <div data-nav-theme="light" className="mt-16 rounded-[28px] bg-white px-6 py-16 text-ink sm:px-10">
+          <Eyebrow shape="circle">data-nav-theme=&quot;light&quot; inside</Eyebrow>
+          <p className="display mt-4 max-w-[18ch] text-title">A white card on a dark stage flips it back.</p>
+        </div>
       </section>
     </div>
   );

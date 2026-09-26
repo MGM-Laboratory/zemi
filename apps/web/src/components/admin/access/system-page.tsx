@@ -296,7 +296,7 @@ function EmailTools({ status: s }: { status: SystemStatus | undefined }) {
           </Button>
         </form>
         <div>
-          <p className="label mb-2 text-ink-4">Email previews</p>
+          <p className="label mb-2 text-ink-3">Email previews</p>
           {previews.isPending ? (
             <Skeleton className="h-40 w-full" rounded="lg" />
           ) : previews.isError ? (

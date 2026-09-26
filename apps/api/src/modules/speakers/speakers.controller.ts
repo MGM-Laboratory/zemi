@@ -17,6 +17,7 @@ import { Public, RequireCapability } from '../../auth/decorators.js';
 import { Ip, type RequestAuth } from '../../common/request.js';
 import { parseOrThrow, UuidParam, ZodBody, ZodParam, ZodQuery } from '../../common/zod.pipe.js';
 import { CurrentAuth } from '../../auth/decorators.js';
+import { assertCanLookup } from '../../auth/permissions.service.js';
 import { presentOnly } from './content.util.js';
 import { SpeakersService } from './speakers.service.js';
 
@@ -39,10 +40,11 @@ export class AdminSpeakersController {
     return this.speakers.list(q, auth.ability);
   }
 
-  /** Any signed-in admin: every speaker, max 20, for pickers. Declared before `:id`. */
+  /** Pickers and the palette (see assertCanLookup): max 20, drafts only when viewable. Declared before `:id`. */
   @Get('lookup')
-  lookup(@ZodQuery(lookupQuery) q: z.infer<typeof lookupQuery>): Promise<SpeakerRef[]> {
-    return this.speakers.lookup(q.q, q.limit);
+  lookup(@ZodQuery(lookupQuery) q: z.infer<typeof lookupQuery>, @CurrentAuth() auth: RequestAuth): Promise<SpeakerRef[]> {
+    assertCanLookup(auth.ability, 'speaker');
+    return this.speakers.lookup(q.q, q.limit, auth.ability);
   }
 
   @Post()

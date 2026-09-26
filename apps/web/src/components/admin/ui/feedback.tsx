@@ -82,9 +82,9 @@ export function EmptyState({ title, description, action, cast = DEFAULT_CAST, si
         ))}
       </div>
       <div className="max-w-md">
-        <h3 className={cn('font-display font-extrabold tracking-[-0.02em] text-ink [font-variation-settings:"CASL"_0.3]', size === 'sm' ? 'text-base' : 'text-xl')}>
+        <h2 className={cn('font-display font-extrabold tracking-[-0.02em] text-ink [font-variation-settings:"CASL"_0.3]', size === 'sm' ? 'text-base' : 'text-xl')}>
           {title}
-        </h3>
+        </h2>
         {description ? <p className={cn('mt-1.5 text-ink-3', size === 'sm' ? 'text-sm' : 'text-[0.9375rem]')}>{description}</p> : null}
       </div>
       {action ? <div className="mt-1 flex flex-wrap items-center justify-center gap-2">{action}</div> : null}
@@ -136,7 +136,7 @@ export function ErrorState({ error, title, description, onRetry, retrying, actio
         <Character shape="arch" mood="look" lookAt={{ x: -0.9, y: 0 }} size={size === 'sm' ? 28 : 36} />
       </div>
       <div className="max-w-md">
-        <h3 className={cn('font-display font-extrabold tracking-[-0.02em] [font-variation-settings:"CASL"_0.3]', size === 'sm' ? 'text-base' : 'text-xl')}>{title ?? autoTitle}</h3>
+        <h2 className={cn('font-display font-extrabold tracking-[-0.02em] [font-variation-settings:"CASL"_0.3]', size === 'sm' ? 'text-base' : 'text-xl')}>{title ?? autoTitle}</h2>
         <p className="mt-1.5 text-[0.9375rem] text-ink-3">{description ?? autoDesc}</p>
       </div>
       {onRetry || action ? (

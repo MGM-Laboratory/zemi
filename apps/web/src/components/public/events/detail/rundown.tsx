@@ -112,13 +112,13 @@ function RundownList({ items, startsAt, now, live, className, past }: RundownPro
                     <time
                       className={cn(
                         'mono block text-[clamp(1.125rem,2vw,1.5rem)] font-bold leading-none',
-                        done ? 'text-ink-4' : 'text-ink',
+                        done ? 'text-ink-3' : 'text-ink',
                       )}
                     >
                       {it.time}
                     </time>
                     {it.endTime ? (
-                      <span className="mono mt-1 block text-[0.8125rem] text-ink-4">
+                      <span className="mono mt-1 block text-[0.8125rem] text-ink-3">
                         to {it.endTime}
                       </span>
                     ) : null}

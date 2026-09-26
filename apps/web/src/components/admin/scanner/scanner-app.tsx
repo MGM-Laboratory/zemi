@@ -934,7 +934,11 @@ function RecentStrip({ recent, onOpen, className }: { recent: RecentScan[]; onOp
 function HistoryPanel({ recent, onClose, onRetry }: { recent: RecentScan[]; onClose: () => void; onRetry: (r: RecentScan) => void }) {
   const reduce = useReducedMotion();
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      // A scan result card on top handles its own Escape (and stops it); never close under it.
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('[data-scan-feedback]')) return;
+      onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);

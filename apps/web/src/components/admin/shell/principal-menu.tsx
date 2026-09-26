@@ -78,7 +78,7 @@ export function PrincipalMenu({ onLogout, loggingOut, onShowShortcuts }: Princip
             </div>
           </dl>
           {/* me.session.expiresAt is the 7 day cap. The API also ends a session after 12 hours without activity. */}
-          <p className="mt-1.5 text-xs text-ink-4">Sooner if you step away for 12 hours.</p>
+          <p className="mt-1.5 text-xs text-ink-3">Sooner if you step away for 12 hours.</p>
         </div>
         <DropdownMenuItem href="/admin" icon={<Sparkles />}>
           What can I do here?

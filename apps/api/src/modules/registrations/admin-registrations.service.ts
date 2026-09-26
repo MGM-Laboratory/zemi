@@ -190,6 +190,8 @@ export class AdminRegistrationsService {
       checkedIn: active.filter((r) => r.checkedInAt).length,
       inPerson: active.filter((r) => r.attendanceMode === 'in-person').length,
       online: active.filter((r) => r.attendanceMode === 'online').length,
+      checkedInInPerson: active.filter((r) => r.checkedInAt && r.attendanceMode === 'in-person').length,
+      checkedInOnline: active.filter((r) => r.checkedInAt && r.attendanceMode === 'online').length,
       capacity: event.row.capacity ?? null,
       walkIns: active.filter((r) => r.source === 'walk-in').length,
       returning,

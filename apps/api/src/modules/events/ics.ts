@@ -1,5 +1,5 @@
 import { createEvent, type EventAttributes } from 'ics';
-import { formatJakarta, formatTimeRange, type EventMode } from '@zemi/shared';
+import { formatJakarta, formatTimeRange, safeWebUrl, type EventMode } from '@zemi/shared';
 
 export interface IcsEventInput {
   id: string;
@@ -59,7 +59,7 @@ export function calendarLocation(
  */
 export function buildEventIcs(e: IcsEventInput, webUrl: string): string {
   const url = `${webUrl.replace(/\/+$/, '')}/events/${e.slug}`;
-  const maps = e.mapsUrl || e.venue?.mapsUrl || null;
+  const maps = safeWebUrl(e.mapsUrl) || safeWebUrl(e.venue?.mapsUrl);
   const lines = [
     e.cancelledAt ? 'Heads up: this one is cancelled.' : null,
     e.summary,

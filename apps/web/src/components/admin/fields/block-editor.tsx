@@ -3,7 +3,7 @@
 import type { AssetPurpose, Blocks } from '@zemi/shared';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/admin/cn';
-import { useFieldControlProps } from '../ui/field';
+import { useFieldContext, useFieldControlProps } from '../ui/field';
 import { SkeletonText } from '../ui/feedback';
 import { useReadOnly } from './read-only';
 
@@ -28,6 +28,11 @@ export interface BlockEditorProps {
   minHeight?: string;
   className?: string;
   id?: string;
+  /**
+   * Accessible name for the writing area when there is no enclosing labelled `<Field>`
+   * (inside one, the editor points at the Field's label instead).
+   */
+  label?: string;
 }
 
 /**
@@ -37,9 +42,12 @@ export interface BlockEditorProps {
  *
  * @example <BlockEditor value={field.value} onChange={field.onChange} placeholder="What is the talk about?" />
  */
-export function BlockEditor({ value, onChange, readOnly: ro, placeholder = "Write something, or type '/' for blocks", uploadPurpose, minHeight = '12rem', className, id }: BlockEditorProps) {
+export function BlockEditor({ value, onChange, readOnly: ro, placeholder = "Write something, or type '/' for blocks", uploadPurpose, minHeight = '12rem', className, id, label }: BlockEditorProps) {
   const readOnly = useReadOnly(ro);
   const aria = useFieldControlProps({ id });
+  const field = useFieldContext();
+  // The contenteditable is the real textbox, so it carries the name, hint and error links.
+  const labelledBy = field?.hasLabel ? field.labelId : undefined;
   return (
     <div
       id={aria.id}
@@ -53,7 +61,17 @@ export function BlockEditor({ value, onChange, readOnly: ro, placeholder = "Writ
       )}
       style={{ minHeight }}
     >
-      <Impl value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder} uploadPurpose={uploadPurpose} />
+      <Impl
+        value={value}
+        onChange={onChange}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        uploadPurpose={uploadPurpose}
+        labelledBy={labelledBy}
+        label={labelledBy ? undefined : (label ?? 'Rich text')}
+        describedBy={aria['aria-describedby']}
+        invalid={Boolean(aria['aria-invalid'])}
+      />
     </div>
   );
 }

@@ -85,7 +85,7 @@ export default function TrendChart({
           tickLine={false}
           axisLine={false}
           width={44}
-          tick={{ fill: 'var(--color-ink-4)', fontSize: 11 }}
+          tick={{ fill: 'var(--color-ink-3)', fontSize: 11 }}
         />
         <Tooltip
           cursor={{ fill: 'var(--color-surface-muted)', radius: 8 }}

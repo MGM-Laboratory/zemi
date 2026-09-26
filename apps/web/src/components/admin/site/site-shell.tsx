@@ -24,7 +24,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
     <div>
       <PageHeader
         title={current.label}
-        eyebrow={<span className="label text-ink-4">Site</span>}
+        eyebrow={<span className="label text-ink-3">Site</span>}
         description={current.blurb}
         actions={current.publicPath ? <ViewPageLink path={current.publicPath} /> : null}
       >

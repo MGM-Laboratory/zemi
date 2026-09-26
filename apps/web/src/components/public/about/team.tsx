@@ -6,10 +6,9 @@ import { Reveal } from '@/components/motion/reveal';
 import { stagger } from '@/components/motion/stagger';
 import { ZemiImage } from '@/components/public/media/zemi-image';
 import { Avatar, shapeForName } from '@/components/public/ui/avatar';
+import { isExternalHref, safeLinkItems } from '@/components/public/ui/safe-href';
 import { SectionHeader } from '@/components/public/ui/section-header';
 import styles from './about.module.css';
-
-const SAFE = /^(https?:|mailto:)/i;
 
 /** The organizers: each photo sits on their own brand shape, with links drawn in the Zemi icon style. */
 export function Team({ team }: { team: TeamMember[] }) {
@@ -27,7 +26,8 @@ export function Team({ team }: { team: TeamMember[] }) {
         <ul className={styles.team}>
           {team.map((m, i) => {
             const shape = shapeForName(m.name);
-            const links = (m.links ?? []).filter((l) => SAFE.test(l.url));
+            // Free text from the admin: only http(s), mailto and tel links render.
+            const links = safeLinkItems(m.links);
             return (
               <Reveal as="li" key={m.id} delay={stagger(i % 3)} y={32} className={styles.member} data-shape={shape}>
                 <div className={styles.memberPhoto} data-shape={shape}>
@@ -50,7 +50,7 @@ export function Team({ team }: { team: TeamMember[] }) {
                 {links.length ? (
                   <ul className="mt-auto flex flex-wrap gap-2 pt-1" aria-label={`${m.name} elsewhere`}>
                     {links.map((l) => {
-                      const external = !l.url.startsWith('mailto:');
+                      const external = isExternalHref(l.url);
                       const label = l.label || LINK_KIND_LABELS[l.kind];
                       return (
                         <li key={`${l.kind}-${l.url}`}>

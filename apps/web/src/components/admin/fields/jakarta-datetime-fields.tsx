@@ -76,10 +76,24 @@ export function JakartaDateTimeFields({ value, onChange, errors, readOnly: ro, q
     if (!mounted) return [];
     const out: Array<{ label: string; date: string; r: ReturnType<typeof nextFridaySession> }> = [];
     let week = 0;
+    let prevWeek = -1;
     while (out.length < 2 && week < 12) {
       const r = nextFridaySession(new Date(), week);
       const d = jakartaDateInput(r.startsAt);
-      if (!takenDates.includes(d)) out.push({ label: out.length === 0 ? 'Next Friday' : 'Friday after', date: d, r });
+      if (!takenDates.includes(d)) {
+        // Say "free" whenever we jumped over a taken Friday, so the chip never claims to be
+        // "next Friday" when it is really three weeks out.
+        const label =
+          out.length === 0
+            ? week === 0
+              ? 'Next Friday'
+              : 'Next free Friday'
+            : week === prevWeek + 1
+              ? 'Friday after'
+              : 'Free after that';
+        out.push({ label, date: d, r });
+        prevWeek = week;
+      }
       week++;
     }
     return out;
@@ -148,7 +162,7 @@ export function JakartaDateTimeFields({ value, onChange, errors, readOnly: ro, q
               <span className="mono">
                 {start} to {end} WIB
               </span>
-              {dur ? <span className="text-ink-4"> ({dur})</span> : null}
+              {dur ? <span className="text-ink-3"> ({dur})</span> : null}
             </>
           ) : (
             'Times are Jakarta time (WIB), for everyone.'
@@ -170,7 +184,7 @@ export function JakartaDateTimeFields({ value, onChange, errors, readOnly: ro, q
                   )}
                 >
                   {p.label}
-                  <span className="mono text-[0.75rem] text-ink-4">{formatJakarta(p.r.startsAt, 'date-short')}</span>
+                  <span className={cn('mono text-[0.75rem]', on ? 'text-blue-600' : 'text-ink-3')}>{formatJakarta(p.r.startsAt, 'date-short')}</span>
                 </button>
               );
             })}

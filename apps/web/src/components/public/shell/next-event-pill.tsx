@@ -9,8 +9,11 @@ import styles from './shell.module.css';
 
 export interface NextEventPillProps {
   event: EventCard | null;
-  /** 'dark' when the nav sits over an inverse section. */
-  theme?: 'light' | 'dark';
+  /**
+   * 'dark' when the nav sits over an inverse section. 'auto' follows the nav bar's
+   * `data-theme` in CSS (needs a `group/bar` ancestor), so the flip needs no re-render.
+   */
+  theme?: 'light' | 'dark' | 'auto';
   compact?: boolean;
   className?: string;
   onNavigate?: () => void;
@@ -24,6 +27,12 @@ export function NextEventPill({ event, theme = 'light', compact, className, onNa
   const status = useEventStatus(event);
   const live = status === 'ongoing';
   const dark = theme === 'dark';
+  const auto = theme === 'auto';
+  /**
+   * [light, dark, auto]. Tailwind only sees literal class names, so 'auto' spells out the
+   * `group-data-[theme=dark]/bar:` variants instead of building them.
+   */
+  const tone = (set: readonly [string, string, string]) => (auto ? cn(set[0], set[2]) : dark ? set[1] : set[0]);
 
   const base = cn(
     styles.pill,
@@ -36,9 +45,9 @@ export function NextEventPill({ event, theme = 'light', compact, className, onNa
       <Link
         href="/events"
         onClick={onNavigate}
-        className={cn(base, dark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-surface-muted text-ink hover:bg-line')}
+        className={cn(base, tone(['bg-surface-muted text-ink hover:bg-line', 'bg-white/10 text-white hover:bg-white/20', 'group-data-[theme=dark]/bar:bg-white/10 group-data-[theme=dark]/bar:text-white group-data-[theme=dark]/bar:hover:bg-white/20']))}
       >
-        <span className={cn('grid size-7 place-items-center rounded-full', dark ? 'bg-white/15' : 'bg-white')}>
+        <span className={cn('grid size-7 place-items-center rounded-full', tone(['bg-white', 'bg-white/15', 'group-data-[theme=dark]/bar:bg-white/15']))}>
           <ShapeIcon shape="square" size={12} />
         </span>
         <span className="mono text-[0.8125rem]">{compact ? 'Fri 13:15' : 'Fridays 13:15'}</span>
@@ -74,10 +83,10 @@ export function NextEventPill({ event, theme = 'light', compact, className, onNa
     <Link
       href={href}
       onClick={onNavigate}
-      className={cn(base, dark ? 'bg-white text-ink hover:bg-ink-inverse' : 'bg-ink text-white hover:bg-[#1c2230]')}
+      className={cn(base, tone(['bg-ink text-white hover:bg-[#1c2230]', 'bg-white text-ink hover:bg-ink-inverse', 'group-data-[theme=dark]/bar:bg-white group-data-[theme=dark]/bar:text-ink group-data-[theme=dark]/bar:hover:bg-ink-inverse']))}
       aria-label={`Next Friday: ${event.title}, ${weekday} ${date} at ${time} WIB`}
     >
-      <span className={cn('grid size-7 place-items-center rounded-full', dark ? 'bg-ink/[0.06]' : 'bg-white/12')}>
+      <span className={cn('grid size-7 place-items-center rounded-full', tone(['bg-white/12', 'bg-ink/[0.06]', 'group-data-[theme=dark]/bar:bg-ink/[0.06]']))}>
         <ShapeIcon shape="circle" size={12} className="transition-transform duration-500 group-hover/pill:scale-125" />
       </span>
       {!compact ? <span className="label hidden font-normal opacity-70 xl:inline">Next</span> : null}

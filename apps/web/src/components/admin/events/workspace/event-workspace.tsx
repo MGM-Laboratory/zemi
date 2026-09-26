@@ -242,7 +242,7 @@ function WorkspaceHeader() {
                   <CalendarDays className="size-4 text-ink-4" aria-hidden="true" />
                   <DateText value={event.startsAt} format="date" />
                 </span>
-                <span className="text-ink-4" aria-hidden="true">
+                <span className="text-ink-3" aria-hidden="true">
                   ·
                 </span>
                 <DateText
@@ -256,7 +256,7 @@ function WorkspaceHeader() {
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <MapPin className="size-4 shrink-0 text-ink-4" aria-hidden="true" />
                   <span className="truncate">
-                    {event.venueFull?.name ?? <span className="text-ink-4">No room yet</span>}
+                    {event.venueFull?.name ?? <span className="text-ink-3">No room yet</span>}
                   </span>
                 </span>
               ) : null}

@@ -14,6 +14,10 @@ const PG_ERRORS: Record<string, { status: number; code: string; message: string 
   '23503': { status: 409, code: 'conflict', message: 'That is linked to something that is missing or still in use.' },
   '23502': { status: 400, code: 'validation', message: 'A required field is missing.' },
   '22P02': { status: 400, code: 'validation', message: 'One of the values has the wrong format.' },
+  // A NUL byte (\u0000) in text, or in JSON stored as jsonb (22P05). ZodPipe strips NULs, this catches the rest.
+  '22021': { status: 400, code: 'validation', message: "One of the values has a character we can't store. Try retyping it." },
+  '22P05': { status: 400, code: 'validation', message: "One of the values has a character we can't store. Try retyping it." },
+  '22003': { status: 400, code: 'validation', message: 'One of the numbers is too big.' },
   '22001': { status: 400, code: 'validation', message: 'One of the values is too long.' },
   '22007': { status: 400, code: 'validation', message: 'One of the dates has the wrong format.' },
   '22008': { status: 400, code: 'validation', message: 'One of the dates is out of range.' },

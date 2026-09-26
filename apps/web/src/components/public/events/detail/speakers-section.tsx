@@ -49,21 +49,22 @@ export function SpeakersSection({
             : 'Bring questions. They asked for them, promise.')
         }
       />
-      <ul
-        className={cn(
-          'mt-10 grid grid-cols-1 gap-[var(--gutter)]',
-          solo ? 'max-w-[44rem]' : 'sm:grid-cols-2 xl:grid-cols-3',
-        )}
-      >
+      {/* Rows always fill: cards share the row and grow into any gap, a wide card lays out sideways. */}
+      <ul className={cn('mt-10 flex flex-wrap gap-[var(--gutter)]', solo && 'max-w-[56rem]')}>
         {speakers.map((s, i) => {
           const shape = shapeForName(s.fullName);
           const org = [s.position, s.organization].filter(Boolean).join(', ');
           return (
-            <Reveal as="li" key={`${s.id}-${s.role}`} delay={stagger(i, 0.08)}>
+            <Reveal
+              as="li"
+              key={`${s.id}-${s.role}`}
+              delay={stagger(i, 0.08)}
+              className="@container min-w-0 flex-[1_1_300px]"
+            >
               <Card className="h-full" cursor="open" maxTilt={4}>
-                <div className="flex h-full flex-col gap-5 p-6 sm:p-7">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="relative">
+                <div className="flex h-full flex-col gap-5 p-6 sm:p-7 @min-[36rem]:flex-row @min-[36rem]:items-start @min-[36rem]:gap-7">
+                  <div className="flex items-start justify-between gap-4 @min-[36rem]:contents">
+                    <div className="relative flex-none">
                       <Avatar name={s.fullName} image={s.avatar} size={84} />
                       <ShapeIcon
                         shape={shape}
@@ -71,24 +72,30 @@ export function SpeakersSection({
                         className="absolute -bottom-1 -right-2 transition-transform duration-500 [transition-timing-function:cubic-bezier(.34,1.56,.64,1)] group-hover/card:rotate-[200deg] group-hover/card:scale-110"
                       />
                     </div>
-                    <Chip tone="outline" mono>
+                    <Chip
+                      tone="outline"
+                      mono
+                      className="@min-[36rem]:absolute @min-[36rem]:right-7 @min-[36rem]:top-7"
+                    >
                       {ROLE_LABEL[s.role]}
                     </Chip>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <h3 className="text-[1.5rem] font-extrabold leading-tight text-ink">
-                      <CardLink href={`/speakers/${s.slug}`}>{s.fullName}</CardLink>
-                    </h3>
-                    {org ? <p className="text-[0.9375rem] text-ink-3">{org}</p> : null}
+                  <div className="flex min-w-0 flex-1 flex-col gap-5 @min-[36rem]:self-stretch @min-[36rem]:pr-24">
+                    <div className="flex flex-col gap-1.5">
+                      <h3 className="text-[1.5rem] font-extrabold leading-tight text-ink">
+                        <CardLink href={`/speakers/${s.slug}`}>{s.fullName}</CardLink>
+                      </h3>
+                      {org ? <p className="text-[0.9375rem] text-ink-3">{org}</p> : null}
+                    </div>
+                    {s.talkTitle ? (
+                      <p
+                        className="display mt-auto text-balance text-[1.25rem] leading-[1.15] text-ink-2"
+                        style={{ fontVariationSettings: "'CASL' 0.6, 'MONO' 0", fontWeight: 700 }}
+                      >
+                        &ldquo;{s.talkTitle}&rdquo;
+                      </p>
+                    ) : null}
                   </div>
-                  {s.talkTitle ? (
-                    <p
-                      className="display mt-auto text-[1.25rem] leading-[1.15] text-ink-2"
-                      style={{ fontVariationSettings: "'CASL' 0.6, 'MONO' 0", fontWeight: 700 }}
-                    >
-                      &ldquo;{s.talkTitle}&rdquo;
-                    </p>
-                  ) : null}
                 </div>
               </Card>
             </Reveal>

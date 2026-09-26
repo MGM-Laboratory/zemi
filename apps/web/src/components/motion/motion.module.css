@@ -20,14 +20,63 @@
 }
 
 .split :global(.split-line-mask) {
-  /* SplitText wraps each line in a mask; keep descenders and CASL swashes from clipping. */
+  /*
+   * SplitText wraps each line in a mask; keep descenders and CASL swashes from clipping.
+   * The padding is pulled back with margins so a split heading takes exactly the room of the
+   * server-rendered one (no layout shift when it splits). Between lines the whole 0.2em comes
+   * back through margin-bottom alone: stacked blocks collapse their margins, so a -0.14em bottom
+   * next to a -0.06em top would only give back 0.14em and push every line down a little.
+   */
   padding-block: 0.06em 0.14em;
-  margin-block: -0.06em -0.14em;
+  margin-block: 0 -0.2em;
+}
+
+.split :global(.split-line-mask:first-child) {
+  margin-top: -0.06em;
+}
+
+.split :global(.split-line-mask:last-child) {
+  margin-bottom: -0.14em;
 }
 
 @keyframes unhide {
   to {
     visibility: visible;
+  }
+}
+
+/*
+ * Above-the-fold headings (every h1, `paint` in SplitRevealOptions). They are visible from the
+ * first paint, so the browser can count them as the LCP without waiting for hydration, and they
+ * rise with a CSS animation that starts at paint. It only moves them: no opacity 0 and no mask,
+ * so the text counts as painted right away. `backwards` keeps no transform on it afterwards.
+ * First visit: the loader curtain lifts from 0.74s and uncovers the top of the page by about 1s,
+ * so the rise waits for it (0.9s, like the JS reveals that wait for useSiteReady). SiteLoader sets
+ * data-zemi-seen once the rise is over, so later client navigations rise right away.
+ */
+:global(html[data-zemi-js]) .splitPaint {
+  transform-origin: 0 100%;
+  animation: splitRise var(--split-duration, 1.05s) cubic-bezier(0.16, 1, 0.3, 1) var(--split-delay, 0s) backwards;
+}
+
+:global(html[data-zemi-js]:not([data-zemi-seen])) .splitPaint {
+  animation-delay: calc(0.9s + var(--split-delay, 0s));
+}
+
+@keyframes splitRise {
+  from {
+    translate: 0 0.34em;
+    rotate: 1.2deg;
+  }
+  to {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splitPaint {
+    animation: none !important;
   }
 }
 

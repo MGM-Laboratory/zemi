@@ -2,7 +2,7 @@
 
 import { LayoutGrid, List, SlidersHorizontal } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState, useSyncExternalStore } from 'react';
 import type { PublicationCard, PublicationType } from '@zemi/shared';
 import { Reveal } from '@/components/motion/reveal';
 import { stagger } from '@/components/motion/stagger';
@@ -54,6 +54,31 @@ function readView(): View | null {
   }
 }
 
+/* The list/grid choice is a tiny external store (localStorage, with an in-memory fallback for
+   private mode), read with useSyncExternalStore: the server and hydration render "list", then
+   the remembered choice, without a setState-in-effect. */
+let memoryView: View | null = null;
+const viewListeners = new Set<() => void>();
+function subscribeView(cb: () => void) {
+  viewListeners.add(cb);
+  window.addEventListener('storage', cb);
+  return () => {
+    viewListeners.delete(cb);
+    window.removeEventListener('storage', cb);
+  };
+}
+const viewSnapshot = (): View => readView() ?? memoryView ?? 'list';
+const viewServerSnapshot = (): View => 'list';
+function storeView(v: View) {
+  memoryView = v;
+  try {
+    window.localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    /* private mode: fine, it just won't stick past this page */
+  }
+  viewListeners.forEach((l) => l());
+}
+
 /**
  * The publications index: type chips, year / keyword / speaker filters, search, sort, list or
  * grid view, grouped by year, "show more" paging and a cover that follows the cursor.
@@ -67,25 +92,13 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
   const [tag, setTag] = useState(initial.tag ?? '');
   const [speaker, setSpeaker] = useState(initial.speaker ?? '');
   const [sort, setSort] = useState<PubSort>(initial.sort ?? 'newest');
-  const [view, setView] = useState<View>('list');
+  const view = useSyncExternalStore(subscribeView, viewSnapshot, viewServerSnapshot);
   const [limit, setLimit] = useState(PAGE);
   const [hovered, setHovered] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const query = useDeferredValue(q);
 
-  useEffect(() => {
-    const v = readView();
-    if (v) setView(v);
-  }, []);
-
-  const changeView = (v: View) => {
-    setView(v);
-    try {
-      window.localStorage.setItem(VIEW_KEY, v);
-    } catch {
-      /* private mode: fine, it just won't stick */
-    }
-  };
+  const changeView = storeView;
 
   useUrlSync({
     q: q.trim() || null,
@@ -290,7 +303,7 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
                   aria-label={v === 'list' ? 'Show as a list' : 'Show as a grid'}
                   onClick={() => changeView(v)}
                   className={cn(
-                    'relative grid size-10 place-items-center rounded-full transition-colors',
+                    'relative grid size-10 place-items-center rounded-full transition-colors pointer-coarse:size-11',
                     view === v ? 'text-white' : 'text-ink-2 hover:text-ink',
                   )}
                 >
@@ -318,7 +331,7 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
           className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:-mx-5 sm:px-5 lg:flex-wrap lg:overflow-visible"
         >
           <ChipButton size="md" selected={!type} onClick={() => setType('')} className="flex-none">
-            Everything <span className="mono ml-1 opacity-60">{pubs.length}</span>
+            Everything <span className="mono ml-1 opacity-80">{pubs.length}</span>
           </ChipButton>
           {options.types.map(([t, n]) => {
             const look = typeLook(t);
@@ -331,7 +344,7 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
                 onClick={() => setType(type === t ? '' : t)}
                 className="flex-none"
               >
-                {TYPE_PLURAL[t]} <span className="mono ml-1 opacity-60">{n}</span>
+                {TYPE_PLURAL[t]} <span className="mono ml-1 opacity-80">{n}</span>
               </ChipButton>
             );
           })}

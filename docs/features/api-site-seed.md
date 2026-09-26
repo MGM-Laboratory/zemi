@@ -211,12 +211,11 @@ now numbers it. Ids did not change, and those four rows now match what the fixtu
 
 ## Known gaps
 
-- **Shared recording caveat**: `RecordingsService.remove()` (stream module) deletes the session's asset
-  unconditionally. Deleting one seeded recording in the admin deletes the video for all 8 sessions: the FK nulls the
-  other sessions' `recording_asset_id`, and they drop off the public pages. The same happens when a re-stitch replaces a
-  session's asset (`attached.oldAssetId` in `recordings.service.ts`). Requested a guard from the stream owner. Until
-  then, hide a seeded recording instead of deleting it. Covers, documentation photos and clips are shared too, but only
-  a media library delete (`DELETE /admin/assets/:id`) removes an asset, and removing it everywhere is what that action means.
+- ~~Shared recording caveat~~: fixed in the stream module (`releaseAsset`). Deleting or re-stitching a recording deletes its
+  asset only when it is purpose `recording`, no other session points at it and no gallery item holds it. Re-verified
+  2026-09-26: the shared asset attached to a throwaway event and that recording deleted left the asset and all 8 seeded
+  sessions intact. Covers, documentation photos and clips are shared too, but only a media library delete
+  (`DELETE /admin/assets/:id`) removes an asset, and removing it everywhere is what that action means.
 - Re-running the seeder changes every id (events, speakers, assets). Anyone holding ids from an earlier run must
   re-fetch.
 - Preflight only catches a bucket that already refuses writes. If uploads start failing mid-run (a disk
@@ -275,3 +274,18 @@ Against the shared API (port 4400), native Postgres 16 and the versitygw S3 (`sc
 - Email previews `contact-auto-reply` and `contact-notification` screenshotted at 390 and 1200 px, both look right.
 - `pnpm --filter @zemi/api typecheck`, eslint on `modules/site` + `seed`, and 17 new specs
   (`site-settings.spec.ts`, `seed/plan.spec.ts`) pass.
+
+## Integration fixes (2026-09-26, fix-api)
+
+- **Seeder citation keys.** Right after `seedPublications` the seeder runs `backfillCitationKeys` (publications module), so a
+  fresh seed has keys like `wicaksono2024robots`. The API also runs it on boot, which filled the 60 existing rows.
+- **Safe links in the site CMS.** Input: contact `socials` and team `links` (`linkSchema`) take only http(s), mailto and tel;
+  `general.announcement.href` takes those or a site path like `/events/zemi-98` (never `//host` or `/\host`); `general.labUrl`
+  is http(s) (empty allowed). Output: `mergeSetting` cleans stored links item by item before parsing, so one bad social is dropped
+  instead of resetting all socials to the defaults, an unsafe announcement link becomes `null` while the banner text stays, an
+  unsafe contact `mapsUrl` becomes `null`, and a bad `labUrl` falls back to the default. Team member `links` go through
+  `sanitizeLinkList`. `PUT /admin/site/settings/:key` strips NUL bytes like ZodPipe.
+- **Site editors and media.** `site.edit` holders may now edit, re-crop, delete and fetch the original of assets with purpose
+  `site` or `team-avatar` (anyone's), on top of the uploader / `media.library` / superadmin rule. Every admin `Asset` response
+  carries `canEdit` for the caller. Verified with a throwaway `site.edit` admin: `canEdit` true on a team photo and false on a
+  speaker portrait, `/original` 200 vs 403, PATCH 200 vs 403, re-crop and delete of a `site` upload by the superadmin 200.

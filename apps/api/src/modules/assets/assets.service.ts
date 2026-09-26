@@ -15,7 +15,7 @@ import {
 } from '@zemi/shared';
 import { and, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
 import { toAssetDto, type AssetRow } from '../../common/asset-refs.js';
-import { forbidden, notFound, unprocessable, unsupportedMedia } from '../../common/errors.js';
+import { forbidden, notFound, payloadTooLarge, unprocessable, unsupportedMedia } from '../../common/errors.js';
 import { FfmpegError, poster, posterTime, probe, storyboard, transcodeMp4, transcodeWebm } from '../../common/ffmpeg.js';
 import { acceptedLabel, EXT_BY_MIME, kindOfMime, PURPOSE_KINDS, sniffFile, type SniffResult } from '../../common/mime.js';
 import { dispositionFor } from '../media-serve/media-stream.js';
@@ -58,7 +58,21 @@ export interface IngestFileInput {
   credit?: string | null;
   /** For videos. Default 'transcode'. */
   videoMode?: VideoMode;
+  /** Refuse (413) files over these sizes, by detected kind, before anything is stored. Uploads pass UPLOAD_KIND_MAX_BYTES. */
+  maxBytesByKind?: Partial<Record<AssetKind, number>>;
 }
+
+const KIND_NOUN: Record<AssetKind, string> = { image: 'photo', video: 'video', document: 'file', audio: 'audio file' };
+const megabytes = (n: number) => `${Math.round(n / 1024 ** 2)} MB`;
+
+/** Who is looking, for `Asset.canEdit`. */
+export interface AssetViewer {
+  ability: Ability;
+  principal: Principal;
+}
+
+/** Purposes a `site.edit` holder may edit, re-crop and delete (site page media and team photos). */
+export const SITE_EDIT_PURPOSES: readonly AssetPurpose[] = ['site', 'team-avatar'];
 
 export interface AssetListQuery {
   purpose?: AssetPurpose;
@@ -110,6 +124,13 @@ function allKeys(v: AssetVariants | null | undefined): Set<string> {
   for (const k of Object.values(v.webp ?? {})) out.add(k);
   for (const k of [v.mp4, v.webm, v.hls, v.poster, v.storyboard?.key]) if (k) out.add(k);
   return out;
+}
+
+/** Pure rule behind `AssetsService.canMutate` (exported for specs). */
+export function canMutateAsset(ability: Ability, principal: Principal, row: Pick<AssetRow, 'createdBy' | 'purpose'>): boolean {
+  if (ability.isSuperadmin || ability.has('media.library')) return true;
+  if (row.createdBy && row.createdBy === principal.id) return true;
+  return ability.has('site.edit') && SITE_EDIT_PURPOSES.includes(row.purpose as AssetPurpose);
 }
 
 /** Friendly, user-facing reason for a processing failure. */
@@ -167,8 +188,10 @@ export class AssetsService implements OnModuleInit {
     });
   }
 
-  dto(row: AssetRow): Asset {
-    return toAssetDto(row, (key, rev) => this.config.mediaUrl(key, rev));
+  /** The admin `Asset`. Pass the viewer to fill `canEdit` (may they edit, re-crop or delete it). */
+  dto(row: AssetRow, viewer?: AssetViewer): Asset {
+    const dto = toAssetDto(row, (key, rev) => this.config.mediaUrl(key, rev));
+    return viewer ? { ...dto, canEdit: this.canMutate(viewer.ability, viewer.principal, row) } : dto;
   }
 
   /* ------------------------------------------------------------------------------ create */
@@ -205,6 +228,12 @@ export class AssetsService implements OnModuleInit {
     const originalKey = asIs ? `assets/${id}/video.mp4` : `assets/${id}/original.${ext}`;
     const filename = sanitizeFilename(input.filename);
     const { size } = await stat(input.filePath);
+    const cap = input.maxBytesByKind?.[kind];
+    if (cap != null && size > cap) {
+      throw payloadTooLarge(`That ${KIND_NOUN[kind]} is ${megabytes(size)}. Keep it under ${megabytes(cap)}.`, {
+        details: { kind, sizeBytes: size, maxBytes: cap },
+      });
+    }
 
     await this.storage.putFile(originalKey, input.filePath, {
       contentType: mime,
@@ -261,7 +290,7 @@ export class AssetsService implements OnModuleInit {
     return row;
   }
 
-  async list(q: AssetListQuery): Promise<Paginated<Asset>> {
+  async list(q: AssetListQuery, viewer?: AssetViewer): Promise<Paginated<Asset>> {
     const where: SQL[] = [];
     if (q.purpose) where.push(eq(assets.purpose, q.purpose));
     if (q.kind) where.push(eq(assets.kind, q.kind));
@@ -280,18 +309,21 @@ export class AssetsService implements OnModuleInit {
       this.db.select({ n: count() }).from(assets).where(cond),
     ]);
     return paginated(
-      rows.map((r) => this.dto(r)),
+      rows.map((r) => this.dto(r, viewer)),
       total?.n ?? 0,
       q,
     );
   }
 
-  /** Uploader, media librarians and the superadmin may change or delete an asset. */
-  canMutate(ability: Ability, principal: Principal, row: Pick<AssetRow, 'createdBy'>): boolean {
-    return ability.isSuperadmin || ability.has('media.library') || (!!row.createdBy && row.createdBy === principal.id);
+  /**
+   * Who may change, re-crop, delete (or fetch the private original of) an asset: the superadmin, media
+   * librarians, the uploader, and site editors (`site.edit`) for site page media and team photos.
+   */
+  canMutate(ability: Ability, principal: Principal, row: Pick<AssetRow, 'createdBy' | 'purpose'>): boolean {
+    return canMutateAsset(ability, principal, row);
   }
 
-  assertCanMutate(ability: Ability, principal: Principal, row: Pick<AssetRow, 'createdBy'>): void {
+  assertCanMutate(ability: Ability, principal: Principal, row: Pick<AssetRow, 'createdBy' | 'purpose'>): void {
     if (!this.canMutate(ability, principal, row)) {
       throw forbidden('Only the person who uploaded this (or a media librarian) can change it.');
     }

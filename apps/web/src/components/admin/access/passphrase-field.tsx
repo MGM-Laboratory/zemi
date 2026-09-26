@@ -193,7 +193,7 @@ export function PassphraseField({ value, onChange, error, autoGenerate = true, i
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <p id={id} className="mono min-h-[1.75rem] min-w-0 flex-1 text-[clamp(1.05rem,2.2vw,1.35rem)] font-semibold tracking-tight break-all text-ink" aria-live="polite">
-              {value ? <ScrambleText text={value} /> : <span className="text-ink-4">{loading ? 'Rolling...' : 'Nothing yet'}</span>}
+              {value ? <ScrambleText text={value} /> : <span className="text-ink-3">{loading ? 'Rolling...' : 'Nothing yet'}</span>}
             </p>
             <div className="flex shrink-0 gap-2">
               <Button

@@ -353,6 +353,7 @@
   text-decoration-color: var(--color-blue, #3a6dc5);
 }
 
+
 .copy {
   display: inline-flex;
   align-items: center;
@@ -502,4 +503,17 @@
 
 .venueNote:hover {
   rotate: 0.4deg;
+}
+
+/* A 44px tall hit area on touch screens, without moving the text. Last in the file so it wins. */
+@media (pointer: coarse) {
+  .bigLink {
+    /* Works on inline and inline-flex links alike: the box grows, the line doesn't move. */
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+  .copy,
+  .pill {
+    height: 44px;
+  }
 }

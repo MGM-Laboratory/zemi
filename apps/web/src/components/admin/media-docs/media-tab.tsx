@@ -273,7 +273,7 @@ function BigDropZone({ onPick, cheer }: { onPick: () => void; cheer: number }) {
             Pick photos and videos
           </Button>
         </div>
-        <p className="text-xs text-ink-4">
+        <p className="text-xs text-ink-3">
           JPG, PNG, HEIC, WebP up to {formatBytes(IMAGE_MAX)}. MP4, MOV, WebM up to {formatBytes(VIDEO_MAX)}.
         </p>
       </div>

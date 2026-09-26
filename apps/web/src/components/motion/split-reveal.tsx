@@ -1,6 +1,6 @@
 'use client';
 
-import { Children, isValidElement, useEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { Children, isValidElement, useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { prefersReducedMotion } from '@/lib/hooks/use-reduced-motion';
 import { cn } from '@/lib/utils';
 import { gsap, ScrollTrigger, SplitText, useGSAP } from './gsap';
@@ -22,6 +22,13 @@ export interface SplitRevealOptions {
   start?: string;
   /** Set false to skip splitting entirely. Default true. */
   enabled?: boolean;
+  /**
+   * Above-the-fold mode: no JS split. The text is visible at first paint (so it can count as the
+   * LCP instead of waiting for hydration) and rises with a CSS animation that starts at paint,
+   * timed to the first-visit curtain. `play`, `start`, `by` and `stagger` don't apply; `delay`
+   * and `duration` do. Default: true for an `h1` (SplitReveal and CaslHeading), else false.
+   */
+  paint?: boolean;
   /** Re-split when this changes (the components pass a key derived from their children). */
   textKey?: string;
 }
@@ -34,6 +41,22 @@ export function childrenKey(children: ReactNode): string {
   return Children.toArray(children)
     .map((c) => (typeof c === 'string' || typeof c === 'number' ? String(c) : isValidElement(c) ? `<${String(c.key ?? '')}>` : ''))
     .join('|');
+}
+
+/** Class, attributes and style for the element that holds the revealed text (see `paint`). */
+export function splitTargetProps(mode: 'split' | 'paint' | 'none', opts: Pick<SplitRevealOptions, 'delay' | 'duration'> = {}) {
+  if (mode === 'split') return { className: cn(styles.splitInner, styles.splitPending), 'data-split-pending': '' };
+  if (mode === 'none') return { className: styles.splitInner };
+  const style: Record<string, string> = {};
+  if (opts.delay) style['--split-delay'] = `${opts.delay}s`;
+  if (opts.duration) style['--split-duration'] = `${opts.duration}s`;
+  return { className: cn(styles.splitInner, styles.splitPaint), 'data-split-paint': '', style: style as CSSProperties };
+}
+
+/** Which reveal a component runs: the JS split, the CSS paint rise (above the fold), or none. */
+export function splitMode(opts: SplitRevealOptions | null, tag: string): 'split' | 'paint' | 'none' {
+  if (!opts || opts.enabled === false) return 'none';
+  return (opts.paint ?? tag === 'h1') ? 'paint' : 'split';
 }
 
 /**
@@ -66,6 +89,10 @@ export function useSplitReveal(ref: RefObject<HTMLElement | null>, opts: SplitRe
         linesClass: 'split-line',
         wordsClass: 'split-word',
         autoSplit: true,
+        // The default ('auto') puts aria-label on our plain <span> (axe: aria-prohibited-attr) and
+        // aria-hidden on the pieces, which also hides links inside a heading. The pieces are only
+        // inline spans around the same text, so screen readers can simply read them.
+        aria: 'none',
         onSplit(self) {
           const targets = by === 'lines' ? self.lines : self.words;
           const controlled = playRef.current !== undefined;
@@ -106,16 +133,19 @@ export interface SplitRevealProps extends SplitRevealOptions {
 }
 
 /**
+ * An `h1` is above the fold, so it takes the paint rise instead of the split (see `paint`).
+ *
  * @example <SplitReveal as="h2" className="display text-display-l">Bring the messy version.</SplitReveal>
  */
 export function SplitReveal({ as = 'div', className, children, id, ...opts }: SplitRevealProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const textKey = childrenKey(children);
-  useSplitReveal(ref, { ...opts, textKey });
+  const mode = splitMode(opts, as);
+  useSplitReveal(ref, mode === 'split' ? { ...opts, textKey } : { enabled: false });
   const Tag = as as 'div';
   return (
     <Tag id={id} className={cn(styles.split, className)}>
-      <span key={textKey} ref={ref} className={cn(styles.splitInner, styles.splitPending)} data-split-pending="">
+      <span key={textKey} ref={ref} {...splitTargetProps(mode, opts)}>
         {children}
       </span>
     </Tag>

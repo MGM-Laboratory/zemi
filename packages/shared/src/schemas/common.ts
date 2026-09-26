@@ -7,6 +7,7 @@ import {
   SLUG_PATTERN,
   VISIBILITIES,
 } from '../constants.js';
+import { HREF_MESSAGE, LINK_MESSAGE, safeLinkHref, WEB_LINK_MESSAGE, WEB_LINK_SCHEMES } from '../links.js';
 
 export const idSchema = z.uuid();
 export const isoDate = z.iso.datetime({ offset: true });
@@ -16,7 +17,7 @@ export const slugSchema = z
   .max(SLUG_MAX)
   .regex(SLUG_PATTERN, 'Use lowercase letters, numbers and dashes, like "my-first-talk".');
 export const hhmmSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm, like 13:15');
-export const urlSchema = z.url({ protocol: /^https?$/ });
+export const urlSchema = z.url({ protocol: /^https?$/, error: WEB_LINK_MESSAGE });
 export const optionalUrl = z.union([urlSchema, z.literal('')]).optional().nullable();
 export const visibilitySchema = z.enum(VISIBILITIES);
 export const accentSchema = z.enum(ACCENTS);
@@ -39,9 +40,31 @@ export interface Paginated<T> {
   pageSize: number;
 }
 
+/** A rendered link: http(s), mailto or tel only (see `safeLinkHref`). */
+export const safeLinkUrl = (max = 2048) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine((v) => safeLinkHref(v) !== null, { message: LINK_MESSAGE });
+
+/** A web page link (http or https). Empty string allowed ("no link"). */
+export const safeWebUrlString = (max = 2048) =>
+  z
+    .string()
+    .max(max)
+    .refine((v) => !v.trim() || safeLinkHref(v, { schemes: WEB_LINK_SCHEMES }) !== null, { message: WEB_LINK_MESSAGE });
+
+/** An href that may also be a page on this site (`/events/zemi-98`). Empty string allowed. */
+export const safeHrefString = (max = 500) =>
+  z
+    .string()
+    .max(max)
+    .refine((v) => !v.trim() || safeLinkHref(v, { relative: true }) !== null, { message: HREF_MESSAGE });
+
 export const linkSchema = z.object({
   kind: z.enum(LINK_KINDS),
-  url: z.string().min(1).max(2048),
+  url: safeLinkUrl(2048),
   label: z.string().max(120).optional().nullable(),
 });
 export type LinkItem = z.infer<typeof linkSchema>;
@@ -129,6 +152,11 @@ export interface Asset {
   video: VideoRef | null;
   file: FileRef | null;
   createdAt: string;
+  /**
+   * Admin responses only: true when the signed-in principal may edit, re-crop or delete this file
+   * (the uploader, `media.library`, the superadmin, or `site.edit` for `site` and `team-avatar` files).
+   */
+  canEdit?: boolean;
 }
 
 export const assetMetaInput = z.object({

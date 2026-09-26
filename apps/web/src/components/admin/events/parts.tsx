@@ -173,7 +173,7 @@ export function SeatsBar({
         <span className="font-medium text-ink tabular-nums">
           {registrations.toLocaleString('en-US')}
           {capacity ? (
-            <span className="font-normal text-ink-4">/{capacity.toLocaleString('en-US')}</span>
+            <span className="font-normal text-ink-3">/{capacity.toLocaleString('en-US')}</span>
           ) : null}
         </span>
         {full ? <span className="text-xs font-semibold text-red-600">Full</span> : null}
@@ -198,7 +198,7 @@ export function SeatsBar({
           />
         </div>
       ) : (
-        <div className="mt-1 text-[0.75rem] text-ink-4">No cap</div>
+        <div className="mt-1 text-[0.75rem] text-ink-3">No cap</div>
       )}
     </div>
   );
@@ -384,7 +384,7 @@ export function EventNumber({
   number: number | null | undefined;
   className?: string;
 }) {
-  if (number == null) return <span className={cn('label text-ink-4', className)}>No number</span>;
+  if (number == null) return <span className={cn('label text-ink-3', className)}>No number</span>;
   return <span className={cn('label text-ink-3', className)}>Zemi #{number}</span>;
 }
 

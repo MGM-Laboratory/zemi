@@ -243,7 +243,7 @@ function HeroCounts({
             >
               <AnimatedNumber value={loading ? 0 : counts.checkedIn} />
             </motion.span>
-            <span className="text-[clamp(1.5rem,3.2vw,2.25rem)] text-ink-4">
+            <span className="text-[clamp(1.5rem,3.2vw,2.25rem)] text-ink-3">
               / <AnimatedNumber value={loading ? 0 : counts.registered} />
             </span>
           </p>
@@ -325,7 +325,7 @@ function MiniStat({ label, value, hint, mono }: { label: string; value: number |
       <dd className={cn('mt-0.5 text-[1.5rem] leading-tight font-extrabold tracking-[-0.03em] text-ink', mono ? 'mono text-[1.25rem] tracking-normal' : 'font-display')}>
         {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
       </dd>
-      <dd className="truncate text-[0.75rem] text-ink-4">{hint}</dd>
+      <dd className="truncate text-[0.75rem] text-ink-3">{hint}</dd>
     </div>
   );
 }

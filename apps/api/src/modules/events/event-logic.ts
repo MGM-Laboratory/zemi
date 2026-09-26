@@ -256,3 +256,15 @@ export function eventLabel(e: { number: number | null; startsAt: DateLike }): st
     ? `#${e.number}`
     : formatJakarta(e.startsAt, 'date-short');
 }
+
+/** How much later a start has to move before lifecycle emails are sent again for the new time. */
+export const LIFECYCLE_RESET_AFTER_MS = 3_600_000;
+
+/**
+ * Did the start move more than an hour later? Then the reminder, "starting now" and thank you
+ * bookkeeping (`*_sent_at`) is reset and `schedule_changed_at` set, so the lifecycle scheduler tells
+ * people about the new time (emails from before the change no longer count for dedupe).
+ */
+export function startMovedLater(before: DateLike, after: DateLike): boolean {
+  return new Date(after).getTime() - new Date(before).getTime() > LIFECYCLE_RESET_AFTER_MS;
+}

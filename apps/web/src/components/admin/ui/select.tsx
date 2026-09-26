@@ -87,7 +87,7 @@ export function Select<V extends string = string>({
       >
         <span className="flex min-w-0 items-center gap-2">
           {current?.icon ? <span className="flex shrink-0 items-center text-ink-3 [&_svg]:size-4">{current.icon}</span> : null}
-          <RSelect.Value placeholder={<span className="text-ink-4">{placeholder}</span>} />
+          <RSelect.Value placeholder={<span className="text-ink-3">{placeholder}</span>} />
         </span>
       </SelectTrigger>
       <RSelect.Portal>
@@ -110,7 +110,7 @@ export function Select<V extends string = string>({
             {options.map((o, i) =>
               isGroup(o) ? (
                 <RSelect.Group key={`g${i}`}>
-                  <RSelect.Label className="label px-2.5 pt-2.5 pb-1 text-ink-4">{o.label}</RSelect.Label>
+                  <RSelect.Label className="label px-2.5 pt-2.5 pb-1 text-ink-3">{o.label}</RSelect.Label>
                   {o.options.map((opt) => (
                     <OptionItem key={opt.value} opt={opt} />
                   ))}
@@ -181,7 +181,7 @@ const SelectTrigger = forwardRef<
       className={cn(
         controlClass,
         controlSizes[size],
-        'flex cursor-pointer items-center justify-between gap-2 text-left data-[placeholder]:text-ink-4',
+        'flex cursor-pointer items-center justify-between gap-2 text-left data-[placeholder]:text-ink-3',
         'data-[state=open]:border-blue data-[state=open]:ring-4 data-[state=open]:ring-blue/15',
         readOnly && 'cursor-default bg-surface-muted disabled:text-ink',
         className,

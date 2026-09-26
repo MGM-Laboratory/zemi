@@ -227,7 +227,12 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
     };
   }
 
-  toConfig(row: StreamRow): StreamConfig {
+  /**
+   * State plus the OBS keys. `withKeys: false` gives `obs: null`: the keys let anyone take over the live
+   * feed, so only `stream.control` gets them (live, end and rotate already require it).
+   */
+  toConfig(row: StreamRow, opts: { withKeys?: boolean } = {}): StreamConfig {
+    if (opts.withKeys === false) return { ...this.snapshot(row), obs: null };
     const privateKey = this.privateKey(row);
     return {
       ...this.snapshot(row),
@@ -240,10 +245,10 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
     };
   }
 
-  /** GET /admin/events/:id/stream */
-  async streamConfig(eventId: string): Promise<StreamConfig> {
+  /** GET /admin/events/:id/stream. `withKeys` only for `stream.control`. */
+  async streamConfig(eventId: string, opts: { withKeys: boolean }): Promise<StreamConfig> {
     await this.event(eventId);
-    return this.toConfig(await this.ensure(eventId));
+    return this.toConfig(await this.ensure(eventId), { withKeys: opts.withKeys });
   }
 
   async statusSnapshot(eventId: string): Promise<StreamStatusSnapshot> {

@@ -168,9 +168,11 @@ export function LoginScreen({ next, reason }: { next: string; reason: LoginReaso
         <div className="w-full max-w-[32rem]">
           <motion.h1
             className="font-display text-[clamp(2.5rem,7vw,4.25rem)] leading-[0.92] font-black tracking-[-0.045em] text-ink"
-            initial={reduce ? false : { opacity: 0, y: 14 }}
+            // Same initial style on the server and the client: `reduce` is only known in the browser,
+            // so branching `initial` on it made the SSR markup disagree for reduced-motion users.
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={reduce ? { duration: 0 } : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             style={{ fontVariationSettings: `'CASL' ${phase === 'success' ? 1 : 0.15}` }}
             whileHover={reduce ? undefined : { fontVariationSettings: "'CASL' 1" }}
           >
@@ -273,7 +275,7 @@ export function LoginScreen({ next, reason }: { next: string; reason: LoginReaso
                   Caps Lock is on. Passphrases care about that.
                 </p>
               ) : (
-                <p className="text-ink-4">Press Enter to go in.</p>
+                <p className="text-ink-3">Press Enter to go in.</p>
               )}
             </div>
 
@@ -308,7 +310,7 @@ export function LoginScreen({ next, reason }: { next: string; reason: LoginReaso
           </form>
 
           <div className="mt-12 flex items-end justify-between gap-4 border-t border-line pt-5">
-            <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-ink-4">Lost your passphrase? The superadmin can give you a new one.</p>
+            <p className="max-w-[16rem] text-[0.8125rem] leading-snug text-ink-3">Lost your passphrase? The superadmin can give you a new one.</p>
             <div className="flex items-end gap-1.5 lg:hidden" aria-hidden="true">
               {(['triangle', 'square', 'arch'] as const).map((s, i) => (
                 <motion.div
@@ -347,7 +349,7 @@ function FridayPanel({ phase, errorKind, typing, shown }: { phase: Phase; errorK
     <aside className="hidden p-4 lg:flex" aria-hidden="true">
       <div className="relative flex flex-1 flex-col overflow-hidden rounded-[32px] bg-surface-muted">
         <div className="flex items-center justify-between px-8 pt-7">
-          <span className="label text-ink-4">Fridays</span>
+          <span className="label text-ink-3">Fridays</span>
           <span className="mono text-sm text-ink-3">13:15 to 15:15 WIB</span>
         </div>
         <div className="flex flex-1 items-center justify-center p-10">
@@ -361,7 +363,7 @@ function FridayPanel({ phase, errorKind, typing, shown }: { phase: Phase; errorK
               >
                 <circle cx="23" cy="23" r="22" fill="none" stroke="var(--color-line-strong)" strokeWidth="1.2" strokeDasharray="3 4" />
               </motion.svg>
-              <span className="mono absolute inset-0 flex items-center justify-center text-center text-[0.8125rem] leading-snug text-ink-4">
+              <span className="mono absolute inset-0 flex items-center justify-center text-center text-[0.8125rem] leading-snug text-ink-3">
                 Q is
                 <br />
                 peeking
@@ -382,7 +384,7 @@ function FridayPanel({ phase, errorKind, typing, shown }: { phase: Phase; errorK
         <p className="px-8 pb-8 text-[0.9375rem] leading-relaxed text-ink-3">
           Research is lonely. Fridays aren&apos;t.
           <br />
-          <span className="text-ink-4">The studio runs every piece of Zemi, from the cover art to the last check-in.</span>
+          <span className="text-ink-3">The studio runs every piece of Zemi, from the cover art to the last check-in.</span>
         </p>
       </div>
     </aside>

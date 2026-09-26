@@ -1,17 +1,21 @@
 import type { Metadata } from 'next';
 import { ContactView } from '@/components/public/contact/contact-view';
 import { matchTopic, resolveContact } from '@/components/public/contact/lib';
+import { withOg } from '@/lib/api/seo';
 import { getNextEvent, getSiteOrDefaults } from '@/lib/api/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteOrDefaults();
   const contact = resolveContact(site);
-  return {
-    title: 'Contact',
-    description: contact.intro,
-    alternates: { canonical: '/contact' },
-    openGraph: { title: `${contact.title} · Zemi`, description: contact.intro },
-  };
+  return withOg(
+    {
+      title: 'Contact',
+      description: contact.intro,
+      alternates: { canonical: '/contact' },
+      openGraph: { url: '/contact', title: 'Contact Zemi', description: contact.intro },
+    },
+    { site },
+  );
 }
 
 /**

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useConfirm } from '@/components/admin/ui/confirm-dialog';
+import { useRegisterLeaveGuard } from '@/lib/admin/leave-guard';
 
 /**
  * Warn before leaving with unsaved changes:
@@ -19,6 +20,18 @@ export function useUnsavedChangesGuard(dirty: boolean, opts: { message?: string 
   useEffect(() => {
     dirtyRef.current = dirty;
   });
+
+  const message =
+    opts.message ??
+    'You have changes on this page that are not saved yet. If you leave now, they stay in a local draft on this device, but nobody else sees them.';
+  // Keyboard jumps and the command palette ask through the shared registry.
+  useRegisterLeaveGuard(
+    () => dirtyRef.current,
+    () => confirm({ title: 'Leave without saving?', description: message, confirmLabel: 'Leave anyway', cancelLabel: 'Stay here' }),
+    () => {
+      dirtyRef.current = false;
+    },
+  );
 
   useEffect(() => {
     if (!dirty) return;

@@ -87,7 +87,7 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className="fixed inset-0 z-[60] bg-[rgba(14,17,22,0.32)] backdrop-blur-[2px] data-[state=open]:animate-[zemi-fade-in_180ms_var(--ease-out)]" />
         <AlertDialog.Content
           className={cn(
-            'fixed z-[61] w-full bg-white shadow-[var(--shadow-3)] outline-none',
+            'fixed z-[60] w-full bg-white shadow-[var(--shadow-3)] outline-none',
             'inset-x-0 bottom-0 rounded-t-[24px] data-[state=open]:animate-[zemi-sheet-up_260ms_var(--ease-out)]',
             'sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-w-[28rem] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[24px] sm:data-[state=open]:animate-[zemi-dialog-in_220ms_var(--ease-out)]',
           )}

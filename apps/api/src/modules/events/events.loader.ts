@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { safeWebUrl } from '@zemi/shared';
 import type {
   Ability,
   EventAdmin,
@@ -624,7 +625,7 @@ export class EventsLoader {
       hasRecording: recordings.length > 0,
       description: e.description ?? [],
       roomNote: e.roomNote ?? null,
-      mapsUrl: audience === 'public' ? e.mapsUrl || venue?.mapsUrl || null : (e.mapsUrl ?? null),
+      mapsUrl: audience === 'public' ? safeWebUrl(e.mapsUrl) || safeWebUrl(venue?.mapsUrl) : safeWebUrl(e.mapsUrl),
       onlineNote: e.onlineNote ?? null,
       venueFull: venue
         ? {
@@ -635,7 +636,7 @@ export class EventsLoader {
             floor: venue.floor ?? null,
             capacity: venue.capacity ?? null,
             address: venue.address ?? null,
-            mapsUrl: venue.mapsUrl ?? null,
+            mapsUrl: safeWebUrl(venue.mapsUrl),
           }
         : null,
       speakersFull,
@@ -646,6 +647,8 @@ export class EventsLoader {
       stream: streamPublic(stream, e.id, this.config.env.PUBLIC_API_URL),
       registration: registrationInfo(e, counts.registrations, now),
       cancelReason: e.cancelledAt ? (e.cancelReason ?? null) : null,
+      // Public pages use it for `noindex` on unlisted events (drafts never reach the public API).
+      visibility: e.visibility,
       updatedAt: e.updatedAt.toISOString(),
     };
     return { detail, counts };

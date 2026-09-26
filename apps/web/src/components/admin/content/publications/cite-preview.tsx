@@ -92,7 +92,7 @@ export function CitePreview({ source, className, id = 'cite' }: { source: Citati
               MONO.includes(fmt) ? 'mono text-[0.8125rem]' : 'font-body',
             )}
           >
-            {text || <span className="text-ink-4">Add a title and it starts to take shape.</span>}
+            {text || <span className="text-ink-3">Add a title and it starts to take shape.</span>}
           </motion.pre>
         </AnimatePresence>
         <IconButton
@@ -126,7 +126,7 @@ export function CitePreview({ source, className, id = 'cite' }: { source: Citati
                 return (
                   <li key={f.key} className="rounded-2xl border border-line p-3">
                     <div className="mb-1.5 flex items-center justify-between gap-2">
-                      <span className="label text-ink-4">{f.label}</span>
+                      <span className="label text-ink-3">{f.label}</span>
                       <button type="button" onClick={() => void doCopy(out, f.label)} className="rounded-md px-1.5 text-[0.8125rem] font-medium text-blue hover:underline focus-visible:outline-2 focus-visible:outline-focus">
                         Copy
                       </button>

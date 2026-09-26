@@ -9,7 +9,10 @@ export interface StreamConfig {
   ingestOnlineAt: string | null;
   liveStartedAt: string | null;
   liveEndedAt: string | null;
-  /** Only included when the principal has stream.view. */
+  /**
+   * OBS server and keys. Only for principals with `stream.control` on the event (the keys let anyone
+   * take over the live feed). Null for `stream.view`, which still gets state, health and preview.
+   */
   obs: {
     server: string; // rtmp://host:port/live
     streamKey: string; // path id

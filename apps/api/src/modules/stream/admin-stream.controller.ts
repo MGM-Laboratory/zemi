@@ -22,8 +22,8 @@ import { RecordingsService } from './recordings.service.js';
 import { StreamService } from './stream.service.js';
 
 /**
- * Admin stream control (SPEC 9). `stream.view` sees keys, health, preview and recordings;
- * `stream.control` goes live, ends, rotates keys and manages recordings.
+ * Admin stream control (SPEC 9). `stream.view` sees state, health, preview and recordings (no OBS keys);
+ * `stream.control` also gets the OBS keys, goes live, ends, rotates keys and manages recordings.
  */
 @ApiTags('admin: stream')
 @Controller('admin')
@@ -34,11 +34,14 @@ export class AdminStreamController {
     private readonly realtime: RealtimeService,
   ) {}
 
-  /** GET /admin/events/:id/stream: keys for OBS + state (creates the stream row on first call). */
+  /**
+   * GET /admin/events/:id/stream: state, plus the OBS keys for `stream.control` (`obs: null` for
+   * `stream.view`, since the private key could take over the live feed). Creates the row on first call.
+   */
   @Get('events/:id/stream')
   config(@UuidParam() id: string, @CurrentAbility() ability: Ability): Promise<StreamConfig> {
     assertCan(ability, 'event', id, 'stream.view');
-    return this.stream.streamConfig(id);
+    return this.stream.streamConfig(id, { withKeys: ability.can('event', id, 'stream.control') });
   }
 
   @Post('events/:id/stream/rotate')

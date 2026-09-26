@@ -1,12 +1,12 @@
-import { Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Logger, Post, Req, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { loginInput, normalizePolicy, SESSION_COOKIE, type LoginInput, type Me, type Policy, type Principal } from '@zemi/shared';
 import { eq } from 'drizzle-orm';
 import type { Response } from 'express';
-import { AppError } from '../common/errors.js';
+import { AppError, unsupportedMedia } from '../common/errors.js';
 import { RateLimitService } from '../common/rate-limit.service.js';
 import { clientIp, clientUserAgent, type RequestAuth, type ZemiRequest } from '../common/request.js';
-import { ZodBody } from '../common/zod.pipe.js';
+import { parseOrThrow } from '../common/zod.pipe.js';
 import { DB, type Db } from '../db/client.js';
 import { admins } from '../db/schema.js';
 import { AuditService } from '../modules/audit/audit.service.js';
@@ -21,8 +21,16 @@ import {
   type SessionRow,
 } from './session.service.js';
 
+/** Per IP: 8 attempts per 10 minutes. Successful sign-ins are refunded, failures stay counted. */
 export const LOGIN_RATE = { limit: 8, windowMs: 10 * 60_000 } as const;
+/**
+ * Failed sign-ins from every IP together. Past this, each failure waits LOGIN_SLOW_FAIL_DELAY_MS
+ * instead of FAIL_DELAY_MS. Never a hard lockout: that would let anyone lock the superadmin out.
+ */
+export const LOGIN_GLOBAL_FAIL_RATE = { limit: 50, windowMs: 10 * 60_000 } as const;
+export const LOGIN_GLOBAL_FAIL_KEY = 'login-fail:all';
 const FAIL_DELAY_MS = 400;
+export const LOGIN_SLOW_FAIL_DELAY_MS = 4_000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,6 +45,8 @@ function toMe(principal: Principal, policy: Policy, session: Pick<SessionRow, 'i
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger('Auth');
+
   constructor(
     @Inject(DB) private readonly db: Db,
     private readonly passphrases: PassphraseService,
@@ -45,18 +55,48 @@ export class AuthController {
     private readonly audit: AuditService,
   ) {}
 
-  /** POST /api/v1/auth/login { passphrase } -> Me, sets the zemi_session cookie. */
+  /**
+   * POST /api/v1/auth/login { passphrase } -> Me, sets the zemi_session cookie.
+   * JSON only (415 otherwise): a cross-site HTML form can't send `application/json`, and a
+   * cross-site fetch that does needs a CORS preflight we refuse. That stops login CSRF, where
+   * another site signs your browser into its own account.
+   */
   @Public()
   @Post('login')
   @HttpCode(200)
-  async login(@ZodBody(loginInput) body: LoginInput, @Req() req: ZemiRequest, @Res({ passthrough: true }) res: Response): Promise<Me> {
+  async login(@Body() raw: unknown, @Req() req: ZemiRequest, @Res({ passthrough: true }) res: Response): Promise<Me> {
+    if (!req.is('application/json')) {
+      throw unsupportedMedia('Sign in from the Zemi login page.', { details: { expected: 'application/json' } });
+    }
+    const body: LoginInput = parseOrThrow(loginInput, raw);
     const ip = clientIp(req);
     const userAgent = clientUserAgent(req);
     const rateKey = `login:${ip ?? 'unknown'}`;
+    // Counted up front, so a burst of parallel guesses can't slip past the limit while argon2 runs.
     this.rateLimit.consume(rateKey, LOGIN_RATE, 'Too many tries. Take a breather and try again in a few minutes.');
 
     const fail = async () => {
-      await sleep(FAIL_DELAY_MS + Math.floor(Math.random() * 100));
+      const global = this.rateLimit.hit(LOGIN_GLOBAL_FAIL_KEY, LOGIN_GLOBAL_FAIL_RATE);
+      if (global.allowed) {
+        await this.audit.log({
+          principal: { kind: 'public', name: 'Unknown visitor' },
+          action: 'auth.login-failed',
+          summary: 'Sign-in failed: the passphrase matched nobody',
+          meta: { userAgent },
+          ip,
+        });
+      } else if (global.count === LOGIN_GLOBAL_FAIL_RATE.limit + 1) {
+        // One entry per window instead of one per guess, so a flood can't flood the audit log too.
+        this.logger.warn(`More than ${LOGIN_GLOBAL_FAIL_RATE.limit} failed sign-ins in 10 minutes, slowing every failure down`);
+        await this.audit.log({
+          principal: 'system',
+          action: 'auth.login-throttled',
+          summary: `More than ${LOGIN_GLOBAL_FAIL_RATE.limit} failed sign-ins in 10 minutes. Failed tries now wait longer.`,
+          meta: { windowMin: LOGIN_GLOBAL_FAIL_RATE.windowMs / 60_000, lastUserAgent: userAgent },
+          ip,
+        });
+      }
+      await sleep((global.allowed ? FAIL_DELAY_MS : LOGIN_SLOW_FAIL_DELAY_MS) + Math.floor(Math.random() * 100));
       return new AppError(401, 'invalid_passphrase', "That passphrase didn't open the door. Check for typos and try again.");
     };
 
@@ -98,7 +138,9 @@ export class AuthController {
       await this.db.update(admins).set({ lastLoginAt: new Date() }).where(eq(admins.id, admin.id));
     }
 
-    this.rateLimit.reset(rateKey);
+    // Only this attempt is given back. Earlier failures from this IP stay counted, so knowing one
+    // working passphrase doesn't buy unlimited guesses at the others.
+    this.rateLimit.refund(rateKey);
     const { token, session } = await this.sessions.create({ principal, ip, userAgent });
     this.sessions.setCookie(res, token);
     await this.audit.log({

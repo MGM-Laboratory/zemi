@@ -14,6 +14,9 @@ export function publicMediaKey(parts: string[] | string): string | null {
   const key = (Array.isArray(parts) ? parts.join('/') : parts).replace(/^\/+/, '');
   if (!key.startsWith('assets/')) return null;
   if (key.length > 512) return null;
+  // NUL and other control bytes (`w320.webp%00`) are never in our keys, and S3 rejects them with a 500.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f\\]/.test(key)) return null;
   if (key.split('/').some((seg) => !seg || seg === '.' || seg === '..')) return null;
   if (PRIVATE_ORIGINAL.test(key)) return null;
   return key;

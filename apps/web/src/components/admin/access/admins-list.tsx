@@ -51,7 +51,7 @@ function AccessCell({ admin }: { admin: AdminSummary }) {
   return (
     <div className="min-w-0">
       <p className="flex items-center gap-1.5 font-medium text-ink-2">
-        <span className={cn(c.empty && 'text-ink-4')}>{c.label}</span>
+        <span className={cn(c.empty && 'text-ink-3')}>{c.label}</span>
         {pii ? (
           <Tooltip content="Can see emails and phone numbers of registrants.">
             <span className="inline-flex text-red-600" tabIndex={0} aria-label="Sees personal data">
@@ -143,7 +143,7 @@ export function AdminsList() {
                 Last in <DateText value={a.lastLoginAt} format="relative" />
               </span>
             ) : (
-              <span className="block text-ink-4">Never signed in</span>
+              <span className="block text-ink-3">Never signed in</span>
             )}
             <span className={cn('flex items-center gap-1.5', a.activeSessions ? 'text-green-600' : 'text-ink-3')}>
               <span className={cn('size-1.5 rounded-full', a.activeSessions ? 'bg-green' : 'bg-line-strong')} aria-hidden="true" />

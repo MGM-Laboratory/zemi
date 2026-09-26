@@ -103,7 +103,7 @@ export function AdminToaster() {
       toastOptions={{
         classNames: {
           toast:
-            'group !rounded-2xl !border !border-line !bg-white !px-4 !py-3 !font-[family-name:var(--font-body)] !text-[0.9375rem] !text-ink !shadow-[var(--shadow-3)] !gap-3',
+            'group !rounded-2xl !border !border-line !bg-white !px-4 !py-3 !font-[family-name:var(--font-body)] !text-[0.9375rem] !text-ink !shadow-[var(--shadow-3)] !gap-3 data-[type=error]:!border-red/45 data-[type=error]:!bg-[#fff6f6] data-[type=warning]:!border-yellow/70 data-[type=warning]:!bg-yellow-50',
           title: '!font-semibold !text-ink',
           description: '!text-ink-3 !text-[0.8125rem]',
           icon: '!m-0 !size-auto !flex !items-center !justify-center !min-w-4',

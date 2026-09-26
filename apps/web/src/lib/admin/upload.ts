@@ -3,6 +3,17 @@ import { ApiError, adminFetch, apiErrorFromBody, apiPath, isAbortError, redirect
 
 export type UploadPhase = 'uploading' | 'processing' | 'ready' | 'failed';
 
+/**
+ * May this admin change the file itself (alt and caption, re-crop, the private original, delete)?
+ * The API sends `Asset.canEdit` (the uploader, media librarians and the superadmin). Older
+ * payloads without the field count as yes, so nothing disappears before the API ships it; the
+ * server still refuses with a clear 403 either way.
+ */
+export function canEditAsset(asset: Pick<Asset, 'id'> | null | undefined): boolean {
+  if (!asset) return false;
+  return (asset as { canEdit?: boolean }).canEdit !== false;
+}
+
 export interface UploadProgress {
   phase: UploadPhase;
   /** Bytes sent so far (uploading phase). */

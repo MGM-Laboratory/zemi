@@ -249,7 +249,7 @@ function SheetBody({ r, eventId, perms, stale, onDeleted }: { r: RegistrationRow
                     <a href={`mailto:${r.email}`} className="truncate text-blue-600 underline-offset-4 hover:underline">
                       {r.email}
                     </a>
-                    <button type="button" onClick={() => void copy(r.email)} className="rounded p-0.5 text-ink-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-focus" aria-label="Copy email">
+                    <button type="button" onClick={() => void copy(r.email)} className="rounded p-0.5 text-ink-3 hover:text-ink focus-visible:outline-2 focus-visible:outline-focus" aria-label="Copy email">
                       <Copy className="size-3.5" />
                     </button>
                   </span>

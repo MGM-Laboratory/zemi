@@ -3,6 +3,7 @@
 import {
   AnimatePresence,
   motion,
+  useAnimate,
   useMotionValue,
   useMotionValueEvent,
   useSpring,
@@ -45,6 +46,8 @@ export interface FridayClockProps {
   end?: string;
   /** 'auto' = bottom-left on desktop, top-center under the nav on mobile. */
   position?: 'auto' | 'bottom-left' | 'top-center' | 'static';
+  /** Bump it to make the pill hop (the home story does at 15:15). */
+  cheer?: number;
   className?: string;
 }
 
@@ -76,8 +79,22 @@ export function FridayClock({
   start = '13:15',
   end = '15:15',
   position = 'auto',
+  cheer = 0,
   className,
 }: FridayClockProps) {
+  const [pillScope, animatePill] = useAnimate<HTMLDivElement>();
+  const lastCheer = useRef(cheer);
+  useEffect(() => {
+    if (lastCheer.current === cheer) return;
+    lastCheer.current = cheer;
+    const el = pillScope.current;
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    void animatePill(
+      el,
+      { scale: [1, 1.16, 0.95, 1.04, 1], rotate: [0, -7, 5, -2, 0], y: [0, -10, 0, -3, 0] },
+      { duration: 0.9, ease: 'easeOut' },
+    );
+  }, [cheer, animatePill, pillScope]);
   const s = toMin(start);
   const total = Math.max(1, toMin(end) - s);
   const visible = time != null || progress != null;
@@ -131,6 +148,7 @@ export function FridayClock({
           transition={{ type: 'spring', stiffness: 320, damping: 24 }}
         >
           <div
+            ref={pillScope}
             className={cn(
               styles.clockPill,
               'inline-flex h-12 items-center gap-3 rounded-full border border-ink/[0.08] bg-white/90 pl-1.5 pr-4 text-ink shadow-2 backdrop-blur-md',

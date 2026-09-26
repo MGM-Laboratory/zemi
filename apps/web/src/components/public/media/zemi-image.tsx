@@ -11,7 +11,7 @@ export interface ZemiImageProps {
   image: ImageRef | null | undefined;
   /** Standard `sizes`. Default '100vw'. Be precise: it decides which width downloads. */
   sizes?: string;
-  /** LCP images: eager, high fetch priority, preloaded. */
+  /** LCP images: eager, high fetch priority, preloaded, and painted without the fade-in. */
   priority?: boolean;
   /** Override the stored alt text. Pass "" for decorative images. */
   alt?: string;
@@ -109,7 +109,9 @@ export function ZemiImage({
 
   return (
     <span
-      className={cn(styles.root, fill && styles.fill, className)}
+      // Priority (LCP) images are visible straight from the server HTML: no fade that waits for
+      // hydration. The LQIP still shows underneath until the pixels arrive.
+      className={cn(styles.root, fill && styles.fill, priority && styles.eager, className)}
       style={{ ...vars, ...boxStyle }}
       data-loaded={loaded ? '' : undefined}
     >

@@ -9,7 +9,7 @@ import { errorMessage, isAbortError } from '@/lib/admin/api';
 import { cn } from '@/lib/admin/cn';
 import { formatBytes } from '@/lib/admin/format';
 import { useAssetPoll } from '@/lib/admin/hooks';
-import { recropAsset, uploadAsset } from '@/lib/admin/upload';
+import { canEditAsset, recropAsset, uploadAsset } from '@/lib/admin/upload';
 import { Character } from '../characters/character';
 import { Button, IconButton } from '../ui/button';
 import { useFieldControlProps } from '../ui/field';
@@ -275,7 +275,8 @@ export function ImageUploadCrop({ value, onChange, purpose, initialImage, alt, m
 
         {!readOnly && !empty && !busy ? (
           <div className={cn('absolute flex gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100', round ? 'inset-x-0 bottom-2 justify-center' : 'top-2.5 right-2.5')}>
-            {known?.originalUrl || file ? (
+            {/* Re-cropping someone else's file needs the media library (Asset.canEdit); a local file can always be framed. */}
+            {file || (known?.originalUrl && canEditAsset(known)) ? (
               <IconButton
                 label="Crop and adjust"
                 size="sm"

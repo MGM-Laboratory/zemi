@@ -13,7 +13,9 @@ import {
 } from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { CaslHeading } from '@/components/motion/casl-heading';
+import { chipToneFix } from '@/components/public/events/lib';
 import { BlocksRenderer, hasBlocks } from '@/components/public/media/blocks-renderer';
+import { DEFAULT_SHARE_IMAGE, shareMeta } from '@/components/public/media/share-meta';
 import { ZemiImage } from '@/components/public/media/zemi-image';
 import { CiteBox } from '@/components/public/publications/cite-box';
 import {
@@ -129,21 +131,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: a.speaker ? siteUrl(`/speakers/${a.speaker.slug}`) : (a.url ?? undefined),
     })),
     alternates: { canonical: url },
-    openGraph: {
+    ...shareMeta({
       type: 'article',
       url,
       title: p.title,
       description,
-      authors: p.authorsFull.map((a) => a.fullName),
-      tags: p.keywords,
-      ...(images ? { images } : null),
-    },
-    twitter: {
-      card: images ? 'summary_large_image' : 'summary',
-      title: p.title,
-      description,
-      ...(images ? { images: images.map((i) => i.url) } : null),
-    },
+      images,
+      article: {
+        authors: p.authorsFull.map((a) => a.fullName),
+        tags: p.keywords,
+        modifiedTime: p.updatedAt,
+      },
+    }),
     other: highwire(p),
   };
 }
@@ -219,7 +218,7 @@ function jsonLd(p: PublicationDetail) {
     ...(p.keywords.length ? { keywords: p.keywords.join(', ') } : null),
     ...(p.language ? { inLanguage: p.language } : null),
     ...(p.license ? { license: licenseUrl(p.license) ?? p.license } : null),
-    ...(p.cover ? { image: p.cover.src } : null),
+    image: p.cover?.src ?? siteUrl(DEFAULT_SHARE_IMAGE.url),
     ...(doiHref
       ? {
           sameAs: doiHref,
@@ -329,6 +328,7 @@ export default async function PublicationPage({ params }: Props) {
                 tone={look.tone}
                 shape={look.shape}
                 size="md"
+                className={chipToneFix(look.tone)}
               >
                 {look.label}
               </ChipLink>

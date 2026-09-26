@@ -152,6 +152,7 @@ export function EventExperience({ event, renderedAt, description }: EventExperie
     initial: { stream: event.stream, status: event.status },
   });
   const stream = live.stream ?? event.stream;
+  const cheers = Object.values(live.reactions).reduce((a, b) => a + b, 0);
   const status: EventStatus = useEventStatus(event, stream.state) ?? event.status;
   const minuteClock = useNow(15_000, status === 'ongoing');
 
@@ -252,7 +253,9 @@ export function EventExperience({ event, renderedAt, description }: EventExperie
   let stage: ReactNode = null;
   if (status === 'ongoing') {
     if (stream.state === 'live')
-      stage = <LiveStage event={event} stream={stream} onStreamEnd={onStreamEnd} />;
+      stage = (
+        <LiveStage event={event} stream={stream} onStreamEnd={onStreamEnd} reactions={cheers} />
+      );
     // A stale `ended` from a rehearsal days before must not greet people with "Stream ended".
     else if (stream.state === 'ended' && streamWentLiveThisFriday(event, stream.liveStartedAt))
       stage = <EndedStage event={event} />;

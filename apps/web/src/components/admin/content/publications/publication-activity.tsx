@@ -37,7 +37,7 @@ export function RelatedEventsCard({ events }: { events: PublicationAdmin['events
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 text-xs text-ink-4">
+                  <span className="flex items-center gap-1.5 text-xs text-ink-3">
                     {e.number != null ? <span className="mono">Zemi #{e.number}</span> : null}
                     <DateText value={e.startsAt} format="date" />
                   </span>

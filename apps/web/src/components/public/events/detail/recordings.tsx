@@ -7,10 +7,21 @@ import { formatClock } from '@/components/public/player/format';
 import { ZemiPlayerLazy } from '@/components/public/player/lazy';
 import { Eyebrow } from '@/components/public/ui/section-header';
 import { cn } from '@/lib/utils';
+import styles from '../events.module.css';
 import { eventLabel } from '../lib';
+import { Ambient } from './ambient';
 
 /** The recording player. Several recordings (the stream dropped, a second session) show as parts. */
-export function Recordings({ event, className }: { event: EventDetail; className?: string }) {
+export function Recordings({
+  event,
+  className,
+  fit,
+}: {
+  event: EventDetail;
+  className?: string;
+  /** Same box as the live player (the ended stage), so the recording lands without a jump. */
+  fit?: boolean;
+}) {
   const recs = event.recordings.filter(
     (r) => r.video && (r.video.mp4 || r.video.webm || r.video.hls),
   );
@@ -71,23 +82,30 @@ export function Recordings({ event, className }: { event: EventDetail; className
         ) : null}
       </div>
       <div
-        id="recording-panel"
-        role={multi ? 'tabpanel' : undefined}
-        className="mx-auto w-full max-w-[calc((100svh-24px)*16/9)] overflow-hidden rounded-[24px] ring-1 ring-white/10 shadow-[0_40px_120px_-40px_rgb(0_0_0/0.8)]"
+        className={cn(
+          fit ? styles.screen : 'relative isolate mx-auto w-full max-w-[calc((100svh-24px)*16/9)]',
+        )}
       >
-        <ZemiPlayerLazy
-          key={rec.id}
-          mode="vod"
-          title={rec.title ?? event.title}
-          subtitle={`${eventLabel(event)} · recorded ${formatJakarta(rec.startedAt, 'date')}`}
-          sources={{ hls: v.hls, mp4: v.mp4, webm: v.webm }}
-          poster={v.poster ?? event.cover?.src}
-          posterColor={event.cover?.color}
-          storyboard={v.storyboard}
-          chapters={rec.chapters}
-          durationSec={v.durationSec}
-          accent={event.accent}
-        />
+        <Ambient event={event} mode="still" />
+        <div
+          id="recording-panel"
+          role={multi ? 'tabpanel' : undefined}
+          className="overflow-hidden rounded-[24px] ring-1 ring-white/10 shadow-[0_40px_120px_-40px_rgb(0_0_0/0.8)]"
+        >
+          <ZemiPlayerLazy
+            key={rec.id}
+            mode="vod"
+            title={rec.title ?? event.title}
+            subtitle={`${eventLabel(event)} · recorded ${formatJakarta(rec.startedAt, 'date')}`}
+            sources={{ hls: v.hls, mp4: v.mp4, webm: v.webm }}
+            poster={v.poster ?? event.cover?.src}
+            posterColor={event.cover?.color}
+            storyboard={v.storyboard}
+            chapters={rec.chapters}
+            durationSec={v.durationSec}
+            accent={event.accent}
+          />
+        </div>
       </div>
     </div>
   );

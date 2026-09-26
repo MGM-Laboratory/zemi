@@ -50,6 +50,14 @@
   --bar-pad: clamp(3px, 0.45cqi, 9px);
 }
 
+/* Thumbs need 44px targets, even on a small phone player. Icons stay the same size. */
+@media (pointer: coarse) {
+  .root > * {
+    --ctrl: clamp(44px, 3.7cqi, 64px);
+    --icon: clamp(20px, calc(var(--ctrl) * 0.46), 32px);
+  }
+}
+
 .root:fullscreen {
   width: 100%;
   height: 100%;
@@ -111,14 +119,18 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   inset: 0;
   z-index: 1;
   background: #15181f;
-  transition: opacity 600ms var(--ease), visibility 0s linear 0s;
+  transition:
+    opacity 600ms var(--ease),
+    visibility 0s linear 0s;
   pointer-events: none;
 }
 
 .poster[data-hidden] {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 500ms var(--ease), visibility 0s linear 500ms;
+  transition:
+    opacity 500ms var(--ease),
+    visibility 0s linear 500ms;
 }
 
 .posterLqip,
@@ -139,7 +151,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
 .posterImg {
   opacity: 0;
   transform: scale(1.03);
-  transition: opacity 700ms var(--ease), transform 1200ms var(--ease);
+  transition:
+    opacity 700ms var(--ease),
+    transform 1200ms var(--ease);
 }
 
 .posterImg[data-loaded] {
@@ -168,13 +182,23 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
 .shadeTop {
   top: 0;
   height: 42%;
-  background: linear-gradient(to bottom, rgba(14, 17, 22, 0.66), rgba(14, 17, 22, 0.2) 55%, transparent);
+  background: linear-gradient(
+    to bottom,
+    rgba(14, 17, 22, 0.66),
+    rgba(14, 17, 22, 0.2) 55%,
+    transparent
+  );
 }
 
 .shadeBottom {
   bottom: 0;
   height: 48%;
-  background: linear-gradient(to top, rgba(14, 17, 22, 0.72), rgba(14, 17, 22, 0.22) 55%, transparent);
+  background: linear-gradient(
+    to top,
+    rgba(14, 17, 22, 0.72),
+    rgba(14, 17, 22, 0.22) 55%,
+    transparent
+  );
 }
 
 .root[data-controls='shown'] .shadeTop,
@@ -708,6 +732,16 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
+/* Touch: a taller invisible grab zone around the thin track, mostly upward so it never steals
+   taps from the buttons below it. */
+@media (pointer: coarse) {
+  .scrubHit::before {
+    content: '';
+    position: absolute;
+    inset: -14px 0 -4px;
+  }
+}
+
 .track {
   position: relative;
   width: 100%;
@@ -879,6 +913,12 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   outline-offset: 6px;
 }
 
+/* Small players: center the big button in the space above the controls, so it never sits on
+   the scrubber (a 16:9 phone player is only about 200px tall). */
+.root[data-compact] .bigPlay {
+  top: calc((100% - var(--pad) - var(--ctrl) - 2 * var(--bar-pad) - 24px) / 2);
+}
+
 .bigPlayHalo {
   position: absolute;
   inset: 0;
@@ -950,7 +990,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
 
 .loadingLabel {
   font-family: var(--font-mono, monospace);
-  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
   font-size: clamp(11px, 1.1cqi, 15px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1078,7 +1120,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   font-family: var(--font-mono, monospace);
-  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
   font-size: clamp(11px, 1.1cqi, 15px);
   letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.8);
@@ -1400,7 +1444,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   background: var(--color-red-600, #d92f2f);
   color: #fff;
   font-family: var(--font-mono, monospace);
-  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
   font-size: clamp(11px, 1.05cqi, 15px);
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -1946,7 +1992,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   background: rgba(255, 255, 255, 0.12);
   box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.18);
   font-family: var(--font-mono, monospace);
-  font-variation-settings: 'MONO' 1, 'CASL' 0;
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
   font-size: 12px;
   font-weight: 800;
 }

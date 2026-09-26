@@ -82,7 +82,7 @@ export function FridayClockPreview({ beats, active, onActiveChange }: { beats: B
             <span className="mono text-[1.0625rem] font-semibold tabular-nums" aria-live="polite">
               {beat ? beat.time || '--:--' : '13:15'}
             </span>
-            <span className="mono text-[0.6875rem] text-ink-4">WIB</span>
+            <span className="mono text-[0.6875rem] text-ink-3">WIB</span>
           </span>
           <span className="flex items-center gap-1">
             <IconButton label="Previous beat" size="sm" variant="secondary" disabled={idx <= 0} onClick={() => onActiveChange(idx - 1)}>
@@ -127,7 +127,7 @@ export function FridayClockPreview({ beats, active, onActiveChange }: { beats: B
             );
           })}
         </div>
-        <div className="mono flex justify-between text-[0.6875rem] text-ink-4" aria-hidden="true">
+        <div className="mono flex justify-between text-[0.6875rem] text-ink-3" aria-hidden="true">
           <span>13:15</span>
           <span>14:15</span>
           <span>15:15</span>
@@ -150,7 +150,7 @@ export function FridayClockPreview({ beats, active, onActiveChange }: { beats: B
               <p className="mt-2 font-display text-[1.5rem] leading-[1.02] font-black tracking-[-0.035em] text-ink [font-variation-settings:'CASL'_0.6]">
                 {beat.title || 'Untitled beat'}
               </p>
-              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-2">{beat.body || <span className="text-ink-4">No words yet.</span>}</p>
+              <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-2">{beat.body || <span className="text-ink-3">No words yet.</span>}</p>
             </motion.div>
           ) : (
             <motion.p key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-ink-3">

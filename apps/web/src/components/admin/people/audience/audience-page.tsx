@@ -96,18 +96,23 @@ export function AudiencePage() {
         },
       },
       {
-        id: 'email',
+        // Email over phone in one column, so "Last signed up" still fits a laptop.
+        id: 'contact',
         accessorKey: 'email',
-        header: 'Email',
+        header: 'Contact',
         enableSorting: false,
-        cell: ({ getValue }) => <span className="text-ink-2">{getValue<string>()}</span>,
-      },
-      {
-        id: 'phone',
-        accessorKey: 'phone',
-        header: 'Phone',
-        enableSorting: false,
-        cell: ({ getValue }) => <span className="mono text-sm whitespace-nowrap text-ink-2">{formatPhone(getValue<string | null>()) || <span className="text-ink-4">None</span>}</span>,
+        meta: { label: 'Email and phone' },
+        cell: ({ row }) => {
+          const phone = formatPhone(row.original.phone);
+          return (
+            <div className="min-w-0 leading-snug">
+              <span className="block max-w-[17rem] truncate text-ink-2" title={row.original.email}>
+                {row.original.email}
+              </span>
+              <span className={cn('mono block text-[0.8125rem] whitespace-nowrap', phone ? 'text-ink-2' : 'text-ink-3')}>{phone || 'No phone'}</span>
+            </div>
+          );
+        },
       },
       {
         id: 'history',
@@ -134,7 +139,7 @@ export function AudiencePage() {
           return (
             <span className="mono text-sm whitespace-nowrap text-ink tabular-nums" title={`Came to ${r.attended} of ${past} Fridays that already happened`}>
               {r.attended}
-              <span className="text-ink-4">/{past}</span>
+              <span className="text-ink-3">/{past}</span>
               <span className="ml-2 text-ink-3">{Math.round(pr * 100)}%</span>
             </span>
           );
@@ -244,7 +249,7 @@ function AttendanceDots({ row }: { row: AudienceRow }) {
           />
         </Tooltip>
       ))}
-      {more > 0 ? <span className="mono ml-0.5 text-[0.75rem] text-ink-4">+{more}</span> : null}
+      {more > 0 ? <span className="mono ml-0.5 text-[0.75rem] text-ink-3">+{more}</span> : null}
     </span>
   );
 }

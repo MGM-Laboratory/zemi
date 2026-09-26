@@ -115,12 +115,12 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
               commit('', true);
               inner.current?.focus();
             }}
-            className="flex size-8 items-center justify-center rounded-full text-ink-4 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+            className="flex size-8 items-center justify-center rounded-full text-ink-3 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
           >
             <X className="size-4" />
           </button>
         ) : slashToFocus ? (
-          <kbd className="mono mr-2 hidden h-5 items-center rounded-md border border-line-strong px-1.5 text-[0.6875rem] text-ink-4 sm:inline-flex">/</kbd>
+          <kbd className="mono mr-2 hidden h-5 items-center rounded-md border border-line-strong px-1.5 text-[0.6875rem] text-ink-3 sm:inline-flex">/</kbd>
         ) : null
       }
     />
@@ -265,7 +265,7 @@ export function Pagination({ page, pageSize, total, onPageChange, onPageSizeChan
             </button>
             {pageList(page, pages).map((p, i) =>
               p === 'gap' ? (
-                <span key={`gap${i}`} className="px-1 text-ink-4" aria-hidden="true">
+                <span key={`gap${i}`} className="px-1 text-ink-3" aria-hidden="true">
                   ...
                 </span>
               ) : (

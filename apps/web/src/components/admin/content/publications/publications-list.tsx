@@ -126,7 +126,7 @@ export function PublicationsList() {
               </Link>
               <p className="line-clamp-1 text-sm text-ink-3">{authorLine(p)}</p>
               {xl ? null : (
-                <p className="line-clamp-1 text-sm text-ink-4">
+                <p className="line-clamp-1 text-sm text-ink-3">
                   {[p.containerTitle, PUBLICATION_TYPE_LABELS[p.type] ?? p.type].filter(Boolean).join(', ')}
                 </p>
               )}
@@ -143,8 +143,8 @@ export function PublicationsList() {
               enableSorting: false,
               cell: ({ row: { original: p } }) => (
                 <div className="min-w-0 text-sm">
-                  <p className="line-clamp-1 max-w-[16rem] text-ink-2">{p.containerTitle || <span className="text-ink-4">Not set</span>}</p>
-                  <p className="line-clamp-1 text-ink-4">{PUBLICATION_TYPE_LABELS[p.type] ?? p.type}</p>
+                  <p className="line-clamp-1 max-w-[16rem] text-ink-2">{p.containerTitle || <span className="text-ink-3">Not set</span>}</p>
+                  <p className="line-clamp-1 text-ink-3">{PUBLICATION_TYPE_LABELS[p.type] ?? p.type}</p>
                 </div>
               ),
             } satisfies ColumnDef<PublicationRow>,
@@ -155,7 +155,7 @@ export function PublicationsList() {
         header: 'Year',
         enableSorting: false,
         meta: { width: '4.75rem' },
-        cell: ({ row: { original: p } }) => <span className="mono tabular-nums">{p.publishedYear ?? <span className="text-ink-4">?</span>}</span>,
+        cell: ({ row: { original: p } }) => <span className="mono tabular-nums">{p.publishedYear ?? <span className="text-ink-3">?</span>}</span>,
       },
       {
         id: 'status',
@@ -231,6 +231,8 @@ export function PublicationsList() {
     ...(params.vis ? [{ key: 'vis', label: `Visibility: ${VIS_LABEL[params.vis]}`, onRemove: () => void setParams({ vis: null, page: null }) }] : []),
   ];
 
+  // Someone who can't see a single publication (door crew who typed the URL) should not read "add the first one".
+  const noAccess = !ability.isSuperadmin && !ability.canAny('publication', 'view') && !ability.has('publications.create');
   const empty = filtered ? (
     <EmptyState
       framed={!wide}
@@ -245,6 +247,14 @@ export function PublicationsList() {
           Clear filters
         </Button>
       }
+    />
+  ) : noAccess ? (
+    <EmptyState
+      framed={!wide}
+      size="lg"
+      title="No publications in your access."
+      description="Your access covers other corners of the studio. Ask the superadmin if you need the shelf."
+      cast={[{ shape: 'square', mood: 'look', size: 48, lookAt: { x: 0.7, y: -0.1 } }]}
     />
   ) : (
     <EmptyState
@@ -326,7 +336,13 @@ export function PublicationsList() {
       <PageHeader
         title="Publications"
         description="Everything the lab has written or built, with authors linked to the speaker directory. Events can point to these."
-        meta={list.data ? <Badge tone="outline">{total.toLocaleString('en-US')} on the shelf</Badge> : null}
+        meta={
+          list.data && !noAccess ? (
+            <Badge tone="outline">
+              {total.toLocaleString('en-US')} {ability.canAll('publication', 'view') ? 'on the shelf' : 'in your access'}
+            </Badge>
+          ) : null
+        }
         actions={
           <Can cap="publications.create">
             <Button variant="primary" icon={<Plus />} asChild>

@@ -186,10 +186,8 @@ export function SameTableBeat({ scene }: { scene: StoryScene }) {
                 </>
               ) : (
                 <>
-                  Flip a card to see who you will meet.{' '}
-                  <span className="text-ink-3">
-                    Plus lecturers, alumni, and whoever heard there was coffee.
-                  </span>
+                  <span className="text-ink">Flip a card to see who you will meet.</span>{' '}
+                  Plus lecturers, alumni, and whoever heard there was coffee.
                 </>
               )}
             </p>

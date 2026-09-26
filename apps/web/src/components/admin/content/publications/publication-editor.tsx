@@ -546,7 +546,7 @@ function WordCount({ text }: { text: string }) {
         <span className="mono font-medium text-ink-2 tabular-nums">{n.toLocaleString('en-US')}</span> {n === 1 ? 'word' : 'words'}
         {n > 0 && n < 50 ? '. A bit short for an abstract.' : n > 400 ? '. On the long side. Most journals stop around 250.' : null}
       </span>
-      <span className="mono text-xs text-ink-4 tabular-nums">{text.length.toLocaleString('en-US')}/20,000</span>
+      <span className="mono text-xs text-ink-3 tabular-nums">{text.length.toLocaleString('en-US')}/20,000</span>
     </p>
   );
 }
@@ -733,7 +733,7 @@ function UrlInput({ value, onChange, onBlur, placeholder }: { value: string; onC
       placeholder={placeholder}
       trailing={
         ok ? (
-          <a href={value.trim()} target="_blank" rel="noopener noreferrer" aria-label="Open link in a new tab" className="mr-3 flex text-ink-4 transition hover:text-blue">
+          <a href={value.trim()} target="_blank" rel="noopener noreferrer" aria-label="Open link in a new tab" className="mr-3 flex text-ink-3 transition hover:text-blue">
             <ExternalLink className="size-4" />
           </a>
         ) : null

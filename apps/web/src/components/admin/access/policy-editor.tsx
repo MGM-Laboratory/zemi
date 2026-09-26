@@ -633,7 +633,7 @@ function ScopeRow({
 function BundleBar({ type, current, readOnly, onPick }: { type: ResourceType; current: Bundle | null; readOnly?: boolean; onPick: (b: Bundle) => void }) {
   return (
     <div className="flex w-full flex-wrap items-center gap-1.5" role="group" aria-label="Shortcuts">
-      <span className="label mr-1 text-ink-4">Shortcuts</span>
+      <span className="label mr-1 text-ink-3">Shortcuts</span>
       {BUNDLES[type].map((b) => {
         const on = current?.key === b.key;
         return (
@@ -694,7 +694,7 @@ function ActionMatrix({ type, actions, readOnly, onActions }: { type: ResourceTy
               <legend className="float-left mb-2.5 flex w-full items-center gap-1.5">
                 <ShapeGlyph shape={gm.shape} className={cn('size-2.5', gm.tone)} />
                 <span className="label text-ink-3">{g.group}</span>
-                <span className="text-xs text-ink-4">{gm.blurb}</span>
+                <span className="text-xs text-ink-3">{gm.blurb}</span>
               </legend>
             ) : (
               <legend className="sr-only">Actions</legend>

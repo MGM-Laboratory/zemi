@@ -11,6 +11,7 @@ import {
   isNull,
   like,
   lte,
+  notLike,
   or,
   sql,
   type SQL,
@@ -26,7 +27,7 @@ import {
   registrations,
   speakers,
 } from '../../db/schema.js';
-import { toAuditEntry } from '../audit/audit.service.js';
+import { redactAuditEntry, toAuditEntry } from '../audit/audit.service.js';
 import { eventLabel, upcomingFridays } from '../events/event-logic.js';
 import { EventsLoader, selectEventList } from '../events/events.loader.js';
 import { isLive, streamJoin } from '../events/events.sql.js';
@@ -36,6 +37,8 @@ const EMPTY_FRIDAY_WEEKS = 8;
 const LIST_SIZE = 6;
 const TREND_SIZE = 12;
 const ACTIVITY_SIZE = 15;
+/** Postgres regex for "an email is in this text" (masked ones too: r***e@example.com). */
+const EMAIL_IN_TEXT = '[^[:space:]@()]+@[^[:space:]@()]+\\.[[:alpha:]]{2,}';
 
 /** `undefined` = no restriction, `false` = nothing visible, else an `IN (...)` on the id column. */
 function scopeOf(
@@ -248,42 +251,59 @@ export class OverviewService {
   }
 
   /**
-   * Latest audit entries. Superadmin and `audit.view` see everything. Everyone else sees content
-   * changes (`event.*`) on events they can view, without IP or meta, plus their own actions.
+   * Latest audit entries.
+   * - Superadmin: everything, IPs and meta included.
+   * - `audit.view`: everything except sign-ins (`auth.*`, `session.*`), with IPs and device details
+   *   redacted (`redactAuditEntry`).
+   * - Everyone else: content changes (`event.*`) on events they can view, without IP or meta, plus
+   *   their own actions (redacted too), never sign-ins.
+   * For every non-superadmin, entries that name registrants (`registration.*`, or a summary with an
+   * email, even masked) show only on events where they have `registrations.view`. Filtering happens
+   * in SQL so the list still has 15 rows.
    */
   private async activity(ability: Ability): Promise<AuditEntry[]> {
-    const full = ability.isSuperadmin || ability.has('audit.view');
-    let where: SQL | undefined;
+    if (ability.isSuperadmin) {
+      const rows = await this.db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(ACTIVITY_SIZE);
+      return rows.map(toAuditEntry);
+    }
+    const full = ability.has('audit.view');
+    const where: SQL[] = [notLike(auditLogs.action, 'auth.%'), notLike(auditLogs.action, 'session.%'), this.peopleClause(ability)];
     if (!full) {
       const ids = visibleIds(ability, 'event');
-      const own = and(
-        eq(auditLogs.actorType, 'admin'),
-        eq(auditLogs.actorId, ability.principal.id),
-      );
+      const own = and(eq(auditLogs.actorType, 'admin'), eq(auditLogs.actorId, ability.principal.id));
       // Content changes only (`event.*`): registration and check-in entries can name people.
-      const aboutEvents = and(
-        eq(auditLogs.resourceType, 'event'),
-        like(auditLogs.action, 'event.%'),
-      );
+      const aboutEvents = and(eq(auditLogs.resourceType, 'event'), like(auditLogs.action, 'event.%'));
+      const clean = ids === 'all' ? ids : ids.filter((id) => UUID.test(id));
       const eventClause =
-        ids === 'all'
-          ? aboutEvents
-          : ids.length
-            ? and(aboutEvents, inArray(auditLogs.resourceId, ids))
-            : undefined;
-      where = eventClause ? or(eventClause, own) : own;
+        clean === 'all' ? aboutEvents : clean.length ? and(aboutEvents, inArray(auditLogs.resourceId, clean)) : undefined;
+      where.push((eventClause ? or(eventClause, own) : own)!);
     }
     const rows = await this.db
       .select()
       .from(auditLogs)
-      .where(where)
+      .where(and(...where))
       .orderBy(desc(auditLogs.createdAt))
       .limit(ACTIVITY_SIZE);
     return rows.map((r) => {
-      const entry = toAuditEntry(r);
-      return full || entry.actorId === ability.principal.id
-        ? entry
-        : { ...entry, ip: null, meta: null };
+      const entry = redactAuditEntry(toAuditEntry(r));
+      return full || entry.actorId === ability.principal.id ? entry : { ...entry, meta: null };
     });
+  }
+
+  /**
+   * Entries that name registrants need `registrations.view` on their event: `registration.*` rows
+   * (event id in `meta.eventId`) and any summary with an email in it (event id in `resource_id` for
+   * `event.*` rows, like "Sent a test of ... to m***w@example.com").
+   */
+  private peopleClause(ability: Ability): SQL {
+    const aboutPeople = sql`(${auditLogs.action} like 'registration.%' or ${auditLogs.summary} ~ ${EMAIL_IN_TEXT})`;
+    if (ability.canAll('event', 'registrations.view')) return sql`true`;
+    const ids = ability.idsWith('event', 'registrations.view').filter((id) => UUID.test(id));
+    if (!ids.length) return sql`not ${aboutPeople}`;
+    const eventOf = sql`coalesce(${auditLogs.meta} ->> 'eventId', case when ${auditLogs.resourceType} = 'event' then ${auditLogs.resourceId} end)`;
+    return sql`(not ${aboutPeople} or ${eventOf} in (${sql.join(
+      ids.map((id) => sql`${id}`),
+      sql`, `,
+    )}))`;
   }
 }

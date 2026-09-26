@@ -113,6 +113,10 @@ export interface RegistrationStats {
   checkedIn: number;
   inPerson: number;
   online: number;
+  /** Check-ins among in-person registrations (walk-ins included). */
+  checkedInInPerson: number;
+  /** Check-ins among online registrations (they turned up in the room after all). */
+  checkedInOnline: number;
   capacity: number | null;
   walkIns: number;
   returning: number; // registered for at least one earlier event
@@ -158,6 +162,8 @@ export interface CheckinFeedItem {
   action: 'check-in' | 'undo';
   method: 'qr' | 'manual';
   actorName: string;
+  /** Who did it (admin id, or 'superadmin'). Null for rows saved before we kept it. */
+  actorId?: string | null;
   device: string | null;
   createdAt: string;
 }

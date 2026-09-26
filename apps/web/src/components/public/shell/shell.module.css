@@ -41,6 +41,16 @@
   color: #fff;
 }
 
+/* Paper tone over dark sections (DESIGN.md sections 3 and 4): the wordmark follows currentColor,
+   the mark and the idea dot go white. CSS overrides the fill attributes, so no re-render. */
+.logo path {
+  transition: fill 320ms ease;
+}
+
+.bar[data-theme='dark'] .logo path {
+  fill: #fff;
+}
+
 .linkLabel {
   --casl: 0;
   font-variation-settings: 'CASL' var(--casl), 'MONO' 0;
@@ -339,6 +349,23 @@
 
 .clockPill {
   pointer-events: auto;
+  transition:
+    translate 360ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 300ms ease;
+}
+
+/* Hover: a little lift, and the face tilts like someone checking the time. */
+.clockPill:hover {
+  translate: 0 -3px;
+  box-shadow: var(--shadow-3);
+}
+
+.clockPill > svg {
+  transition: rotate 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clockPill:hover > svg {
+  rotate: -14deg;
 }
 
 .clock[data-pos='bottom-left'] {
@@ -348,24 +375,25 @@
 
 .clock[data-pos='top-center'] {
   left: 50%;
-  top: calc(var(--nav-h, 72px) + 8px);
+  /* Under the nav, which sits lower while the announcement bar is still on screen. */
+  top: calc(var(--nav-h, 72px) + 8px + var(--announcement-offset, 0px));
   translate: -50% 0;
   transition: top 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :global(html[data-nav-hidden]) .clock[data-pos='top-center'] {
-  top: 10px;
+  top: calc(10px + var(--announcement-offset, 0px));
 }
 
 @media (max-width: 1023.98px) {
   .clock[data-pos='auto'] {
     left: 50%;
-    top: calc(var(--nav-h, 72px) + 8px);
+    top: calc(var(--nav-h, 72px) + 8px + var(--announcement-offset, 0px));
     translate: -50% 0;
     transition: top 420ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   :global(html[data-nav-hidden]) .clock[data-pos='auto'] {
-    top: 10px;
+    top: calc(10px + var(--announcement-offset, 0px));
   }
 }
 

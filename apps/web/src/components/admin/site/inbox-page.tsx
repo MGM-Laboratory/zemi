@@ -299,7 +299,7 @@ function MessageRow({ m, active, onOpen }: { m: ContactMessage; active: boolean;
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
             <span className={cn('truncate', isNew ? 'font-bold text-ink' : 'font-medium text-ink-2')}>{m.name}</span>
-            <DateText value={m.createdAt} format="relative" className="shrink-0 text-xs text-ink-4" />
+            <DateText value={m.createdAt} format="relative" className="shrink-0 text-xs text-ink-3" />
           </span>
           <span className="mt-0.5 flex items-center gap-1.5">
             {isNew ? <span className="size-2 shrink-0 rounded-full bg-blue" aria-label="Unread" role="img" /> : null}
@@ -357,11 +357,11 @@ function MessageDetail({ m, onStatus, onDelete }: { m: ContactMessage; onStatus:
         </div>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="label text-ink-4">Topic</dt>
+            <dt className="label text-ink-3">Topic</dt>
             <dd className="mt-0.5 font-medium text-ink">{m.topic}</dd>
           </div>
           <div>
-            <dt className="label text-ink-4">Sent</dt>
+            <dt className="label text-ink-3">Sent</dt>
             <dd className="mt-0.5 text-ink">
               <DateText value={m.createdAt} format="datetime" />{' '}
               <span className="text-ink-3">

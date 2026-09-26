@@ -5,6 +5,7 @@ import {
   formatJakarta,
   formatTimeRange,
   maskEmail,
+  safeWebUrl,
   type Accent,
   type AttendanceCounts,
   type EventMode,
@@ -114,7 +115,8 @@ export class PeopleContext {
 
   /** Google Maps link: the event's own, the venue's, or a search for the address. */
   mapsUrl(ctx: EventCtx): string | null {
-    const direct = ctx.row.mapsUrl || ctx.venue?.mapsUrl;
+    // Links saved before the input checks may be anything: emails and calendars only get web links.
+    const direct = safeWebUrl(ctx.row.mapsUrl) || safeWebUrl(ctx.venue?.mapsUrl);
     if (direct) return direct;
     const address = ctx.venue?.address?.trim();
     return address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null;

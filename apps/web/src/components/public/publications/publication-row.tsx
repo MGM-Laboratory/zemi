@@ -6,6 +6,7 @@ import type { PublicationCard } from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { Avatar } from '@/components/public/ui/avatar';
 import { Card, CardLink } from '@/components/public/ui/card';
+import { chipToneFix } from '@/components/public/events/lib';
 import { Chip } from '@/components/public/ui/chip';
 import { cn } from '@/lib/utils';
 import { doiText, statusNote, STATUS_TONE, typeLook } from './lib';
@@ -80,7 +81,7 @@ function Badges({ pub, className }: { pub: PublicationCard; className?: string }
   return (
     <span className={cn('flex flex-wrap items-center gap-2', className)}>
       {pub.hasPdf ? (
-        <span className="inline-flex h-7 items-center gap-1 rounded-full bg-red-50 pl-2 pr-2.5 text-[0.8125rem] font-bold leading-none text-red-600">
+        <span className="inline-flex h-7 items-center gap-1 rounded-full bg-red-50 pl-2 pr-2.5 text-[0.8125rem] font-bold leading-none text-[#b42323]">
           <PdfIcon size={15} strokeWidth={2} className="inline-block" />
           PDF
         </span>
@@ -111,7 +112,7 @@ export function PublicationRow({ pub, onPreview, titleAs = 'h3', hideYear }: Pub
     >
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Chip tone={look.tone} shape={look.shape}>
+          <Chip tone={look.tone} shape={look.shape} className={chipToneFix(look.tone)}>
             {look.label}
           </Chip>
           {note ? <Chip tone={STATUS_TONE[pub.status]}>{note}</Chip> : null}
@@ -182,7 +183,7 @@ export function PublicationTile({ pub, onPreview, titleAs = 'h3' }: PublicationI
           <ShapeIcon shape={look.shape} size="100%" color={look.hex} />
         </span>
         <div className="flex flex-wrap items-center gap-2 pr-10">
-          <Chip tone={look.tone} shape={look.shape}>
+          <Chip tone={look.tone} shape={look.shape} className={chipToneFix(look.tone)}>
             {look.label}
           </Chip>
           {pub.publishedYear ? <span className="label text-ink-3">{pub.publishedYear}</span> : null}

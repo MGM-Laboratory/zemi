@@ -230,7 +230,7 @@ const COLUMNS: ColumnDef<SampleEvent>[] = [
     cell: ({ row }) => (
       <span className="whitespace-nowrap">
         {row.original.registrations}
-        <span className="text-ink-4">/{row.original.capacity}</span>
+        <span className="text-ink-3">/{row.original.capacity}</span>
       </span>
     ),
   },
@@ -1209,7 +1209,7 @@ function FieldsSection() {
                 renderItem={(s, { handle, index, readOnly }) => (
                   <div className="flex items-center gap-2 rounded-xl border border-line bg-white py-1 pr-3 pl-1">
                     <DragHandle {...handle} disabled={readOnly} />
-                    <span className="mono w-6 text-xs text-ink-4">{index + 1}</span>
+                    <span className="mono w-6 text-xs text-ink-3">{index + 1}</span>
                     <span className="text-[0.9375rem]">{s}</span>
                   </div>
                 )}
@@ -1232,6 +1232,7 @@ function FieldsSection() {
               { type: 'paragraph', content: 'Traffic data is messy. This is the story of making a graph model survive Jakarta.' },
             ]}
             onChange={() => {}}
+            label="Talk description"
           />
         </Demo>
       </ReadOnlyScope>

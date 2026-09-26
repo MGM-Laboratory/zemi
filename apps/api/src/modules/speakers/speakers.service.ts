@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  sanitizeLinkList,
   CONTENT_ACTIONS,
   type Ability,
   computeEventStatus,
@@ -17,7 +18,7 @@ import {
   type speakerListQuery,
   type speakerUpdateInput,
 } from '@zemi/shared';
-import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
 import { assertCan, visibleIds } from '../../auth/permissions.service.js';
 import { PermissionsService } from '../../auth/permissions.service.js';
@@ -197,7 +198,7 @@ export class SpeakersService {
     return {
       ...toSpeakerRef(row, avatars),
       bio: row.bio ?? [],
-      links: row.links ?? [],
+      links: sanitizeLinkList(row.links),
       talks,
       publications: pubs,
       talkCount: counted.length,
@@ -296,10 +297,17 @@ export class SpeakersService {
     return paginated(items, total, q);
   }
 
-  /** Picker search over every speaker (any admin). Prefix matches first. */
-  async lookup(q: string | undefined, limit = 20): Promise<SpeakerRef[]> {
+  /**
+   * Picker search. Prefix matches first. Drafts only when the caller can view them (the controller
+   * checks `assertCanLookup` first).
+   */
+  async lookup(q: string | undefined, limit = 20, ability: ContentCtx['ability']): Promise<SpeakerRef[]> {
     const term = (q ?? '').trim();
-    const where = this.searchWhere(term);
+    const ids = visibleIds(ability, 'speaker');
+    const where = and(
+      this.searchWhere(term),
+      ids === 'all' ? undefined : ids.length ? or(ne(speakers.visibility, 'draft'), inArray(speakers.id, ids)) : ne(speakers.visibility, 'draft'),
+    );
     const prefix = term ? `${term.replace(/[\\%_]/g, (m) => `\\${m}`)}%` : null;
     const rows = await this.db
       .select()

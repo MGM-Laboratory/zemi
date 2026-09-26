@@ -83,7 +83,7 @@ export function PolicySummaryCard({ policy, expiresAt, label, name, className }:
         </ul>
 
         <div>
-          <p className="label mb-2 text-ink-4">Their sidebar</p>
+          <p className="label mb-2 text-ink-3">Their sidebar</p>
           <ul className="flex flex-wrap gap-1.5" aria-label="Sections they will see">
             {nav.map((n) => (
               <li key={n.key} className="rounded-full border border-line bg-white px-2.5 py-1 text-[0.8125rem] text-ink-2">
@@ -95,7 +95,7 @@ export function PolicySummaryCard({ policy, expiresAt, label, name, className }:
 
         {hints.length || empties ? (
           <div className="space-y-2">
-            <p className="label text-ink-4">Worth a second look</p>
+            <p className="label text-ink-3">Worth a second look</p>
             {empties ? (
               <Hint tone="info" title={`${empties} empty ${empties === 1 ? 'scope' : 'scopes'}`} body="Scopes with nothing ticked are dropped when you save." />
             ) : null}

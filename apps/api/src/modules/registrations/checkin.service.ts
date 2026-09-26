@@ -42,6 +42,7 @@ export const toFeedItem = (c: CheckinRow, r: Pick<RegistrationRow, 'fullName' | 
   action: c.action,
   method: c.method,
   actorName: c.actorName,
+  actorId: c.actorId ?? null,
   device: c.device ?? null,
   createdAt: c.createdAt.toISOString(),
 });
@@ -81,6 +82,7 @@ export class CheckinService {
         eventId: reg.eventId,
         action: 'check-in',
         method: by.method,
+        actorId: by.principal.id,
         actorName: by.principal.name.slice(0, 200),
         device: by.device?.slice(0, 80) ?? null,
       })
@@ -117,6 +119,7 @@ export class CheckinService {
         eventId: reg.eventId,
         action: 'undo',
         method: 'manual',
+        actorId: by.principal.id,
         actorName: by.principal.name.slice(0, 200),
         device: by.device?.slice(0, 80) ?? null,
       })

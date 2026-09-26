@@ -11,6 +11,7 @@ import {
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { LinkIcon, LINK_KIND_LABELS, linkDisplay } from '@/components/icons';
 import { BlocksRenderer, hasBlocks } from '@/components/public/media/blocks-renderer';
+import { shareMeta } from '@/components/public/media/share-meta';
 import { slimCard } from '@/components/public/publications/lib';
 import { SectionTitle } from '@/components/public/publications/publication-parts';
 import { getAllPublications, getAllSpeakers } from '@/components/public/speakers/data';
@@ -66,19 +67,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: s.fullName,
     description,
     alternates: { canonical: url },
-    openGraph: {
-      type: 'profile',
-      url,
-      title: `${s.fullName} at Zemi`,
-      description,
-      ...(images ? { images } : null),
-    },
-    twitter: {
-      card: 'summary',
-      title: `${s.fullName} at Zemi`,
-      description,
-      ...(images ? { images: images.map((i) => i.url) } : null),
-    },
+    // A square-ish portrait reads better as a small card; no portrait means the brand card.
+    ...shareMeta({ type: 'profile', url, title: `${s.fullName} at Zemi`, description, images, card: 'summary' }),
   };
 }
 

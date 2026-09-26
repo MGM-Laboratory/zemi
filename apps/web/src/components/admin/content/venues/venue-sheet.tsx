@@ -142,7 +142,7 @@ export function VenueSheet({ venue, onClose, canManage, onDelete, draftName }: V
               {current.eventCount === 1 ? 'Used by 1 event' : `Used by ${current.eventCount ?? 0} events`}
             </Badge>
             {current.updatedAt ? (
-              <span className="text-ink-4">
+              <span className="text-ink-3">
                 Changed <DateText value={current.updatedAt} format="relative" />
               </span>
             ) : null}

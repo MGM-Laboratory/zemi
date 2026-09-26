@@ -46,15 +46,17 @@ async function bootstrap(): Promise<void> {
   if (config.env.MIGRATE_ON_BOOT) await runMigrations(config.env.DATABASE_URL);
 
   const logLevels: LogLevel[] = config.isProduction ? ['log', 'warn', 'error', 'fatal'] : ['log', 'warn', 'error', 'fatal', 'debug'];
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: logLevels });
+  // bodyParser: false, or Nest adds its default urlencoded parser next to ours (see below).
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: logLevels, bodyParser: false });
 
   // Railway (and the Next rewrite) sit in front of us: honour X-Forwarded-* for req.ip / protocol.
   app.set('trust proxy', config.trustProxy);
   app.disable('x-powered-by');
 
   // JSON bodies are small. Multipart uploads are handled per route by multer (disk storage, 4 GB).
+  // No urlencoded parser: no route takes HTML form posts, and without it a cross-site <form> can't
+  // drive any endpoint (login CSRF included; /auth/login also answers 415 to anything but JSON).
   app.useBodyParser('json', { limit: '2mb' });
-  app.useBodyParser('urlencoded', { limit: '2mb', extended: true });
   app.use(cookieParser());
 
   app.use(

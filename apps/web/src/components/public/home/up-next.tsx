@@ -74,21 +74,22 @@ export function UpNext({ data }: UpNextProps) {
       const mm = gsap.matchMedia();
       mm.add('(prefers-reduced-motion: no-preference)', () => {
         if (cover.current) {
+          // The card moves as one piece (frame, backing card, sticker), so the composition never
+          // breaks mid-scroll. Only the art zooms, inside its frame.
+          const scrub = {
+            trigger: cover.current,
+            start: 'top 98%',
+            end: 'top 40%',
+            scrub: 0.6,
+          };
           gsap.fromTo(
             cover.current,
-            { clipPath: 'inset(14% 10% 14% 10% round 32px)', scale: 1.06 },
-            {
-              clipPath: 'inset(0% 0% 0% 0% round 24px)',
-              scale: 1,
-              ease: 'none',
-              scrollTrigger: {
-                trigger: cover.current,
-                start: 'top 95%',
-                end: 'top 35%',
-                scrub: 0.6,
-              },
-            },
+            { y: 90, rotate: -4, scale: 0.94 },
+            { y: 0, rotate: 0, scale: 1, ease: 'power2.out', scrollTrigger: scrub },
           );
+          const zoom = cover.current.querySelector('[data-cover-zoom]');
+          if (zoom)
+            gsap.fromTo(zoom, { scale: 1.18 }, { scale: 1, ease: 'none', scrollTrigger: scrub });
         }
         if (!root.current?.querySelector('[data-up-in]')) return;
         gsap.fromTo(
@@ -179,8 +180,8 @@ export function UpNext({ data }: UpNextProps) {
 
         <div className={styles.grid}>
           <div className={styles.coverCol}>
-            <div className={cn(styles.cover, styles[`accent_${featured.accent}`])}>
-              <div ref={cover} className={styles.clip}>
+            <div ref={cover} className={cn(styles.cover, styles[`accent_${featured.accent}`])}>
+              <div className={styles.clip}>
                 <DistortImage className="size-full" strength={26}>
                   <Link
                     href={href}
@@ -189,14 +190,16 @@ export function UpNext({ data }: UpNextProps) {
                     tabIndex={-1}
                     aria-hidden="true"
                   >
-                    <ZemiImage
-                      image={featured.cover}
-                      aspect="4/5"
-                      sizes="(min-width: 1024px) 40vw, 92vw"
-                      className="size-full"
-                      placeholderShape="square"
-                      alt=""
-                    />
+                    <span className={styles.zoom} data-cover-zoom="">
+                      <ZemiImage
+                        image={featured.cover}
+                        aspect="4/5"
+                        sizes="(min-width: 1920px) 640px, (min-width: 1024px) 40vw, 92vw"
+                        className="size-full"
+                        placeholderShape="square"
+                        alt=""
+                      />
+                    </span>
                   </Link>
                 </DistortImage>
               </div>

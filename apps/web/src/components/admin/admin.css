@@ -168,6 +168,10 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+/* BlockNote's default quote grey (#7d797a) is 4.29:1 on white. ink-3 clears 4.5:1. */
+.zemi-blocknote .bn-editor blockquote {
+  color: var(--color-ink-3);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .zemi-skeleton {

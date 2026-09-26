@@ -251,8 +251,8 @@ Fixes made:
 ## Known gaps
 
 - `GET /admin/events/:id/media` requires `view`, not `media.manage`. The brief grouped it under media.manage, but `EventAdmin.media` already exposes the same list to viewers, so a 403 there would be inconsistent. Writes need `media.manage`.
-- Event deletion doesn't cancel other teams' queued jobs (reminders and so on). Their handlers must tolerate a missing event (the cancel worker already does).
-- Changing `startsAt` doesn't emit a job. The registrations lifecycle should compare `events.reminders_scheduled_for` with `starts_at`, or ask for a hook.
+- Event deletion now cancels a queued `event.cancelled.notify` (key `event-cancelled:<id>`). The lifecycle tick skips missing events, its claim UPDATE finds no row for a deleted one, and the cancel worker returns early, so nothing else is keyed on events.
+- ~~Changing `startsAt` doesn't emit a job.~~ Fixed 2026-09-26 (fix-api): see "Integration fixes" below.
 - Recording chapters use the rundown times only. No chapter comes from a speaker's talk title.
 
 ## Requests (outside my ownership)
@@ -269,7 +269,7 @@ Fixes made:
   - a cancelled event still occupies its Friday (for create defaults and `emptyFridays`)
   - generated event slugs skip old slugs that still redirect to another event
   - `GET /admin/events/:id/media` needs `view`, and writes need `media.manage`
-  - for admins without `audit.view`, the overview activity shows only `event.*` entries on events they can view (no ip or meta), plus their own actions
+  - overview activity (updated 2026-09-26, fix-api): the superadmin sees everything; `audit.view` holders see everything except `auth.*` / `session.*`, with IPs and device details redacted; everyone else sees `event.*` entries on events they can view (no ip or meta) plus their own actions, never sign-ins; for all non-superadmins, `registration.*` entries and summaries with an email show only on events where they have `registrations.view`
   - registration capacity counts in-person and online registrations together
 - **FYI for the web-public and web-admin owners:**
   - `GET /public/events/next` returns a literal JSON `null` when there is nothing coming.
@@ -277,3 +277,24 @@ Fixes made:
   - `EventAdmin.media` items are `EventMediaAdminItem` (with `status` and `assetId`).
   - `DELETE /admin/venues/:id` returns `{ ok, detachedEvents, warning }`. Show the warning.
   - Mutations return the full `EventAdmin`, so you can `setQueryData` instead of refetching.
+
+## Integration fixes (2026-09-26, fix-api)
+
+- **Reschedule bookkeeping.** `PATCH /admin/events/:id` that moves `startsAt` **more than 1 hour later** (`startMovedLater` in
+  `event-logic.ts`) resets `reminder_sent_at`, `starting_sent_at` and `thanks_sent_at` and sets the new `events.schedule_changed_at`
+  (migration `0002_checkin_actor_schedule_change`), all in the same UPDATE. The lifecycle recipient dedupe now counts only emails
+  sent after `schedule_changed_at`, so people who got the reminder for 13:15 get one for 15:15 (without it, the reset alone would
+  have claimed the stage and emailed nobody). Moving earlier, or later by an hour or less, changes nothing (the 6 hour stale rule
+  for day moves still applies). The audit entry carries `meta.lifecycleEmailsReset: true`. Verified on a throwaway event: +30 min
+  kept the three columns, +2 h cleared them and set `schedule_changed_at`, -3 h kept them.
+- **Safe links.** Event `mapsUrl` and the venue's `mapsUrl` go through `safeWebUrl` on output (admin, public detail, ICS, and the
+  ticket/reminder emails via `PeopleContext.mapsUrl`), so a `javascript:` value saved before the input check never reaches an href.
+  Public detail falls back to the venue's link, as before. Venue `mapsUrl` on `GET /admin/venues` too.
+- **Overview activity** (`GET /admin/overview`), for everyone but the superadmin: no `auth.*` or `session.*` entries (own sign-ins
+  included), IPs and device details redacted (`redactAuditEntry`), and entries that name registrants (`registration.*`, or a summary
+  with an email, masked or not) only on events where the admin has `registrations.view` (event id from `meta.eventId`, or
+  `resource_id` for `event.*` rows like `event.broadcast-test`). Filtered in SQL, so the list still has 15 rows. Verified with
+  throwaway admins: an `audit.view` holder without `registrations.view` saw no sign-ins, no IPs and no email summaries; a scan-only
+  door admin saw neither their own sign-in nor their own check-ins.
+- **NUL bytes.** The request above is done in api-core: `ZodPipe` strips `\u0000` from every string (nested too), and the filter maps
+  `22021`, `22P05` and `22003` to 400 `validation`.

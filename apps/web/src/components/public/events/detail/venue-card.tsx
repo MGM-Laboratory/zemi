@@ -42,7 +42,10 @@ export function VenueCard({ event, className }: { event: EventDetail; className?
           <Reveal>
             <Card tinted accent={event.accent} className="h-full" maxTilt={3}>
               <div className="relative flex h-full flex-col gap-5 p-6 sm:p-9">
-                <Eyebrow shape="square">In the room</Eyebrow>
+                {/* ink-2 on the accent tint: ink-3 is 4:1 on red-50. */}
+                <Eyebrow shape="square" className="text-ink-2">
+                  In the room
+                </Eyebrow>
                 <div className="flex flex-col gap-2">
                   <p
                     className="display text-[clamp(1.75rem,3.4vw,3rem)] text-ink"
@@ -65,7 +68,7 @@ export function VenueCard({ event, className }: { event: EventDetail; className?
                   <p className="max-w-[36rem] text-body-l text-ink">{event.roomNote}</p>
                 ) : null}
                 {v?.address ? (
-                  <p className="flex max-w-[36rem] items-start gap-2 text-[0.9375rem] text-ink-3">
+                  <p className="flex max-w-[36rem] items-start gap-2 text-[0.9375rem] text-ink-2">
                     <MapPin className="mt-0.5 size-4 flex-none" aria-hidden="true" />
                     {v.address}
                   </p>

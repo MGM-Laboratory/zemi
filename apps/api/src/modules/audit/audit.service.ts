@@ -37,6 +37,25 @@ export function toAuditEntry(row: AuditRow): AuditEntry {
   };
 }
 
+/** Meta keys that describe a device or a network, never shown to anyone but the superadmin. */
+const PRIVATE_META_KEYS = new Set(['ip', 'userAgent', 'user_agent']);
+/** Actions whose `meta.sessionId` is a sign-in session (elsewhere it is a stream session, which is fine to show). */
+const SIGN_IN_ACTION = /^(auth|session)\./;
+
+/**
+ * An audit entry as a non-superadmin reader (`audit.view`, the overview activity) may see it: no IP,
+ * and no user agent or sign-in session id in `meta`.
+ */
+export function redactAuditEntry(entry: AuditEntry): AuditEntry {
+  let meta = entry.meta;
+  if (meta && typeof meta === 'object') {
+    const signIn = SIGN_IN_ACTION.test(entry.action);
+    const kept = Object.entries(meta).filter(([k]) => !PRIVATE_META_KEYS.has(k) && !(signIn && k === 'sessionId'));
+    meta = kept.length ? Object.fromEntries(kept) : null;
+  }
+  return { ...entry, ip: null, meta };
+}
+
 /**
  * Append-only audit log. `log()` never throws: a failed audit write is logged and swallowed so it
  * can't break the action it describes. Await it (it is quick) or fire and forget.

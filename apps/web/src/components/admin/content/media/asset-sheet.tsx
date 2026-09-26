@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { assetMetaInput, PURPOSE_ASPECT, type Asset, type AssetPurpose } from '@zemi/shared';
-import { Check, Copy, Crop as CropIcon, Download, ExternalLink, FileText, Trash2 } from 'lucide-react';
+import { Check, Copy, Crop as CropIcon, Download, ExternalLink, FileText, Lock, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { z } from 'zod';
@@ -33,7 +33,8 @@ import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
 import { formatBytes, formatDuration } from '@/lib/admin/format';
 import { useAdminMutation, useAssetPoll } from '@/lib/admin/hooks';
 import { adminKeys } from '@/lib/admin/query-keys';
-import { recropAsset } from '@/lib/admin/upload';
+import { ReadOnlyScope } from '@/components/admin/fields/read-only';
+import { canEditAsset, recropAsset } from '@/lib/admin/upload';
 import { dimensions, KIND_LABELS, PURPOSE_LABELS } from './media-meta';
 
 const CropDialog = dynamic(() => import('@/components/admin/fields/crop-dialog'), { ssr: false });
@@ -61,6 +62,8 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
   }, [asset, asset?.status, qc]);
 
   const title = asset ? (asset.alt || asset.originalFilename) : 'File';
+  // Someone else's file (no media library access): look, copy the public URLs, nothing else.
+  const editable = canEditAsset(asset);
   return (
     <Sheet
       open={Boolean(assetId)}
@@ -79,7 +82,12 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
         ) : undefined
       }
       footer={
-        asset ? (
+        asset && !editable ? (
+          <p className="flex items-start gap-2 text-sm text-ink-3 sm:mr-auto">
+            <Lock className="mt-0.5 size-4 shrink-0 text-ink-4" aria-hidden="true" />
+            <span>Only the person who uploaded this, or someone with the media library, can change or delete it.</span>
+          </p>
+        ) : asset ? (
           <>
             <Button type="button" variant="danger-soft" icon={<Trash2 />} className="sm:mr-auto" onClick={() => setDeleteOpen(true)}>
               Delete
@@ -115,7 +123,7 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
               {asset.error}
             </p>
           ) : null}
-          <MetaForm key={asset.id} asset={asset} />
+          <MetaForm key={asset.id} asset={asset} readOnly={!editable} />
           <section aria-labelledby="asset-facts" className="space-y-3">
             <h3 id="asset-facts" className="font-display text-base font-extrabold [font-variation-settings:'CASL'_0.2]">
               Facts
@@ -137,7 +145,7 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
         </div>
       )}
 
-      {asset && cropOpen ? (
+      {asset && editable && cropOpen ? (
         <CropDialog
           open={cropOpen}
           onOpenChange={setCropOpen}
@@ -160,7 +168,7 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
         />
       ) : null}
 
-      {asset ? (
+      {asset && editable ? (
         <ConfirmDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
@@ -280,7 +288,7 @@ function DocumentPreview({ name, file }: { name: string; file: NonNullable<Asset
   );
 }
 
-function MetaForm({ asset }: { asset: Asset }) {
+function MetaForm({ asset, readOnly }: { asset: Asset; readOnly: boolean }) {
   const qc = useQueryClient();
   const defaults: MetaValues = { alt: asset.alt ?? '', caption: asset.caption ?? '', credit: asset.credit ?? '' };
   const form = useZodForm(assetMetaInput, { defaultValues: defaults });
@@ -312,6 +320,7 @@ function MetaForm({ asset }: { asset: Asset }) {
       <h3 id="asset-details" className="font-display text-base font-extrabold [font-variation-settings:'CASL'_0.2]">
         Details
       </h3>
+      <ReadOnlyScope readOnly={readOnly}>
       {asset.kind === 'image' || asset.kind === 'video' ? (
         <FormField
           control={form.control}
@@ -329,6 +338,8 @@ function MetaForm({ asset }: { asset: Asset }) {
       <FormField control={form.control} name="credit" label="Credit" optional maxLength={200}>
         {(field) => <Input {...field} value={field.value ?? ''} placeholder="Photo by the Zemi crew" />}
       </FormField>
+      </ReadOnlyScope>
+      {readOnly ? null : (
       <div className="flex justify-end gap-2">
         {dirty ? (
           <Button type="button" variant="ghost" size="sm" onClick={() => form.reset(defaults)} disabled={save.isPending}>
@@ -339,6 +350,7 @@ function MetaForm({ asset }: { asset: Asset }) {
           Save details
         </Button>
       </div>
+      )}
     </form>
   );
 }
@@ -380,7 +392,7 @@ function Variants({ asset }: { asset: Asset }) {
         <h3 id="asset-variants" className="font-display text-base font-extrabold [font-variation-settings:'CASL'_0.2]">
           Files
         </h3>
-        {rows.length ? <span className="text-sm text-ink-4">{rows.length} public URLs</span> : null}
+        {rows.length ? <span className="text-sm text-ink-3">{rows.length} public URLs</span> : null}
       </div>
       {rows.length ? (
         <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
@@ -391,7 +403,7 @@ function Variants({ asset }: { asset: Asset }) {
       ) : (
         <p className="text-sm text-ink-3">{asset.status === 'processing' ? 'Sizes show up here once processing finishes.' : 'No public versions.'}</p>
       )}
-      <p className="text-[0.8125rem] text-ink-4">The original stays private. It keeps camera data like GPS, so it is only for the crew.</p>
+      <p className="text-[0.8125rem] text-ink-3">The original stays private. It keeps camera data like GPS, so it is only for the crew.</p>
     </section>
   );
 }
@@ -403,7 +415,7 @@ function VariantItem({ row }: { row: VariantRow }) {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-ink">
           {row.label}
-          {row.meta ? <span className="ml-2 font-normal text-ink-4">{row.meta}</span> : null}
+          {row.meta ? <span className="ml-2 font-normal text-ink-3">{row.meta}</span> : null}
         </p>
         <p className="mono truncate text-xs text-ink-3" title={row.url}>
           {row.url.replace(/^https?:\/\//, '')}

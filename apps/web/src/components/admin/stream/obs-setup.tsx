@@ -4,6 +4,7 @@ import type { StreamConfig } from '@zemi/shared';
 import { ChevronLeft, ChevronRight, KeyRound, MousePointer2, RefreshCw, ShieldAlert } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Character } from '@/components/admin/characters/character';
 import { Button } from '@/components/admin/ui/button';
 import { Card } from '@/components/admin/ui/card';
 import { ConfirmDialog } from '@/components/admin/ui/confirm-dialog';
@@ -44,7 +45,11 @@ export function ObsSetupCard({
             <h2 id="obs-setup-title" className="font-display text-xl leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.2]">
               Connect OBS
             </h2>
-            <p className="mt-0.5 text-sm text-ink-3">Two things to paste, one button to press. The guide below has every setting we like.</p>
+            <p className="mt-0.5 text-sm text-ink-3">
+              {obs
+                ? 'Two things to paste, one button to press. The guide below has every setting we like.'
+                : 'The keys stay with the people who run the stream.'}
+            </p>
           </div>
         </div>
         {canControl && obs ? (
@@ -60,7 +65,7 @@ export function ObsSetupCard({
           <ObsGuide obs={obs} />
         </div>
       ) : (
-        <p className="px-5 py-6 text-sm text-ink-3 sm:px-6">The OBS keys are only shown to people with stream access.</p>
+        <NoKeys />
       )}
 
       <ConfirmDialog
@@ -82,6 +87,28 @@ export function ObsSetupCard({
         onConfirm={() => onRotate()}
       />
     </Card>
+  );
+}
+
+/**
+ * The API leaves `obs` out for admins who may watch the stream but not run it (stream.view
+ * without stream.control). Say who has the keys instead of showing empty fields.
+ */
+function NoKeys() {
+  return (
+    <div className="flex flex-col items-start gap-4 px-5 py-6 sm:flex-row sm:items-center sm:gap-5 sm:px-6 sm:py-7">
+      <div className="flex shrink-0 items-end gap-1.5" aria-hidden="true">
+        <Character shape="square" mood="look" size={40} lookAt={{ x: 0.8, y: -0.1 }} />
+        <Character shape="circle" mood="idle" size={32} />
+      </div>
+      <div className="min-w-0">
+        <p className="font-semibold text-ink">Ask a stream operator for the OBS keys.</p>
+        <p className="mt-1 max-w-prose text-sm text-ink-3">
+          The key works like a password for this stream, so only people who can go live see it. You can still watch the preview, check the signal and find the
+          recordings right here.
+        </p>
+      </div>
+    </div>
   );
 }
 

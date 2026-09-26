@@ -132,7 +132,7 @@ export function SpeakersDirectory({ speakers, initial, renderedAt }: SpeakersDir
                 selected={from === f.key}
                 onClick={() => setFrom(f.key)}
               >
-                {f.label} <span className="mono ml-1 opacity-60">{counts[f.key]}</span>
+                {f.label} <span className="mono ml-1 opacity-80">{counts[f.key]}</span>
               </ChipButton>
             ))}
           </div>

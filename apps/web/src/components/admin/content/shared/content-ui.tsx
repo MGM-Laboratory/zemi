@@ -82,7 +82,7 @@ export function FieldGroup({
     <div role="group" aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} className={cn('flex min-w-0 flex-col gap-1.5', className)}>
       <p id={`${id}-label`} className={cn('text-sm font-semibold text-ink', hideLabel && 'sr-only')}>
         {label}
-        {optional ? <span className="ml-1.5 text-xs font-normal text-ink-4">Optional</span> : null}
+        {optional ? <span className="ml-1.5 text-xs font-normal text-ink-3">Optional</span> : null}
       </p>
       {children}
       {error ? (

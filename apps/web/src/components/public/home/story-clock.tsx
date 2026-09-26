@@ -23,21 +23,22 @@ export interface StoryClockProps {
  * Wires the Friday clock to the home story (DESIGN.md section 2).
  *
  * Every element with `data-story-time="HH:mm"` is an anchor: the clock reads that time when the
- * anchor's top crosses the stamp line (`data-story-at="end"` uses the anchor's bottom reaching the
- * bottom of the viewport instead). Between anchors the time runs linearly, so the stamps and the
- * clock always agree, pins included. Reduced motion: the clock steps from stamp to stamp.
+ * anchor's top crosses the stamp line (`data-story-at` takes another ScrollTrigger start, like
+ * "top 82%", or "end" for the anchor's bottom reaching the bottom of the viewport). Between
+ * anchors the time runs linearly, so the stamps and the clock always agree, pins included.
+ * Reduced motion: the clock steps from stamp to stamp.
  *
- * At the last stamp (15:15) it celebrates once and rewinds to 13:15, "see you next friday".
+ * At the last stamp (15:15, the closing copy coming in) it celebrates once and holds on
+ * "15:15, see you next week" until the footer takes over.
  *
  * Render it after the story sections so its triggers are created (and refreshed) after the pins.
  */
 export function StoryClock({ beats, rootId }: StoryClockProps) {
   const progress = useMotionValue(0);
-  const [override, setOverride] = useState<{ time: string; label: string } | null>(null);
   const [hidden, setHidden] = useState(false);
+  const [cheers, setCheers] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
   const celebrated = useRef(false);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useGSAP(() => {
     const root = document.getElementById(rootId);
@@ -49,20 +50,16 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
         min: minutesOf(el.dataset.storyTime ?? ''),
         st: ScrollTrigger.create({
           trigger: el,
-          start: el.dataset.storyAt === 'end' ? 'bottom bottom' : STAMP_LINE,
+          start:
+            el.dataset.storyAt === 'end' ? 'bottom bottom' : el.dataset.storyAt || STAMP_LINE,
         }),
       }))
       .filter((a) => Number.isFinite(a.min));
     if (!anchors.length) return;
 
-    const clearTimers = () => {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    };
-
     const celebrate = () => {
       celebrated.current = true;
-      setOverride({ time: '15:15', label: 'see you next week' });
+      setCheers((n) => n + 1);
       const pill = wrap.current?.querySelector('[role="img"]');
       void shapeConfetti({
         from: pill ?? null,
@@ -71,29 +68,11 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
         startVelocity: 30,
         angle: 70,
       });
-      clearTimers();
-      timers.current.push(
-        setTimeout(() => setOverride({ time: '13:15', label: 'next friday' }), 1700),
-      );
-    };
-
-    // Phones and tablets pin the clock just under the nav (`--nav-h` + 8px). While the
-    // announcement bar is still on screen the nav sits lower by the bar's visible height, so the
-    // clock drops with it. `#main` starts right under the bar (the nav overlays it).
-    let drop = -1;
-    const main = document.getElementById('main');
-    const syncDrop = (y: number) => {
-      if (!main || (y > 240 && drop === 0)) return;
-      const next = Math.max(0, Math.min(160, Math.round(main.getBoundingClientRect().top)));
-      if (next === drop) return;
-      drop = next;
-      wrap.current?.style.setProperty('--clock-drop', `${next}px`);
     };
 
     // An anchor above the fold (the hero) counts from the very top of the page.
     const at = (i: number) => Math.max(0, anchors[i]!.st.start);
     const update = (y: number) => {
-      syncDrop(y);
       const stepped = prefersReducedMotion();
       let min = anchors[0]!.min;
       for (let i = 0; i < anchors.length; i++) {
@@ -112,22 +91,18 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
       const last = anchors[anchors.length - 1]!;
       if (!celebrated.current && y >= at(anchors.length - 1) - 2 && last.min >= START + TOTAL)
         celebrate();
-      else if (celebrated.current && y < at(anchors.length - 1) - 120) {
-        celebrated.current = false;
-        clearTimers();
-        setOverride(null);
-      }
+      else if (celebrated.current && y < at(anchors.length - 1) - 120) celebrated.current = false;
     };
 
     const master = ScrollTrigger.create({
       start: 0,
       end: 'max',
+      // Reads every anchor's start, so it refreshes after all of them (see motion/gsap.ts).
+      refreshPriority: -1,
       onUpdate: (self) => update(self.scroll()),
       onRefresh: (self) => update(self.scroll()),
     });
     update(master.scroll());
-
-    return clearTimers;
   });
 
   // Keep every pin honest when things above the story move: the announcement bar being dismissed,
@@ -181,13 +156,7 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
 
   return (
     <div ref={wrap}>
-      <FridayClock
-        className="max-lg:mt-[var(--clock-drop,0px)]"
-        progress={hidden ? null : progress}
-        time={hidden ? null : (override?.time ?? null)}
-        label={override?.label}
-        beats={beats}
-      />
+      <FridayClock progress={hidden ? null : progress} beats={beats} cheer={cheers} />
     </div>
   );
 }

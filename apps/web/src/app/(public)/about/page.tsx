@@ -10,17 +10,22 @@ import { PresentSteps } from '@/components/public/about/present-steps';
 import { Story } from '@/components/public/about/story';
 import { Team } from '@/components/public/about/team';
 import { ZemiWord } from '@/components/public/about/zemi-word';
+import { withOg } from '@/lib/api/seo';
 import { getSiteOrDefaults } from '@/lib/api/server';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { about } = resolveAbout(await getSiteOrDefaults());
+  const site = await getSiteOrDefaults();
+  const { about } = resolveAbout(site);
   const description = about.intro.length > 200 ? `${about.intro.slice(0, 197).replace(/\s+\S*$/, '')}...` : about.intro;
-  return {
-    title: 'About',
-    description,
-    alternates: { canonical: '/about' },
-    openGraph: { title: 'About Zemi', description },
-  };
+  return withOg(
+    {
+      title: 'About',
+      description,
+      alternates: { canonical: '/about' },
+      openGraph: { url: '/about', title: 'About Zemi', description },
+    },
+    { site },
+  );
 }
 
 /**

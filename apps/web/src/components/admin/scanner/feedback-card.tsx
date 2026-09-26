@@ -53,11 +53,15 @@ export function FeedbackCard({ feedback, onDismiss }: { feedback: ScanFeedback; 
       if (e.key !== 'Escape' && (e.target as Element | null)?.closest?.('button, a, input, textarea, select, [role="button"]')) return;
       if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        // The card is the top layer: this key is for it alone, not for the Recent scans panel
+        // or a dialog underneath that also listen for Escape.
+        e.stopPropagation();
         onDismiss();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Capture phase on window runs before every other keydown listener on the page.
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [onDismiss]);
 
   const dark = look.text === 'text-ink';
@@ -67,6 +71,7 @@ export function FeedbackCard({ feedback, onDismiss }: { feedback: ScanFeedback; 
       key={feedback.id}
       role="alertdialog"
       aria-modal="true"
+      data-scan-feedback=""
       aria-labelledby={`fb-title-${feedback.id}`}
       aria-describedby={feedback.body ? `fb-body-${feedback.id}` : undefined}
       initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 1.04 }}

@@ -3,6 +3,7 @@
 import { Film, Images, Radio, RotateCcw, ScanLine } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/admin/ui/button';
 import { useConfirm } from '@/components/admin/ui/confirm-dialog';
 import { DateText } from '@/components/admin/ui/display';
@@ -18,6 +19,9 @@ import { useEventActions, useWorkspaceEvent } from '../use-event';
  */
 export function StateBanner({ className }: { className?: string }) {
   const { event, status, can, id } = useWorkspaceEvent();
+  const pathname = usePathname() ?? '';
+  // No "go to the Stream tab" button while you are on the Stream tab.
+  const away = (tab: 'stream' | 'attendance' | 'media') => pathname !== adminRoutes.event(id, tab);
   const reduce = useReducedMotion();
   const confirm = useConfirm();
   const { restore } = useEventActions(id);
@@ -100,7 +104,7 @@ export function StateBanner({ className }: { className?: string }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {can('stream.view') && event.mode !== 'offline' ? (
+          {can('stream.view') && event.mode !== 'offline' && away('stream') ? (
             <Button
               asChild
               size="sm"
@@ -108,11 +112,11 @@ export function StateBanner({ className }: { className?: string }) {
             >
               <Link href={adminRoutes.event(id, 'stream')}>
                 <Radio />
-                Stream controls
+                {can('stream.control') ? 'Stream controls' : 'Watch the stream'}
               </Link>
             </Button>
           ) : null}
-          {can('attendance.scan') && event.mode !== 'online' ? (
+          {can('attendance.scan') && event.mode !== 'online' && away('attendance') ? (
             <Button
               asChild
               size="sm"
@@ -165,7 +169,7 @@ export function StateBanner({ className }: { className?: string }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {can('stream.view') && event.mode !== 'offline' ? (
+          {can('stream.view') && event.mode !== 'offline' && away('stream') ? (
             <Button asChild size="sm" variant="secondary">
               <Link href={adminRoutes.event(id, 'stream')}>
                 <Film />
@@ -173,7 +177,7 @@ export function StateBanner({ className }: { className?: string }) {
               </Link>
             </Button>
           ) : null}
-          {can('media.manage') ? (
+          {can('media.manage') && away('media') ? (
             <Button asChild size="sm" variant="secondary">
               <Link href={adminRoutes.event(id, 'media')}>
                 <Images />
@@ -223,7 +227,7 @@ export function StateBanner({ className }: { className?: string }) {
           </p>
         </div>
       </div>
-      {can('stream.view') && event.mode !== 'offline' ? (
+      {can('stream.view') && event.mode !== 'offline' && away('stream') ? (
         <Button asChild size="sm" variant="secondary" className="self-start sm:self-auto">
           <Link href={adminRoutes.event(id, 'stream')}>
             <Radio />

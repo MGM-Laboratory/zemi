@@ -9,6 +9,7 @@ import {
   sessionOn,
   shiftToDate,
   sortRundown,
+  startMovedLater,
   streamPublic,
   upcomingFridays,
   type RegistrationRuleInput,
@@ -248,5 +249,18 @@ describe('small helpers', () => {
 
   it('cleans tags', () => {
     expect(cleanTags([' AI ', 'ai', '', 'Robots', 'robots '])).toEqual(['AI', 'Robots']);
+  });
+});
+
+describe('startMovedLater (lifecycle email reset)', () => {
+  const start = new Date('2026-10-02T06:15:00Z');
+  const later = (min: number) => new Date(start.getTime() + min * 60_000);
+  it('resets only when the start moves more than an hour later', () => {
+    expect(startMovedLater(start, later(61))).toBe(true);
+    expect(startMovedLater(start, later(7 * 1440))).toBe(true);
+    expect(startMovedLater(start, later(60))).toBe(false);
+    expect(startMovedLater(start, later(20))).toBe(false);
+    expect(startMovedLater(start, later(-180))).toBe(false);
+    expect(startMovedLater(start.toISOString(), later(90).toISOString())).toBe(true);
   });
 });

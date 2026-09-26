@@ -79,7 +79,8 @@ export function BeatStamp({ time, label, inverse, className }: BeatStampProps) {
       >
         {time}
       </time>
-      <span className="-ml-1 opacity-50">WIB</span>
+      {/* A real color, not opacity: at 12px it must stay above 4.5:1 (ink-3 on white is 4.8:1). */}
+      <span className={cn('-ml-1', inverse ? 'text-white/70' : 'text-ink-3')}>WIB</span>
       {label ? (
         <>
           <span aria-hidden="true" className="opacity-40">

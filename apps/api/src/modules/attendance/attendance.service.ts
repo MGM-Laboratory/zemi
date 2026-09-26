@@ -185,17 +185,22 @@ export class AttendanceService {
 
   async summary(eventId: string, ability: Ability, principal: Principal): Promise<AttendanceSummary> {
     const event = await this.regs.eventFor(ability, eventId, 'attendance.scan');
-    return this.buildSummary(eventId, event.row.startsAt, !ability.can('event', eventId, 'attendance.manage') ? principal.name : null);
+    return this.buildSummary(eventId, event.row.startsAt, !ability.can('event', eventId, 'attendance.manage') ? principal : null);
   }
 
-  private async buildSummary(eventId: string, startsAt: Date, onlyActor: string | null): Promise<AttendanceSummary> {
+  /** `onlyActor`: scan-only principals see just their own scans in `recent`. */
+  private async buildSummary(eventId: string, startsAt: Date, onlyActor: Principal | null): Promise<AttendanceSummary> {
     const counts = await this.ctx.counts(eventId);
     const times = await this.db
       .select({ at: registrations.checkedInAt })
       .from(registrations)
       .where(and(eq(registrations.eventId, eventId), eq(registrations.status, 'registered'), isNotNull(registrations.checkedInAt)));
     const conds: SQL[] = [eq(checkins.eventId, eventId)];
-    if (onlyActor) conds.push(eq(checkins.actorName, onlyActor));
+    // By id, not display name (two admins can share a name). Rows from before actor_id existed fall
+    // back to the name, so nobody loses their earlier scans.
+    if (onlyActor) {
+      conds.push(or(eq(checkins.actorId, onlyActor.id), and(isNull(checkins.actorId), eq(checkins.actorName, onlyActor.name)))!);
+    }
     const recent = await this.db
       .select({ c: checkins, fullName: registrations.fullName, ticketCode: registrations.ticketCode })
       .from(checkins)
@@ -241,7 +246,7 @@ export class AttendanceService {
   async stream(eventId: string, ability: Ability, principal: Principal): Promise<Observable<MessageEvent>> {
     const event = await this.regs.eventFor(ability, eventId, 'attendance.scan');
     const full = ability.can('event', eventId, 'attendance.manage');
-    const onlyActor = full ? null : principal.name;
+    const onlyActor = full ? null : principal;
     const source = this.realtime.stream(channels.attendance(eventId), {
       initial: async (): Promise<AttendanceStreamMessage> => {
         const summary = await this.buildSummary(eventId, event.row.startsAt, onlyActor);
@@ -253,7 +258,7 @@ export class AttendanceService {
     return source.pipe(
       map((msg) => {
         const data = msg.data as AttendanceStreamMessage;
-        if (data && typeof data === 'object' && data.type === 'checkin' && data.item && data.item.actorName !== onlyActor) {
+        if (data && typeof data === 'object' && data.type === 'checkin' && data.item && data.item.actorId !== onlyActor!.id) {
           return { ...msg, data: { type: 'checkin', item: null, counts: data.counts } satisfies AttendanceStreamMessage };
         }
         return msg;

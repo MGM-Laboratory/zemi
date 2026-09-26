@@ -139,7 +139,7 @@ export function TagsInput({ value, onChange, placeholder = 'Add a tag', max = 20
       >
         {value.map((t) => (
           <span key={t} className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-muted pr-1 pl-2.5 text-sm text-ink">
-            <span className="text-ink-4">#</span>
+            <span className="text-ink-3">#</span>
             {t}
             {readOnly ? (
               <span className="w-1.5" />
@@ -159,7 +159,7 @@ export function TagsInput({ value, onChange, placeholder = 'Add a tag', max = 20
           </span>
         ))}
         {readOnly ? (
-          value.length ? null : <span className="px-2 text-ink-4">No tags</span>
+          value.length ? null : <span className="px-2 text-ink-3">No tags</span>
         ) : (
           <input
             ref={inputRef}
@@ -274,7 +274,7 @@ export function SlugField({ value, onChange, source, basePath, savedSlug, auto: 
               Match the title
             </button>
           ) : auto && !readOnly ? (
-            <span className="label mr-3 rounded-full bg-surface-muted px-2 py-0.5 text-[0.625rem] text-ink-4">Auto</span>
+            <span className="label mr-3 rounded-full bg-surface-muted px-2 py-0.5 text-[0.625rem] text-ink-2">Auto</span>
           ) : null
         }
       />

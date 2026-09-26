@@ -293,7 +293,7 @@ function BeatsEditor({ form }: { form: UseFormReturn<Values, unknown, Values> })
           </Button>
         </div>
         <div className="min-w-0 xl:order-2">
-          <p className="label mb-2 text-ink-4">Preview</p>
+          <p className="label mb-2 text-ink-3">Preview</p>
           <div className="xl:sticky xl:top-[calc(var(--admin-topbar-h,60px)+6rem)]">
             <FridayClockPreview beats={beats} active={active} onActiveChange={onActive} />
           </div>

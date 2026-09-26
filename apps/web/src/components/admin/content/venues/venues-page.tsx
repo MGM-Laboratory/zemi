@@ -88,8 +88,8 @@ export function VenuesPage() {
         header: 'Where',
         cell: ({ row: { original: v } }) => (
           <div className="min-w-0 text-sm">
-            <p className="line-clamp-1 text-ink-2">{[v.building, v.floor ? `floor ${v.floor}` : null].filter(Boolean).join(', ') || <span className="text-ink-4">Not set</span>}</p>
-            {v.address ? <p className="line-clamp-1 max-w-[22rem] text-ink-4 2xl:max-w-[36rem]">{v.address}</p> : null}
+            <p className="line-clamp-1 text-ink-2">{[v.building, v.floor ? `floor ${v.floor}` : null].filter(Boolean).join(', ') || <span className="text-ink-3">Not set</span>}</p>
+            {v.address ? <p className="line-clamp-1 max-w-[22rem] text-ink-3 2xl:max-w-[36rem]">{v.address}</p> : null}
           </div>
         ),
       },
@@ -98,7 +98,7 @@ export function VenuesPage() {
         header: 'Seats',
         meta: { align: 'right', width: '5.5rem' },
         sortUndefined: 'last',
-        cell: ({ row: { original: v } }) => (v.capacity != null ? <span className="mono tabular-nums">{v.capacity.toLocaleString('en-US')}</span> : <span className="text-ink-4">?</span>),
+        cell: ({ row: { original: v } }) => (v.capacity != null ? <span className="mono tabular-nums">{v.capacity.toLocaleString('en-US')}</span> : <span className="text-ink-3">?</span>),
       },
       {
         accessorKey: 'eventCount',

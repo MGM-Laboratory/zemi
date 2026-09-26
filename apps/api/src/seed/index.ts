@@ -36,6 +36,7 @@ import { runMigrations } from '../db/migrate.js';
 import * as schema from '../db/schema.js';
 import { AssetsService } from '../modules/assets/assets.service.js';
 import { JobsService } from '../modules/jobs/jobs.service.js';
+import { backfillCitationKeys } from '../modules/publications/citation-keys.js';
 import { ContentResetService } from '../modules/site/content-reset.service.js';
 import { SiteService } from '../modules/site/site.service.js';
 import { StorageService } from '../modules/storage/storage.service.js';
@@ -488,6 +489,8 @@ async function main(): Promise<void> {
       log('Speakers, publications, events...');
       const speakerIds = await seedSpeakers(ctx, plan);
       const pubs = await seedPublications(ctx, speakerIds);
+      // Same keys the admin would get ("wicaksono2024robots"), so BibTeX and file names are stable.
+      await backfillCitationKeys(ctx.db);
       const seeded = await seedEvents(ctx, plan, venueMap, speakerIds);
       const links = await linkPublications(ctx, seeded, pubs);
       const docs = await seedDocumentation(ctx, seeded);

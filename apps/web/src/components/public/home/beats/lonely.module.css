@@ -171,11 +171,15 @@
   position: absolute;
   z-index: 1;
   pointer-events: none;
-  left: var(--sx);
+  left: 0;
   top: 0;
-  width: calc(var(--sr) * 2);
-  height: var(--sy);
-  translate: -50% 0;
+  /* Drawn once at a nominal size, then moved and stretched with transforms only. */
+  width: 520px;
+  height: 100%;
+  transform-origin: 50% 0;
+  translate: calc(var(--sx) - 260px) 0;
+  scale: var(--beam-k, 0.85) var(--beam-h, 0.62);
+  will-change: translate, scale;
   background: linear-gradient(to bottom, rgb(255 246 222 / 0), rgb(255 246 222 / 0.1));
   clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
   -webkit-mask-image:
@@ -195,9 +199,9 @@
   content: '';
   position: absolute;
   left: 50%;
-  bottom: calc(var(--sr) * -0.35);
-  width: calc(var(--sr) * 1.7);
-  height: calc(var(--sr) * 0.7);
+  bottom: -90px;
+  width: 440px;
+  height: 180px;
   translate: -50% 0;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(255 244 214 / 0.16), transparent);

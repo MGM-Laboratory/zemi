@@ -87,7 +87,7 @@ export function KeyValue({ items, columns = 1, dense, className }: { items: KeyV
         <div key={i} className={cn('min-w-0', columns === 1 && 'grid gap-1 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-4')}>
           <dt className="text-sm text-ink-3">{it.label}</dt>
           <dd className={cn('min-w-0 text-[0.9375rem] break-words text-ink', it.mono && 'mono text-sm')}>
-            {it.value ?? <span className="text-ink-4">Not set</span>}
+            {it.value ?? <span className="text-ink-3">Not set</span>}
             {it.hint ? <span className="mt-0.5 block text-[0.8125rem] text-ink-3">{it.hint}</span> : null}
           </dd>
         </div>
@@ -347,7 +347,7 @@ export function Timeline({ items, className, empty }: { items: TimelineItem[]; c
           <div className="min-w-0 flex-1 pt-0.5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
               <div className="min-w-0 text-[0.9375rem] leading-snug text-ink">{it.title}</div>
-              {it.at ? <DateText value={it.at} format="relative" className="shrink-0 text-xs text-ink-4" /> : null}
+              {it.at ? <DateText value={it.at} format="relative" className="shrink-0 text-xs text-ink-3" /> : null}
             </div>
             {it.description ? <div className="mt-0.5 text-[0.8125rem] leading-snug text-ink-3">{it.description}</div> : null}
           </div>

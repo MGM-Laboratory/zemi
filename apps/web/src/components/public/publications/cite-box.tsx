@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { CITATION_FILE_TYPES, CITATION_FORMATS, type CitationFormat } from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { shapeConfetti } from '@/components/motion/shape-confetti';
@@ -65,10 +65,31 @@ export function CiteBox({ citations, fileNames, initial = 'apa' }: CiteBoxProps)
   const [format, setFormat] = useState<CitationFormat>(initial);
   const [copied, setCopied] = useState<'idle' | 'ok' | 'fail'>('idle');
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const listRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLButtonElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const text = citations[format] ?? '';
   const formats = CITATION_FORMATS.filter((f) => citations[f.key]);
+
+  // One row of tabs everywhere; fade whichever side has more tabs hidden behind it.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      const start = el.scrollLeft > 2;
+      const end = el.scrollLeft < max - 2;
+      el.dataset.fade = max <= 2 ? 'none' : start && end ? 'both' : start ? 'start' : 'end';
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, []);
 
   const select = (i: number) => {
     const f = formats[(i + formats.length) % formats.length]!;
@@ -106,6 +127,7 @@ export function CiteBox({ citations, fileNames, initial = 'apa' }: CiteBoxProps)
   return (
     <div className="flex flex-col gap-4 rounded-[28px] border border-line bg-white p-4 shadow-1 sm:p-6">
       <div
+        ref={listRef}
         role="tablist"
         aria-label="Citation style"
         className={cn(styles.tabs, 'isolate')}

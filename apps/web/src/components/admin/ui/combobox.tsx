@@ -250,6 +250,8 @@ export function Combobox<T = unknown>({
     <RPopover.Root
       open={open}
       onOpenChange={(o) => {
+        // Read-only stays shut, from the keyboard too (the trigger is still focusable).
+        if (o && locked) return;
         setOpen(o);
         if (!o) setQuery('');
       }}
@@ -265,6 +267,7 @@ export function Combobox<T = unknown>({
             aria-label={ariaLabel}
             aria-describedby={aria['aria-describedby']}
             aria-invalid={aria['aria-invalid']}
+            aria-readonly={aria.readOnly || undefined}
             disabled={aria.disabled}
             className={cn(
               controlClass,
@@ -276,7 +279,7 @@ export function Combobox<T = unknown>({
             )}
           >
             {current?.icon ? <span className="flex shrink-0 items-center">{current.icon}</span> : null}
-            <span className={cn('min-w-0 flex-1 truncate', !current && 'text-ink-4')}>{current ? current.label : value ? 'Selected' : placeholder}</span>
+            <span className={cn('min-w-0 flex-1 truncate', !current && 'text-ink-3')}>{current ? current.label : value ? 'Selected' : placeholder}</span>
             {locked ? null : <ChevronsUpDown className="size-4 shrink-0 text-ink-4" aria-hidden="true" />}
           </button>
         </RPopover.Trigger>
@@ -285,7 +288,7 @@ export function Combobox<T = unknown>({
             type="button"
             aria-label="Clear"
             onClick={() => onValueChange(null, null)}
-            className="absolute top-1/2 right-8 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-ink-4 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+            className="absolute top-1/2 right-8 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-ink-3 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
           >
             <X className="size-3.5" />
           </button>
@@ -387,6 +390,7 @@ export function MultiCombobox<T = unknown>({
     <RPopover.Root
       open={open}
       onOpenChange={(o) => {
+        if (o && locked) return;
         setOpen(o);
         if (!o) setQuery('');
       }}
@@ -422,7 +426,7 @@ export function MultiCombobox<T = unknown>({
             </span>
           ))}
           {locked ? (
-            selected.length ? null : <span className="px-2 text-ink-4">None</span>
+            selected.length ? null : <span className="px-2 text-ink-3">None</span>
           ) : (
             <RPopover.Trigger asChild>
               <button

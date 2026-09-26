@@ -277,23 +277,41 @@
 
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
   padding: 4px;
   border-radius: 999px;
   background: var(--color-surface-muted, #f7f7f5);
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  overscroll-behavior-x: contain;
 }
 
-@media (min-width: 1024px) {
-  .tabs {
-    -webkit-mask-image: none;
-    mask-image: none;
-    flex-wrap: wrap;
-    border-radius: 22px;
-  }
+/* One row at every width. When it overflows, the hidden side fades (set from JS on scroll). */
+.tabs[data-fade='end'] {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+}
+
+.tabs[data-fade='start'] {
+  -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+  mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent);
+}
+
+.tabs[data-fade='both'] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 36px,
+    #000 calc(100% - 36px),
+    transparent
+  );
 }
 
 .tabs::-webkit-scrollbar {
@@ -303,8 +321,8 @@
 .tab {
   position: relative;
   flex: none;
-  height: 38px;
-  padding: 0 14px;
+  height: 40px;
+  padding: 0 12px;
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.9063rem;
@@ -315,6 +333,12 @@
 
 .tab:hover {
   color: var(--color-ink, #0e1116);
+}
+
+@media (pointer: coarse) {
+  .tab {
+    height: 44px;
+  }
 }
 
 .tab:focus-visible {

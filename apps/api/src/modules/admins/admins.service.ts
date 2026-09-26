@@ -16,7 +16,7 @@ import { PassphraseService } from '../../auth/passphrase.service.js';
 import { adminBlockReason, SessionService } from '../../auth/session.service.js';
 import { DB, type Db } from '../../db/client.js';
 import { admins, auditLogs, sessions } from '../../db/schema.js';
-import { AuditService, toAuditEntry } from '../audit/audit.service.js';
+import { AuditService, redactAuditEntry, toAuditEntry } from '../audit/audit.service.js';
 
 type AdminRow = typeof admins.$inferSelect;
 type SessionRow = typeof sessions.$inferSelect;
@@ -263,7 +263,8 @@ export class AdminsService {
     });
   }
 
-  async auditLog(q: AuditQuery): Promise<Paginated<AuditEntry>> {
+  /** `full` (the superadmin) sees IPs and device details; everyone else gets `redactAuditEntry`. */
+  async auditLog(q: AuditQuery, opts: { full: boolean } = { full: false }): Promise<Paginated<AuditEntry>> {
     const where: SQL[] = [];
     if (q.actor) {
       const pattern = searchPattern(q.actor)!;
@@ -280,6 +281,10 @@ export class AdminsService {
       this.db.select().from(auditLogs).where(cond).orderBy(desc(auditLogs.createdAt)).limit(limit).offset(offset),
       this.db.select({ n: count() }).from(auditLogs).where(cond),
     ]);
-    return paginated(rows.map(toAuditEntry), total?.n ?? 0, q);
+    return paginated(
+      rows.map((r) => (opts.full ? toAuditEntry(r) : redactAuditEntry(toAuditEntry(r)))),
+      total?.n ?? 0,
+      q,
+    );
   }
 }

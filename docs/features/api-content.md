@@ -172,4 +172,19 @@ Re-checked against the shared API (Postgres and MinIO back up) with a throwaway 
 Known gaps found in review:
 - For a speaker-only admin, the admin list's `talkCount` and `latestTalkAt` (speakers) and `eventCount` (publications) still count
   draft events. They show a number or date, never a title.
-- All 60 seeded publications have `citation_key` null. Citations fall back to `makeCitationKey`, and the first PATCH saves a key.
+- ~~All 60 seeded publications have `citation_key` null.~~ Fixed 2026-09-26 (fix-api): see below.
+
+## Integration fixes (2026-09-26, fix-api)
+
+- **Citation keys for every publication.** `modules/publications/citation-keys.ts`: `backfillCitationKeys(db)` fills null or blank
+  keys the way the service makes them (`makeCitationKey` on the first author in `sort_order`, speaker name or manual name, year,
+  first real title word), deduped with the same b..z / `-2` suffixes (`pickCitationKey`, now shared with `uniqueCitationKey`).
+  Idempotent, under an advisory lock, keeps `updated_at`. It runs on API boot (`PublicationsService.onApplicationBootstrap`,
+  a no-op when nothing is missing) and in the seeder right after `seedPublications`. The dev DB now has 60/60 distinct keys
+  (`anindya2026batik`, `anindya2026batikb`, ...).
+- **Safe links.** Input: `linkSchema.url` (speaker links) and `publicationLinkSchema.url` refuse anything but http(s), mailto and tel
+  (`safeLinkUrl` in `@zemi/shared`), with the path on the url field (`links.0.url`). `url` and manual author `url` were already
+  `optionalUrl` (http(s) only), whose message is now "Use a full link that starts with https://". Output, for rows saved before:
+  speaker `links` and publication `links` go through `sanitizeLinkList` (unsafe ones dropped, a bare address on an `email` link
+  becomes `mailto:`), publication `url` and manual author `url` through `safeWebUrl`. Verified by writing `javascript:` links
+  straight into the DB for throwaway records: admin and public responses dropped them. Spec: `common/safe-links.spec.ts`.

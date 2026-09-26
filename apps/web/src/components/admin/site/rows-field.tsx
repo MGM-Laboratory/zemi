@@ -62,7 +62,7 @@ export function RowsField<F extends FieldValues, N extends ArrayPath<F>>({
               <div className="flex items-start gap-2">
                 <div className="flex flex-col items-center gap-1 pt-6">
                   <DragHandle {...handle} label={`Move ${noun} ${index + 1}`} />
-                  {numbered ? <span className="mono text-xs text-ink-4 tabular-nums">{index + 1}</span> : null}
+                  {numbered ? <span className="mono text-xs text-ink-3 tabular-nums">{index + 1}</span> : null}
                 </div>
                 <div className={cn('grid min-w-0 flex-1 gap-3', withShape && 'sm:grid-cols-[minmax(0,1fr)_11rem]')}>
                   <FormField control={control} name={`${name}.${index}.title` as Path<F>} label="Title" maxLength={titleMax}>
@@ -99,7 +99,7 @@ export function RowsField<F extends FieldValues, N extends ArrayPath<F>>({
         <Button variant="secondary" size="sm" icon={<Plus />} disabled={fields.length >= max} onClick={() => append(newRow())}>
           Add {noun}
         </Button>
-        <span className="mono text-xs text-ink-4 tabular-nums">
+        <span className="mono text-xs text-ink-3 tabular-nums">
           {fields.length} / {max}
         </span>
       </div>

@@ -199,3 +199,11 @@
     var(--color-focus) var(--font-display) var(--font-body) var(--font-mono) var(--radius-card) var(--radius-cover)
     var(--radius-input) var(--shadow-1) var(--shadow-2) var(--shadow-3) var(--ease-out) var(--ease-in-out);
 }
+
+/*
+ * Contrast note for --color-ink-4 (#9aa1ad): about 2.6:1 on white, so it is for non-text use
+ * only (hairlines, disabled icons, decorative dots, placeholder shapes). Never use it for text a
+ * person needs to read. For quiet text use --color-ink-3 (4.8:1 on white) and prefer
+ * --color-ink-2 on tinted backgrounds like the *-50 colors. The same goes for opacity on text:
+ * pick a real token instead. The value stays as is.
+ */

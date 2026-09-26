@@ -18,7 +18,7 @@ import { useNow } from '@/lib/hooks/use-now';
 import { prefersReducedMotion, useReducedMotion } from '@/lib/hooks/use-reduced-motion';
 import { cn } from '@/lib/utils';
 import { CalendarButton } from '../events/detail/actions';
-import { accentVars, asAccent, eventLabel } from '../events/lib';
+import { accentVars, asAccent, eventLabel, labelAndTitle } from '../events/lib';
 import { downloadTicketPng } from './save-ticket';
 import { MODE_TICKET_LABEL, TicketCard } from './ticket-card';
 
@@ -315,10 +315,10 @@ export function TicketView({ initial, openCancel }: { initial: Ticket; openCance
         <div className="flex flex-col gap-7 lg:order-1 lg:pt-6">
           <Link
             href={`/events/${e.slug}`}
-            className="label inline-flex w-fit items-center gap-2 rounded-full py-1 pr-2 text-ink-3 transition-colors hover:text-ink"
+            className="label inline-flex min-h-11 w-fit items-center gap-2 rounded-full pr-2 text-ink-3 transition-colors hover:text-ink"
           >
             <ArrowLeft className="size-3.5" aria-hidden="true" />
-            {eventLabel(e)} · {e.title}
+            {labelAndTitle(e)}
           </Link>
           <div className="flex items-end gap-2" aria-hidden="true">
             <Character

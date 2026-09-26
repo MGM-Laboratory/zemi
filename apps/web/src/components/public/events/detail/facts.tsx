@@ -75,7 +75,7 @@ export function EventFacts({
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                'mt-1 inline-flex items-center gap-1 text-[0.9375rem] font-bold underline decoration-[0.08em] underline-offset-[0.2em] hover:decoration-[0.14em]',
+                'relative mt-1 inline-flex items-center gap-1 text-[0.9375rem] font-bold underline decoration-[0.08em] underline-offset-[0.2em] before:absolute before:-inset-x-1 before:-inset-y-2.5 hover:decoration-[0.14em]',
                 dark ? 'text-white decoration-white/40' : 'text-blue-600 decoration-blue/35',
               )}
               data-cursor="open"

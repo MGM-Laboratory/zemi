@@ -10,6 +10,12 @@ export const DialogRoot = RDialog.Root;
 export const DialogTrigger = RDialog.Trigger;
 export const DialogClose = RDialog.Close;
 
+/*
+ * Overlays and contents of every modal layer (Dialog, Sheet, ConfirmDialog, palette, drawer,
+ * lightbox) share one z-index on purpose. Radix portals each layer to the end of <body> when it
+ * opens, so with equal z-index the DOM order stacks them: a Dialog opened over a Sheet puts its
+ * overlay above the Sheet and dims it, and its content above that.
+ */
 const overlayClass =
   'fixed inset-0 z-[60] bg-[rgba(14,17,22,0.32)] backdrop-blur-[2px] data-[state=open]:animate-[zemi-fade-in_180ms_var(--ease-out)] data-[state=closed]:animate-[zemi-fade-out_140ms_ease-in]';
 
@@ -73,7 +79,7 @@ export function Dialog({
           onPointerDownOutside={dismissible ? undefined : (e) => e.preventDefault()}
           onInteractOutside={dismissible ? undefined : (e) => e.preventDefault()}
           className={cn(
-            'fixed z-[61] flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden bg-white shadow-[var(--shadow-3)] outline-none',
+            'fixed z-[60] flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden bg-white shadow-[var(--shadow-3)] outline-none',
             'inset-x-0 bottom-0 rounded-t-[24px] data-[state=open]:animate-[zemi-sheet-up_260ms_var(--ease-out)]',
             'sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[24px] sm:data-[state=open]:animate-[zemi-dialog-in_220ms_var(--ease-out)]',
             SIZES[size],
@@ -153,7 +159,7 @@ export function Sheet({
           onPointerDownOutside={dismissible ? undefined : (e) => e.preventDefault()}
           onInteractOutside={dismissible ? undefined : (e) => e.preventDefault()}
           className={cn(
-            'fixed inset-y-0 z-[61] flex w-full flex-col bg-white shadow-[var(--shadow-3)] outline-none',
+            'fixed inset-y-0 z-[60] flex w-full flex-col bg-white shadow-[var(--shadow-3)] outline-none',
             side === 'right'
               ? 'right-0 border-l border-line data-[state=open]:animate-[zemi-slide-in-right_280ms_var(--ease-out)]'
               : 'left-0 border-r border-line data-[state=open]:animate-[zemi-slide-in-left_280ms_var(--ease-out)]',

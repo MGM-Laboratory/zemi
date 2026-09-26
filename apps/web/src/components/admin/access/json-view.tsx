@@ -10,7 +10,7 @@ type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 function Scalar({ value }: { value: Exclude<Json, Json[] | { [k: string]: Json }> }) {
-  if (value === null) return <span className="text-ink-4">null</span>;
+  if (value === null) return <span className="text-ink-3">null</span>;
   if (typeof value === 'boolean') return <span className="text-blue-600">{String(value)}</span>;
   if (typeof value === 'number') return <span className="text-green-600 tabular-nums">{value}</span>;
   return (
@@ -40,7 +40,7 @@ function Node({ name, value, depth }: { name?: string; value: Json; depth: numbe
     return (
       <div className="pl-5">
         {label}
-        <span className="text-ink-4">{brackets.join('')}</span>
+        <span className="text-ink-3">{brackets.join('')}</span>
       </div>
     );
   }
@@ -54,7 +54,7 @@ function Node({ name, value, depth }: { name?: string; value: Json; depth: numbe
       >
         <ChevronRight className={cn('size-4 shrink-0 text-ink-4 transition-transform duration-150', open && 'rotate-90')} aria-hidden="true" />
         {label}
-        <span className="text-ink-4">
+        <span className="text-ink-3">
           {brackets[0]}
           {open ? null : <span className="px-1 text-xs">{isArr ? `${entries.length} items` : `${entries.length} keys`}</span>}
           {open ? null : brackets[1]}
@@ -65,7 +65,7 @@ function Node({ name, value, depth }: { name?: string; value: Json; depth: numbe
           {entries.map(([k, v]) => (
             <Node key={k} name={k} value={v} depth={depth + 1} />
           ))}
-          <div className="pl-5 text-ink-4">{brackets[1]}</div>
+          <div className="pl-5 text-ink-3">{brackets[1]}</div>
         </div>
       ) : null}
     </div>

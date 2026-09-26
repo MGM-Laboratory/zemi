@@ -268,7 +268,7 @@ function SpeakerForm({ speaker }: { speaker?: SpeakerAdmin }) {
                 )}
               </FormField>
               <div className="w-full border-t border-line pt-4">
-                <p className="label mb-2 text-ink-4">On the site</p>
+                <p className="label mb-2 text-ink-3">On the site</p>
                 <div className="flex items-center justify-center gap-3 text-left">
                   <Avatar name={fullName || 'New speaker'} image={avatarImage} size={44} />
                   <div className="min-w-0">

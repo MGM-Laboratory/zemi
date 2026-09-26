@@ -15,6 +15,13 @@
       "when": 1790352562114,
       "tag": "0001_event_lifecycle_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790392976788,
+      "tag": "0002_checkin_actor_schedule_change",
+      "breakpoints": true
     }
   ]
 }

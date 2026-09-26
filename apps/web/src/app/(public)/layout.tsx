@@ -6,31 +6,30 @@ import { SiteBootScript, SiteLoader } from '@/components/brand/site-loader';
 import { SmoothScroll } from '@/components/motion/smooth-scroll';
 import { AnnouncementBar } from '@/components/public/shell/announcement-bar';
 import { Cursor } from '@/components/public/shell/cursor';
+import { NavThemeBootScript } from '@/components/public/shell/nav-theme-boot';
 import { PageTransition } from '@/components/public/shell/page-transition';
 import { PublicFooter } from '@/components/public/shell/public-footer';
 import { PublicNav } from '@/components/public/shell/public-nav';
 import { ScrollProgress } from '@/components/public/shell/scroll-progress';
 import { PublicSiteProvider, type ShellSite } from '@/components/public/shell/site-context';
 import { SkipLink } from '@/components/public/shell/skip-link';
+import { SITE_NAME, withOg } from '@/lib/api/seo';
 import { getNextEvent, getSiteOrDefaults } from '@/lib/api/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteOrDefaults();
   const { seo, general } = site.settings;
-  const og = site.ogImage?.src;
-  return {
-    title: { default: seo.title, template: `%s · ${general.siteName || 'Zemi'}` },
-    description: seo.description,
-    keywords: seo.keywords?.length ? seo.keywords : undefined,
-    openGraph: {
-      type: 'website',
-      siteName: general.siteName || 'Zemi',
-      title: seo.title,
+  // `absolute`: the root layout's '%s · Zemi' template must not wrap the site title again.
+  // No og/twitter title or description here: Next fills them from each page's own title and
+  // description, so pages that don't set openGraph never share the home page's title.
+  return withOg(
+    {
+      title: { absolute: seo.title, template: `%s · ${general.siteName || SITE_NAME}` },
       description: seo.description,
-      ...(og ? { images: [{ url: og, width: site.ogImage?.width, height: site.ogImage?.height }] } : null),
+      keywords: seo.keywords?.length ? seo.keywords : undefined,
     },
-    twitter: { card: og ? 'summary_large_image' : 'summary', title: seo.title, description: seo.description },
-  };
+    { site },
+  );
 }
 
 /**
@@ -70,6 +69,8 @@ export default async function PublicLayout({ children }: { children: ReactNode }
             {children}
           </main>
           <PublicFooter site={site} />
+          {/* Runs before paint once the page is parsed: a dark hero gets a paper-tone nav right away. */}
+          <NavThemeBootScript />
           <PageTransition />
           <Cursor />
           <Toaster position="bottom-center" offset={24} />

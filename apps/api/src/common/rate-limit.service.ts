@@ -10,6 +10,8 @@ export interface RateLimitRule {
 
 export interface RateLimitResult {
   allowed: boolean;
+  /** Hits counted in the current window, this one included (`peek`: without one). */
+  count: number;
   remaining: number;
   /** Epoch ms when the window resets. */
   resetAt: number;
@@ -28,7 +30,7 @@ interface Bucket {
  *   rateLimit.consume(`login:${ip}`, { limit: 8, windowMs: 10 * 60_000 }); // throws 429 when over
  *   const r = rateLimit.hit(`react:${ip}:${eventId}`, { limit: 30, windowMs: 10_000 }); // check r.allowed
  *
- * Key prefixes in use: `login:`, `register:`, `contact:`, `react:`, `heartbeat:`.
+ * Key prefixes in use: `login:`, `login-fail:`, `register:`, `contact:`, `react:`, `heartbeat:`, `upload:`.
  */
 @Injectable()
 export class RateLimitService implements OnModuleDestroy {
@@ -54,6 +56,7 @@ export class RateLimitService implements OnModuleDestroy {
     const allowed = b.count <= rule.limit;
     return {
       allowed,
+      count: b.count,
       remaining: Math.max(0, rule.limit - b.count),
       resetAt: b.resetAt,
       retryAfterSec: allowed ? 0 : Math.max(1, Math.ceil((b.resetAt - now) / 1000)),
@@ -70,16 +73,27 @@ export class RateLimitService implements OnModuleDestroy {
   /** Look without counting. */
   peek(key: string, rule: RateLimitRule, now = Date.now()): RateLimitResult {
     const b = this.buckets.get(key);
-    if (!b || b.resetAt <= now) return { allowed: true, remaining: rule.limit, resetAt: now + rule.windowMs, retryAfterSec: 0 };
+    if (!b || b.resetAt <= now) return { allowed: true, count: 0, remaining: rule.limit, resetAt: now + rule.windowMs, retryAfterSec: 0 };
     return {
       allowed: b.count < rule.limit,
+      count: b.count,
       remaining: Math.max(0, rule.limit - b.count),
       resetAt: b.resetAt,
       retryAfterSec: b.count < rule.limit ? 0 : Math.max(1, Math.ceil((b.resetAt - now) / 1000)),
     };
   }
 
-  /** Forget a key (e.g. after a successful login). */
+  /**
+   * Give back one hit in the current window (never below zero). Count first with `consume`/`hit`,
+   * which is safe under concurrency, then refund the attempts that turned out fine: a successful
+   * login costs nothing, while the failures before it stay counted.
+   */
+  refund(key: string, now = Date.now()): void {
+    const b = this.buckets.get(key);
+    if (b && b.resetAt > now && b.count > 0) b.count -= 1;
+  }
+
+  /** Forget a key entirely. */
   reset(key: string): void {
     this.buckets.delete(key);
   }

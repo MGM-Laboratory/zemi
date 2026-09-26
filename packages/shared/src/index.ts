@@ -6,6 +6,7 @@ export * from './rbac.js';
 export * from './citations.js';
 export * from './format.js';
 export * from './brand.js';
+export * from './links.js';
 export * from './schemas/common.js';
 export * from './schemas/auth.js';
 export * from './schemas/admins.js';

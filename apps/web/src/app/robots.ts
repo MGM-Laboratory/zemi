@@ -12,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
-    host: siteUrl,
+    // No `host`: that directive is Yandex-only and wants a bare hostname, not a URL.
   };
 }

@@ -11,6 +11,7 @@ import {
   blocksSchema,
   idSchema,
   optionalUrl,
+  safeLinkUrl,
   slugSchema,
   visibilitySchema,
   type Blocks,
@@ -22,7 +23,7 @@ import type { SpeakerRef } from './speakers.js';
 export const publicationLinkSchema = z.object({
   kind: z.enum(PUBLICATION_LINK_KINDS),
   label: z.string().min(1).max(120),
-  url: z.string().min(1).max(2048),
+  url: safeLinkUrl(2048),
 });
 export type PublicationLink = z.infer<typeof publicationLinkSchema>;
 

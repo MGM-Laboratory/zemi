@@ -167,7 +167,7 @@ export function ExpiryField({ value, onChange, error, readOnly, neverHint = 'Acc
             </div>
             <div>
               <label htmlFor={timeId} className="mb-1 block text-[0.8125rem] font-medium text-ink-2">
-                Time <span className="text-ink-4">(WIB)</span>
+                Time <span className="text-ink-3">(WIB)</span>
               </label>
               <Input
                 id={timeId}

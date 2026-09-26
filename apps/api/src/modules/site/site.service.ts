@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  sanitizeLinkList,
   SITE_SETTING_SCHEMAS,
   type EventMode,
   type Faq,
@@ -296,7 +297,7 @@ export class SiteService {
       bio: r.bio ?? null,
       avatar: (r.avatarAssetId && avatars.get(r.avatarAssetId)) || null,
       avatarAssetId: r.avatarAssetId ?? null,
-      links: r.links ?? [],
+      links: sanitizeLinkList(r.links),
       visibility: r.visibility,
       sortOrder: r.sortOrder,
     }));

@@ -257,6 +257,8 @@ interface Particle {
   spin: number;
   ox: number;
   oy: number;
+  /** Size factor: ideas shrink while they drift behind the words, so the copy stays calm. */
+  k: number;
 }
 
 /** Small brand shapes drifting upward like ideas, nudged away by the pointer. */
@@ -273,6 +275,8 @@ function IdeaParticles({
   const gl = useThree((s) => s.gl);
   const meshes = useRef<Array<InstancedMesh | null>>([]);
   const dummy = useMemo(() => new Object3D(), []);
+  /** The hero's text column on screen (eyebrow, title, body, buttons), re-read every ~half second. */
+  const zone = useRef({ l: 0, t: 0, r: 0, b: 0, ttl: 0 });
   const data = useMemo(() => {
     const rnd = mulberry(7);
     return SHAPE_ORDER.map(() =>
@@ -286,6 +290,7 @@ function IdeaParticles({
         spin: (rnd() - 0.5) * 1.2,
         ox: 0,
         oy: 0,
+        k: 1,
       })),
     );
   }, [count]);
@@ -308,6 +313,14 @@ function IdeaParticles({
       ? -(((p.y - rect.top) / Math.max(1, rect.height)) * 2 - 1) * (viewport.height / 2)
       : 1e6;
     const lift = (scroll.current?.p ?? 0) * 1.5;
+    const z = zone.current;
+    if (--z.ttl <= 0) {
+      const box = document.getElementById('home-hero-title')?.parentElement?.getBoundingClientRect();
+      zone.current = box
+        ? { l: box.left - 12, t: box.top - 12, r: box.right + 12, b: box.bottom + 12, ttl: 30 }
+        : { l: 0, t: 0, r: 0, b: 0, ttl: 30 };
+    }
+    const zz = zone.current;
     SHAPE_ORDER.forEach((_, si) => {
       const mesh = meshes.current[si];
       if (!mesh) return;
@@ -325,7 +338,12 @@ function IdeaParticles({
         q.oy = MathUtils.damp(q.oy, d > 0 ? (tmp.y / d) * push : 0, 4, dt);
         dummy.position.set(x + q.ox, y + q.oy, q.z);
         dummy.rotation.set(t * q.spin * 0.6 + q.phase, t * q.spin, t * q.spin * 0.4);
-        dummy.scale.setScalar(q.s);
+        // Screen position (same flat approximation as the pointer push).
+        const sx = rect.left + ((x + q.ox) / viewport.width + 0.5) * rect.width;
+        const sy = rect.top + (0.5 - (y + q.oy) / viewport.height) * rect.height;
+        const behindWords = sx > zz.l && sx < zz.r && sy > zz.t && sy < zz.b;
+        q.k = MathUtils.damp(q.k, behindWords ? 0.3 : 1, 5, dt);
+        dummy.scale.setScalar(q.s * q.k);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       });

@@ -322,8 +322,10 @@ export function ArchiveBrowser({
           {topTags.map((t) => (
             <ChipButton
               key={t.tag}
-              size="sm"
+              size="md"
               tone="outline"
+              // 36px chips, 44px to a thumb (the hit area reaches into the row gap).
+              className="relative before:absolute before:inset-x-0 before:-inset-y-1"
               selected={filters.tag === t.tag}
               onClick={() => void setState({ tag: filters.tag === t.tag ? null : t.tag })}
             >

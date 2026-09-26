@@ -56,7 +56,7 @@ export function Sidebar({ groups, pathname, collapsed, onToggleCollapsed, onNavi
               rail ? (
                 <div className="mx-auto mb-2 h-px w-6 bg-line" aria-hidden="true" />
               ) : (
-                <div className="label mb-1.5 px-3 text-[0.6875rem] text-ink-4">{g.label}</div>
+                <div className="label mb-1.5 px-3 text-[0.6875rem] text-ink-3">{g.label}</div>
               )
             ) : null}
             <ul className="space-y-0.5">
@@ -200,7 +200,7 @@ function NavRow({
             onClick={() => setOpenManual(!open)}
             aria-label={open ? `Hide ${item.label} pages` : `Show ${item.label} pages`}
             aria-expanded={open}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-4 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
           >
             <ChevronDown className={cn('size-4 transition-transform duration-200', open && 'rotate-180')} />
           </button>

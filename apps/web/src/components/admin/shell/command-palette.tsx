@@ -13,6 +13,7 @@ import { cn } from '@/lib/admin/cn';
 import { useDebouncedValue } from '@/lib/admin/hooks';
 import { adminRoutes, flattenNav, visibleNav } from '@/lib/admin/nav';
 import { adminKeys } from '@/lib/admin/query-keys';
+import { confirmLeave } from '@/lib/admin/leave-guard';
 import { Avatar } from '../ui/media';
 import { Kbd } from '../ui/media';
 import { Spinner } from '../ui/spinner';
@@ -55,14 +56,14 @@ function Item({ onSelect, icon, children, hint, value, keywords }: { onSelect: (
         {icon}
       </span>
       <span className="min-w-0 flex-1 truncate">{children}</span>
-      {hint ? <span className="shrink-0 text-xs text-ink-4">{hint}</span> : null}
+      {hint ? <span className="shrink-0 text-xs text-ink-3">{hint}</span> : null}
       <ArrowRight className="size-4 shrink-0 text-ink-4 opacity-0 transition-opacity group-data-[selected=true]:opacity-100" aria-hidden="true" />
     </Command.Item>
   );
 }
 
 const groupCls =
-  '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[0.6875rem] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-ink-4';
+  '[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-mono [&_[cmdk-group-heading]]:text-[0.6875rem] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-ink-3';
 
 /** Every word of the query appears in the label or keywords (order free). Empty query matches all. */
 function matches(query: string, label: string, keywords: string[] = []) {
@@ -130,31 +131,56 @@ export function CommandPalette({ open, onOpenChange, onToggleSidebar, onShowShor
 
   // Keep the highlight on the first row as results arrive (cmdk only does this when it filters).
   const [selected, setSelected] = useState('');
+  // Typing a page name ("speak", "Venues") should land on the page, not on a search hit that
+  // happens to contain the word: then "Go to" moves above the search results.
+  const typed = query.trim().toLowerCase();
+  const navHit = typed.length >= 2 ? nav.find((n) => n.label.toLowerCase().startsWith(typed)) : undefined;
+  const navFirst = Boolean(navHit);
   const firstValue =
+    (navHit && `go ${navHit.parent ? `${navHit.parent.label} ` : ''}${navHit.label}`) ||
     (searching && events.data?.[0] && `event ${events.data[0].id} ${events.data[0].title}`) ||
     (searching && speakers.data?.[0] && `speaker ${speakers.data[0].id} ${speakers.data[0].fullName}`) ||
     (searching && pubs.data?.[0] && `publication ${pubs.data[0].id} ${pubs.data[0].title}`) ||
     (nav[0] && `go ${nav[0].parent ? `${nav[0].parent.label} ` : ''}${nav[0].label}`) ||
     '';
   useEffect(() => {
-    setSelected(firstValue.toLowerCase());
+    // cmdk 1.x compares values as they are (no lowercasing), so keep the case or nothing is
+    // highlighted and Enter does nothing.
+    setSelected(firstValue);
   }, [firstValue]);
 
   const go = (href: string) => {
     onOpenChange(false);
-    router.push(href);
+    void confirmLeave().then((ok) => ok && router.push(href));
   };
   const run = (fn?: () => void) => {
     onOpenChange(false);
     fn?.();
   };
 
+  const navGroup = nav.length ? (
+              <Command.Group heading="Go to" className={groupCls}>
+                {nav.map((n) => (
+                  <Item
+                    key={n.key}
+                    value={`go ${n.parent ? `${n.parent.label} ` : ''}${n.label}`}
+                    keywords={n.keywords}
+                    icon={<NavIcon name={n.icon ?? n.parent?.icon ?? 'overview'} />}
+                    hint={n.shortcut ? <Kbd>{n.shortcut.toUpperCase()}</Kbd> : n.parent ? n.parent.label : undefined}
+                    onSelect={() => go(n.href)}
+                  >
+                    {n.parent ? `${n.parent.label}: ${n.label}` : n.label}
+                  </Item>
+                ))}
+              </Command.Group>
+              ) : null;
+
   return (
     <RDialog.Root open={open} onOpenChange={onOpenChange}>
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-[60] bg-[rgba(14,17,22,0.28)] backdrop-blur-[2px] data-[state=open]:animate-[zemi-fade-in_160ms_var(--ease-out)]" />
         <RDialog.Content
-          className="fixed top-[max(1rem,10vh)] left-1/2 z-[61] w-[min(40rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[22px] border border-line bg-white shadow-[var(--shadow-3)] outline-none data-[state=open]:animate-[zemi-dialog-in_200ms_var(--ease-out)]"
+          className="fixed top-[max(1rem,10vh)] left-1/2 z-[60] w-[min(40rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-[22px] border border-line bg-white shadow-[var(--shadow-3)] outline-none data-[state=open]:animate-[zemi-dialog-in_200ms_var(--ease-out)]"
           aria-describedby={undefined}
         >
           <RDialog.Title className="sr-only">Command palette</RDialog.Title>
@@ -175,6 +201,7 @@ export function CommandPalette({ open, onOpenChange, onToggleSidebar, onShowShor
                 {loading ? 'Looking...' : searching ? `Nothing for "${q}". Try a different word?` : 'Nothing matches that.'}
               </Command.Empty>
 
+              {navFirst ? navGroup : null}
               {searching && (events.data?.length ?? 0) > 0 ? (
                 <Command.Group heading="Events" className={groupCls}>
                   {events.data!.map((e) => (
@@ -216,24 +243,9 @@ export function CommandPalette({ open, onOpenChange, onToggleSidebar, onShowShor
                   ))}
                 </Command.Group>
               ) : null}
-              {failed ? <div className="px-4 py-2 text-xs text-ink-4">Search is having a moment. Pages still work.</div> : null}
+              {failed ? <div className="px-4 py-2 text-xs text-ink-3">Search is having a moment. Pages still work.</div> : null}
 
-              {nav.length ? (
-              <Command.Group heading="Go to" className={groupCls}>
-                {nav.map((n) => (
-                  <Item
-                    key={n.key}
-                    value={`go ${n.parent ? `${n.parent.label} ` : ''}${n.label}`}
-                    keywords={n.keywords}
-                    icon={<NavIcon name={n.icon ?? n.parent?.icon ?? 'overview'} />}
-                    hint={n.shortcut ? <Kbd>{n.shortcut.toUpperCase()}</Kbd> : n.parent ? n.parent.label : undefined}
-                    onSelect={() => go(n.href)}
-                  >
-                    {n.parent ? `${n.parent.label}: ${n.label}` : n.label}
-                  </Item>
-                ))}
-              </Command.Group>
-              ) : null}
+              {navFirst ? null : navGroup}
 
               {actions.length ? (
               <Command.Group heading="Do something" className={groupCls}>

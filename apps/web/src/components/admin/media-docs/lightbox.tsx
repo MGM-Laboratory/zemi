@@ -58,7 +58,7 @@ export function MediaLightbox({
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-[60] bg-[rgba(14,17,22,0.96)] data-[state=open]:animate-[zemi-fade-in_180ms_var(--ease-out)]" />
         <RDialog.Content
-          className="fixed inset-0 z-[61] flex flex-col text-white outline-none"
+          className="fixed inset-0 z-[60] flex flex-col text-white outline-none"
           onCloseAutoFocus={(e) => {
             const el = lastId.current ? document.querySelector<HTMLElement>(`[data-media-open="${lastId.current}"]`) : null;
             if (el) {

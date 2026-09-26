@@ -13,6 +13,7 @@ import type {
   RosterRow,
 } from '@zemi/shared';
 import { adminFetch, api } from '@/lib/admin/api';
+import { notify } from '@/components/admin/ui/toast';
 import { useAdminMutation } from '@/lib/admin/hooks';
 import { invalidatePeople, peopleKeys, shortName } from './lib';
 
@@ -99,9 +100,12 @@ export function useBulkRegistrations(eventId: string) {
   return useAdminMutation({
     mutationFn: (vars: { ids: string[]; action: BulkAction }) =>
       adminFetch<BulkRegistrationResult>(`/admin/events/${eventId}/registrations/bulk`, { method: 'POST', body: vars }),
-    successMessage: (res) => bulkMessage(res),
-    celebrate: false,
-    onSuccess: () => invalidatePeople(qc, eventId),
+    // Any failed email makes the whole toast an error, so "3 emails failed" never hides in a green one.
+    onSuccess: (res) => {
+      if (res.emails?.failed) notify.error(bulkMessage(res));
+      else notify.success(bulkMessage(res), { celebrate: false });
+      return invalidatePeople(qc, eventId);
+    },
   });
 }
 
@@ -117,9 +121,11 @@ export function useRegistrationActions(eventId: string, device = 'Studio (regist
   });
   const resend = useAdminMutation({
     mutationFn: (r: { id: string; fullName: string }) => adminFetch<ResendResult>(`/admin/registrations/${r.id}/resend`, { method: 'POST' }),
-    successMessage: (res, r) =>
-      res.status === 'failed' ? `The email to ${shortName(r.fullName)} failed. Check the address.` : `Ticket sent to ${shortName(r.fullName)} again.`,
-    onSuccess: refresh,
+    onSuccess: (res, r) => {
+      if (res.status === 'failed') notify.error(`The email to ${shortName(r.fullName)} failed. Check the address and try again.`);
+      else notify.success(`Ticket sent to ${shortName(r.fullName)} again.`);
+      return refresh();
+    },
   });
   const patch = useAdminMutation({
     mutationFn: (v: { id: string; body: Record<string, unknown>; message?: string }) =>

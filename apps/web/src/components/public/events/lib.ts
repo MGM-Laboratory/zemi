@@ -20,6 +20,14 @@ export const ACCENT_SHAPE: Record<Accent, ShapeName> = {
   green: 'arch',
 };
 
+/** A second brand color that pops against an accent frame (stickers, sidekick characters). */
+export const ACCENT_FRIEND: Record<Accent, Accent> = {
+  blue: 'yellow',
+  yellow: 'blue',
+  red: 'green',
+  green: 'red',
+};
+
 export const ACCENT_HEX: Record<Accent, string> = {
   blue: '#3a6dc5',
   red: '#f94141',
@@ -64,6 +72,12 @@ export const MODE_LABEL: Record<EventMode, string> = {
 
 export function eventLabel(e: { number: number | null }): string {
   return e.number != null ? `Zemi #${e.number}` : 'Zemi';
+}
+
+/** "Zemi #97 · Title", without saying the number twice when the title already has it. */
+export function labelAndTitle(e: { number: number | null; title: string }, sep = ' · '): string {
+  if (e.number != null && e.title.toLowerCase().includes(`#${e.number}`)) return e.title;
+  return `${eventLabel(e)}${sep}${e.title}`;
 }
 
 export function whenLine(e: { startsAt: string; endsAt: string }): string {
@@ -177,4 +191,22 @@ export function seeded(seed: string | number, salt = 0): number {
 export function siteUrl(path = ''): string {
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3300').replace(/\/+$/, '');
   return `${base}${path}`;
+}
+
+/** Link-only ("unlisted") Friday: reachable by URL, kept out of lists, and never indexed. */
+export function isUnlisted(e: Pick<EventDetail, 'visibility'>): boolean {
+  return e.visibility === 'unlisted';
+}
+
+/** Page and share title: "Zemi #97: Title" (the number once, even when the title already has it). */
+export function eventTitle(e: { number: number | null; title: string }): string {
+  return labelAndTitle(e, ': ');
+}
+
+/**
+ * Extra class for a `<Chip tone={accent}>`. The shared red chip (red-600 on red-50) is 3.99:1, under
+ * AA at chip size, so red chips get a darker red (#b42323, 5.48:1). The other tones pass.
+ */
+export function chipToneFix(tone: string): string | undefined {
+  return tone === 'red' ? 'text-[#b42323]' : undefined;
 }

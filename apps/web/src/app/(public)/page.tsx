@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 import { loadHome } from '@/components/public/home/data';
 import { HomeStory } from '@/components/public/home/home-story';
+import { withOg } from '@/lib/api/seo';
+import { getSiteOrDefaults } from '@/lib/api/server';
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { alternates: { canonical: '/' } };
+  // The title and description come from the layout (SEO settings), og:title and twitter follow them.
+  return withOg({ alternates: { canonical: '/' }, openGraph: { url: '/' } }, { site: await getSiteOrDefaults() });
 }
 
 /**

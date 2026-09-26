@@ -131,8 +131,9 @@ export class AdminsController {
   /** GET /admin/audit?actor&resourceType&resourceId&action&page&pageSize (superadmin or audit.view) */
   @Get('audit')
   @RequireCapability('audit.view')
-  audit(@ZodQuery(auditQuery) q: z.infer<typeof auditQuery>): Promise<Paginated<AuditEntry>> {
-    return this.admins.auditLog(q);
+  audit(@ZodQuery(auditQuery) q: z.infer<typeof auditQuery>, @CurrentAuth() auth: RequestAuth): Promise<Paginated<AuditEntry>> {
+    // IPs, user agents and sign-in session ids are for the superadmin only.
+    return this.admins.auditLog(q, { full: auth.ability.isSuperadmin });
   }
 
   @Get('system')

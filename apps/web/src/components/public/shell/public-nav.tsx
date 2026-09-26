@@ -55,13 +55,16 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
 
   const active = NAV_LINKS.find((l) => isActive(pathname, l.href))?.href ?? null;
   const indicator = hover ?? active;
-  const dark = theme === 'dark';
 
   return (
     <header className={cn(styles.header, pinned && 'relative! mb-0!')}>
       <motion.div
-        className={styles.bar}
+        // Everything that flips reads this attribute in CSS (group/bar variants), so the pre-paint
+        // script can set it before hydration and a flip never needs a re-render to look right.
+        className={cn(styles.bar, 'group/bar')}
+        data-nav-bar=""
         data-theme={theme}
+        suppressHydrationWarning
         data-scrolled={!atTop || pinned ? 'true' : 'false'}
         initial={false}
         animate={{ y: hidden ? '-100%' : '0%' }}
@@ -78,14 +81,14 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
             className="-ml-1 flex h-11 items-center rounded-full px-1 text-[1.5rem] sm:text-[1.65rem]"
             aria-current={pathname === '/' ? 'page' : undefined}
           >
-            <ZemiLogo trigger={pathname} title="Zemi" />
+            <ZemiLogo trigger={pathname} title="Zemi" className={styles.logo} />
           </Link>
 
           <LayoutGroup id="public-nav">
             <ul
               className={cn(
-                'hidden items-center gap-0.5 rounded-full border p-1 transition-colors duration-300 lg:flex',
-                dark ? 'border-white/12 bg-white/[0.06]' : 'border-ink/[0.07] bg-white/70 backdrop-blur-md',
+                'hidden items-center gap-0.5 rounded-full border border-ink/[0.07] bg-white/70 p-1 backdrop-blur-md transition-colors duration-300 lg:flex',
+                'group-data-[theme=dark]/bar:border-white/12 group-data-[theme=dark]/bar:bg-white/[0.06] group-data-[theme=dark]/bar:backdrop-blur-none',
               )}
               onPointerLeave={() => setHover(null)}
             >
@@ -99,7 +102,9 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
                       className={cn(
                         styles.link,
                         'relative flex h-10 items-center gap-2 rounded-full px-4 text-[0.9375rem] font-bold transition-colors duration-200',
-                        on ? (dark ? 'text-ink' : 'text-white') : dark ? 'text-white/85 hover:text-white' : 'text-ink-2 hover:text-ink',
+                        on
+                          ? 'text-white group-data-[theme=dark]/bar:text-ink'
+                          : 'text-ink-2 hover:text-ink group-data-[theme=dark]/bar:text-white/85 group-data-[theme=dark]/bar:hover:text-white',
                       )}
                       onPointerEnter={() => setHover(l.href)}
                       onFocus={() => setHover(l.href)}
@@ -108,7 +113,7 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
                       {on ? (
                         <motion.span
                           layoutId="nav-indicator"
-                          className={cn('absolute inset-0 rounded-full', dark ? 'bg-white' : 'bg-ink')}
+                          className="absolute inset-0 rounded-full bg-ink transition-colors duration-300 group-data-[theme=dark]/bar:bg-white"
                           transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                           aria-hidden="true"
                         />
@@ -123,15 +128,15 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
           </LayoutGroup>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <NextEventPill event={nextEvent} theme={theme} compact className="sm:hidden" />
-            <NextEventPill event={nextEvent} theme={theme} className="hidden sm:inline-flex" />
+            <NextEventPill event={nextEvent} theme="auto" compact className="sm:hidden" />
+            <NextEventPill event={nextEvent} theme="auto" className="hidden sm:inline-flex" />
             <button
               ref={burgerRef}
               type="button"
               className={cn(
                 styles.burger,
-                'transition-colors lg:hidden',
-                dark ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-surface-muted text-ink hover:bg-line',
+                'bg-surface-muted text-ink transition-colors hover:bg-line active:scale-95 lg:hidden',
+                'group-data-[theme=dark]/bar:bg-white/10 group-data-[theme=dark]/bar:text-white group-data-[theme=dark]/bar:hover:bg-white/20',
               )}
               aria-expanded={open}
               aria-controls="zemi-mobile-menu"

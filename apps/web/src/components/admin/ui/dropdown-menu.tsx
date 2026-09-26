@@ -48,7 +48,7 @@ export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps
     <>
       {icon}
       <span className="min-w-0 flex-1 truncate">{children}</span>
-      {shortcut ? <span className="mono text-xs text-ink-4">{shortcut}</span> : null}
+      {shortcut ? <span className="mono text-xs text-ink-3">{shortcut}</span> : null}
     </>
   );
   if (href) {
@@ -99,7 +99,7 @@ export const DropdownMenuRadioItem = forwardRef<HTMLDivElement, ComponentPropsWi
 });
 
 export function DropdownMenuLabel({ children, className }: { children: ReactNode; className?: string }) {
-  return <RMenu.Label className={cn('label px-2.5 pt-2 pb-1 text-ink-4', className)}>{children}</RMenu.Label>;
+  return <RMenu.Label className={cn('label px-2.5 pt-2 pb-1 text-ink-3', className)}>{children}</RMenu.Label>;
 }
 
 export function DropdownMenuSeparator({ className }: { className?: string }) {

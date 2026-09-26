@@ -255,7 +255,7 @@ function DateRange({
       </div>
       <div>
         <label htmlFor={toId} className="mb-1 block text-[0.8125rem] font-medium text-ink-2">
-          To <span className="text-ink-4">(WIB, inclusive)</span>
+          To <span className="text-ink-3">(WIB, inclusive)</span>
         </label>
         <Input id={toId} type="date" size="sm" value={to} max={today} onChange={(e) => onChange(from, e.target.value)} className="w-[10.5rem]" aria-invalid={invalid || undefined} />
       </div>

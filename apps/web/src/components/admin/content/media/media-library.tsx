@@ -189,7 +189,7 @@ export function MediaLibrary() {
                 Load more
               </Button>
             ) : total > PAGE_SIZE ? (
-              <p className="text-sm text-ink-4">That is all {pluralize(total, 'file')}.</p>
+              <p className="text-sm text-ink-3">That is all {pluralize(total, 'file')}.</p>
             ) : null}
           </div>
         </>

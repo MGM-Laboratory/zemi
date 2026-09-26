@@ -178,7 +178,7 @@ export function BarList({ items, color, total, formatValue = (n) => n.toLocaleSt
             </span>
             <span className="mono min-w-[3.5rem] text-right text-sm font-semibold text-ink tabular-nums">
               {formatValue(it.value)}
-              {share != null ? <span className="ml-1.5 font-normal text-ink-4">{share}%</span> : null}
+              {share != null ? <span className="ml-1.5 font-normal text-ink-3">{share}%</span> : null}
             </span>
           </li>
         );
@@ -228,7 +228,7 @@ export function StackedShare({ parts, height = 14, legend = true, className }: {
               <span className="size-2.5 rounded-[3px]" style={{ background: p.color }} aria-hidden="true" />
               {p.label}
               <span className="mono font-semibold text-ink tabular-nums">{p.value.toLocaleString('en-US')}</span>
-              {total ? <span className="text-ink-4">{Math.round((p.value / total) * 100)}%</span> : null}
+              {total ? <span className="text-ink-3">{Math.round((p.value / total) * 100)}%</span> : null}
             </li>
           ))}
         </ul>

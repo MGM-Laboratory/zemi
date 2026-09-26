@@ -8,6 +8,7 @@ import { formatJakarta, type EventCard } from '@zemi/shared';
 import { Character } from '@/components/brand/character';
 import { EmailIcon, LinkIcon } from '@/components/icons/link-icon';
 import { LINK_KIND_LABELS, linkDisplay } from '@/components/icons/link-kinds';
+import { isExternalHref, safeLinkItems } from '@/components/public/ui/safe-href';
 import { cn } from '@/lib/utils';
 import styles from './contact.module.css';
 import { CheckIcon, ClockIcon, CopyIcon, DoorIcon, PinIcon, WhatsappIcon } from './icons';
@@ -99,7 +100,8 @@ export interface ContactDetailsProps {
 export function ContactDetails({ contact, nextEvent }: ContactDetailsProps) {
   const wa = whatsappHref(contact.whatsapp);
   const maps = mapsHref(contact.mapsUrl, contact.address);
-  const socials = contact.socials ?? [];
+  // Free text from the admin: only http(s), mailto and tel links render.
+  const socials = safeLinkItems(contact.socials);
   const nextVenue = nextEvent?.venue?.name;
 
   return (
@@ -153,7 +155,7 @@ export function ContactDetails({ contact, nextEvent }: ContactDetailsProps) {
           <ul className="flex flex-wrap gap-2">
             {socials.map((s) => {
               const label = s.label || LINK_KIND_LABELS[s.kind];
-              const external = !s.url.startsWith('mailto:');
+              const external = isExternalHref(s.url);
               return (
                 <li key={`${s.kind}-${s.url}`}>
                   <a

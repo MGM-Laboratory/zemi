@@ -3,6 +3,7 @@ import { PUBLICATION_TYPES, type PublicationType } from '@zemi/shared';
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { CountUp } from '@/components/motion/count-up';
 import { HighlightSwipe } from '@/components/motion/highlight-swipe';
+import { shareMeta } from '@/components/public/media/share-meta';
 import { getAllPublications } from '@/components/public/speakers/data';
 import { Enter } from '@/components/public/speakers/enter';
 import { firstParam } from '@/components/public/speakers/lib';
@@ -21,11 +22,11 @@ export const metadata: Metadata = {
   description:
     'Papers, preprints, theses, datasets and software that were presented, argued about or born at Zemi, the Friday seminar of MGM Laboratory. Read them, cite them, borrow the good ideas.',
   alternates: { canonical: '/publications' },
-  openGraph: {
-    url: '/publications',
+  ...shareMeta({
     title: 'Publications from Zemi',
-    description: 'Papers that sat at our table.',
-  },
+    description: 'Papers that sat at our table. Read them, cite them, borrow the good ideas.',
+    url: '/publications',
+  }),
 };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };

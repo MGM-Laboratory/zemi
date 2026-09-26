@@ -33,7 +33,7 @@ export function SeoSettings() {
 }
 
 function LengthHint({ n, ideal, max }: { n: number; ideal: number; max: number }) {
-  const tone = n === 0 ? 'text-ink-4' : n <= ideal ? 'text-green-600' : n <= max ? 'text-[#8a5a00]' : 'text-red-600';
+  const tone = n === 0 ? 'text-ink-3' : n <= ideal ? 'text-green-600' : n <= max ? 'text-[#8a5a00]' : 'text-red-600';
   return (
     <span className={cn('text-[0.8125rem]', tone)}>
       {n <= ideal ? `Fits. Google shows about ${ideal} characters.` : `Google will cut it around character ${ideal}.`}
@@ -121,7 +121,7 @@ function SharePreviews({ title, description, image }: { title: string; descripti
       {image ? (
         <AdminImage image={image} sizes="420px" alt="" className="absolute inset-0 size-full" />
       ) : (
-        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[0.8125rem] text-ink-4">
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-[0.8125rem] text-ink-3">
           <ImageOff className="size-5" aria-hidden="true" />
           No share image yet
         </span>
@@ -147,7 +147,7 @@ function SharePreviews({ title, description, image }: { title: string; descripti
             <div className="space-y-0.5 px-3 py-2">
               <p className="line-clamp-2 text-[0.875rem] font-semibold text-ink">{title || 'Your title'}</p>
               <p className="line-clamp-2 text-[0.8125rem] text-ink-3">{description}</p>
-              <p className="text-[0.75rem] text-ink-4">{host}</p>
+              <p className="text-[0.75rem] text-ink-3">{host}</p>
             </div>
           </div>
           <p className="px-1.5 pt-1.5 text-[0.875rem] text-[#1a7f37] underline">{SITE_URL}</p>
@@ -156,7 +156,7 @@ function SharePreviews({ title, description, image }: { title: string; descripti
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[var(--shadow-1)]" aria-label="Social card preview">
           {pic}
           <div className="border-t border-line bg-surface-muted/60 px-4 py-3">
-            <p className="text-[0.75rem] tracking-wide text-ink-4 uppercase">{host}</p>
+            <p className="text-[0.75rem] tracking-wide text-ink-3 uppercase">{host}</p>
             <p className="mt-0.5 line-clamp-1 font-semibold text-ink">{title || 'Your title'}</p>
             <p className="line-clamp-1 text-[0.8125rem] text-ink-3">{description}</p>
           </div>

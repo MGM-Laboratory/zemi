@@ -62,6 +62,24 @@
   pointer-events: auto;
 }
 
+/* Hero cover entrance: transform only. The cover (the LCP image) paints at full opacity from the
+   server HTML, and this plays without waiting for hydration. */
+.heroCoverIn {
+  animation: heroCoverIn 1s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+@keyframes heroCoverIn {
+  from {
+    transform: translateY(36px) rotate(-3deg) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroCoverIn {
+    animation: none;
+  }
+}
+
 /* Number stamp that sits on the frame corner. */
 .stamp {
   position: absolute;
@@ -217,6 +235,128 @@
   transform-origin: bottom;
   z-index: -1;
   pointer-events: none;
+}
+
+/* The player box on every stage (waiting, live, ended) shares one size, so swapping them never
+   jumps: 16:9, never taller than the screen, and on laptops the whole thing fits under the title. */
+.screen {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  margin-inline: auto;
+  max-width: calc((100svh - 24px) * 16 / 9);
+}
+
+@media (min-height: 600px) {
+  .screen {
+    max-width: calc((100svh - var(--nav-h, 72px) - 210px) * 16 / 9);
+  }
+}
+
+/* Ambilight: the cover, blurred into a slow glow that breathes behind the screen. */
+.ambient {
+  position: absolute;
+  inset: -7% -5%;
+  z-index: -2;
+  border-radius: 48px;
+  background:
+    radial-gradient(60% 70% at 50% 50%, var(--accent, #3a6dc5), transparent 72%),
+    var(--ambient-img, none) center / cover no-repeat;
+  filter: blur(clamp(36px, 6vw, 96px)) saturate(1.5);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: breathe 5.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.ambient[data-live] {
+  animation-duration: 3.4s;
+}
+
+.ambient[data-still] {
+  animation: none;
+  opacity: 0.34;
+}
+
+/* Phones and tablets keep the still glow: no looping blur layer behind a decoding video. */
+@media (pointer: coarse) {
+  .ambient {
+    animation: none;
+    opacity: 0.5;
+  }
+  .ambient[data-still] {
+    opacity: 0.34;
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.62;
+    transform: scale(1.04);
+  }
+}
+
+/* The cast watches from behind the top edge of the screen (bottoms tucked behind it). */
+.cast {
+  position: absolute;
+  right: clamp(16px, 7%, 120px);
+  bottom: 100%;
+  z-index: -1;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(2px, 0.6vw, 10px);
+  transform: translateY(42%);
+  pointer-events: none;
+}
+
+.castMember {
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+.castMember[data-bob] {
+  animation: peek 2.8s steps(42, jump-none) infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes peek {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  80% {
+    transform: translateY(-14%);
+  }
+  90% {
+    transform: translateY(-4%);
+  }
+}
+
+/* Landscape phones: the screen comes first and fills the height under the nav; the title follows. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .stageTight {
+    padding-top: calc(var(--nav-h, 72px) + 6px);
+  }
+  .stageTight .screen {
+    max-width: calc((100svh - var(--nav-h, 72px) - var(--announcement-h, 0px) - 14px) * 16 / 9);
+  }
+  .stageTight .stageHead {
+    order: 2;
+  }
+  .stageTight .stageHint {
+    display: none;
+  }
+  .stageTight .waitClock {
+    font-size: 2.75rem;
+  }
+  .cast {
+    display: none;
+  }
 }
 
 /* Stop-motion idle: characters hop on a stepped timeline (15 fps feel). */
@@ -479,7 +619,9 @@
   }
   .hop,
   .sway,
-  .nowPulse {
+  .nowPulse,
+  .ambient,
+  .castMember[data-bob] {
     animation: none;
   }
 }

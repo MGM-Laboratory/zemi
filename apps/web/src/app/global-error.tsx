@@ -1,11 +1,10 @@
 'use client';
 
-import { Atkinson_Hyperlegible_Next, Recursive } from 'next/font/google';
 import { MARK_PATHS, SHAPE_COLORS, SHAPE_ORDER, SHAPE_PATHS_46, type ShapeName } from '@zemi/shared';
+// The root layout's own font definitions: a second loader call here shipped (and preloaded) a
+// second Recursive on every page, since this boundary is part of every route's tree.
+import { atkinson, recursive } from '@/styles/fonts';
 import './globals.css';
-
-const recursive = Recursive({ subsets: ['latin'], axes: ['CASL', 'MONO'], variable: '--font-recursive', display: 'swap' });
-const atkinson = Atkinson_Hyperlegible_Next({ subsets: ['latin'], variable: '--font-atkinson', display: 'swap' });
 
 /** A sleepy shape with closed eyes. Plain SVG: nothing here may depend on code that could be the thing that broke. */
 function Sleepy({ shape, size, tilt = 0 }: { shape: ShapeName; size: number; tilt?: number }) {

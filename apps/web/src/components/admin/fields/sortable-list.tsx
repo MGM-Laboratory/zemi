@@ -148,7 +148,7 @@ export const DragHandle = forwardRef<HTMLButtonElement, SortableHandleProps & { 
       {...listeners}
       aria-label={label}
       className={cn(
-        'flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink-4 transition hover:bg-surface-muted hover:text-ink active:cursor-grabbing',
+        'flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink-3 transition hover:bg-surface-muted hover:text-ink active:cursor-grabbing',
         'focus-visible:outline-2 focus-visible:outline-focus',
         className,
       )}

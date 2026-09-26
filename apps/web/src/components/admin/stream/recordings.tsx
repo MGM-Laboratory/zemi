@@ -519,7 +519,7 @@ function UploadRecording({ onAttach }: { onAttach: (assetId: string, title: stri
       <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] lg:items-start">
         <label className="block space-y-1.5">
           <span className="text-sm font-semibold text-ink">
-            Title <span className="font-normal text-ink-4">(optional)</span>
+            Title <span className="font-normal text-ink-3">(optional)</span>
           </span>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="Like: Full session, camera 2" />
         </label>

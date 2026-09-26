@@ -94,24 +94,24 @@ function InboxPreview({ sender, replyTo, signature }: { sender: string; replyTo:
     <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[var(--shadow-1)]" aria-label="Email preview">
       <div className="space-y-1 border-b border-line px-4 py-3 text-[0.8125rem]">
         <p className="flex gap-2">
-          <span className="w-14 shrink-0 text-ink-4">From</span>
+          <span className="w-14 shrink-0 text-ink-3">From</span>
           <span className="min-w-0 truncate text-ink">
             <strong className="font-semibold">{sender.trim() || 'Zemi'}</strong> <span className="text-ink-3">&lt;no-reply@labmgm.org&gt;</span>
           </span>
         </p>
         <p className="flex gap-2">
-          <span className="w-14 shrink-0 text-ink-4">Reply to</span>
-          <span className="min-w-0 truncate text-ink-2">{replyTo.trim() || <span className="text-ink-4">nobody, it bounces</span>}</span>
+          <span className="w-14 shrink-0 text-ink-3">Reply to</span>
+          <span className="min-w-0 truncate text-ink-2">{replyTo.trim() || <span className="text-ink-3">nobody, it bounces</span>}</span>
         </p>
         <p className="flex gap-2">
-          <span className="w-14 shrink-0 text-ink-4">Subject</span>
+          <span className="w-14 shrink-0 text-ink-3">Subject</span>
           <span className="min-w-0 truncate font-medium text-ink">Tomorrow at 13:15 WIB: Zemi #98</span>
         </p>
       </div>
       <div className="space-y-3 px-4 py-4 text-[0.875rem] text-ink-2">
         <p>Hi Rina,</p>
         <p>Quick heads up: Zemi #98 is tomorrow, 13:15 to 15:15 WIB in Theater A. Your ticket is attached.</p>
-        <p className="whitespace-pre-line text-ink">{signature.trim() || <span className="text-ink-4">No sign-off</span>}</p>
+        <p className="whitespace-pre-line text-ink">{signature.trim() || <span className="text-ink-3">No sign-off</span>}</p>
       </div>
     </div>
   );

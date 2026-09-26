@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { MARK_PATHS, SHAPE_COLORS, SHAPE_ORDER } from '@zemi/shared';
 import loader from './site-loader.module.css';
 
@@ -18,7 +18,9 @@ import loader from './site-loader.module.css';
 export function SiteLoader() {
   const [gone, setGone] = useState(false);
 
-  useEffect(() => {
+  // A layout effect: on a client-side entry (from /admin, say) the attribute below must be on
+  // <html> before the first paint, or the page's h1 would wait for a curtain that never shows.
+  useLayoutEffect(() => {
     const html = document.documentElement;
     let seen = html.hasAttribute('data-zemi-seen');
     try {
@@ -30,12 +32,27 @@ export function SiteLoader() {
     }
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const skip = seen || reduced;
-    if (skip) markReady();
+    if (skip) {
+      markReady();
+      html.setAttribute('data-zemi-seen', '');
+    }
     const ready = skip ? undefined : setTimeout(markReady, 820);
     const done = setTimeout(() => setGone(true), skip ? 0 : 1300);
+    // The h1 paint rise (motion.module.css) waits for the curtain while data-zemi-seen is missing.
+    // Once the curtain is long gone, set it so later client navigations rise right away. A rise
+    // still running (a slow stream) keeps its delay pinned inline, so the flip can't make it jump.
+    const settle = skip
+      ? undefined
+      : setTimeout(() => {
+          for (const el of document.querySelectorAll<HTMLElement>('[data-split-paint]')) {
+            el.style.animationDelay = getComputedStyle(el).animationDelay;
+          }
+          html.setAttribute('data-zemi-seen', '');
+        }, 2400);
     return () => {
       clearTimeout(ready);
       clearTimeout(done);
+      clearTimeout(settle);
     };
   }, []);
 

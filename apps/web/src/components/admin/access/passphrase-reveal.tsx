@@ -72,7 +72,7 @@ export function PassphraseReveal({ name, passphrase, expiresAt, reason, onCopied
         transition={{ type: 'spring', stiffness: 260, damping: 22 }}
         className="relative overflow-hidden rounded-[22px] border border-line bg-[linear-gradient(var(--color-graph)_1px,transparent_1px),linear-gradient(90deg,var(--color-graph)_1px,transparent_1px)] bg-[size:24px_24px] p-5 sm:p-6"
       >
-        <p className="label mb-2 text-ink-4">Passphrase</p>
+        <p className="label mb-2 text-ink-3">Passphrase</p>
         <p className="mono text-[clamp(1.15rem,3.2vw,1.75rem)] font-semibold tracking-tight break-all text-ink select-all" data-testid="revealed-passphrase">
           <ScrambleText text={passphrase} />
         </p>

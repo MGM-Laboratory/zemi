@@ -238,6 +238,11 @@ export interface EventDetail extends EventCard {
   stream: EventStreamPublic;
   registration: EventRegistrationInfo;
   cancelReason: string | null;
+  /**
+   * `unlisted` events open by link but stay out of lists and search: the public page should send
+   * `noindex`. The public API 404s drafts, so there this is only ever `published` or `unlisted`.
+   */
+  visibility: z.infer<typeof visibilitySchema>;
   prev: { slug: string; title: string; number: number | null } | null;
   next: { slug: string; title: string; number: number | null } | null;
   updatedAt: string;
