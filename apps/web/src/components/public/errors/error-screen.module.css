@@ -1,0 +1,96 @@
+.page {
+  --nav-h: 72px;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 5vh, 56px);
+  padding-block: clamp(24px, 6vh, 72px) clamp(56px, 10vh, 120px);
+  outline: none;
+}
+
+.scene {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 640px);
+  padding-bottom: 18px;
+}
+
+.crew {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 20px);
+}
+
+.fallen {
+  display: inline-block;
+  rotate: -84deg;
+  translate: 0 4%;
+  transform-origin: 50% 90%;
+  animation: wobble 5.2s var(--ease-in-out, ease-in-out) infinite;
+}
+
+@keyframes wobble {
+  0%,
+  86%,
+  100% {
+    rotate: -84deg;
+  }
+  90% {
+    rotate: -70deg;
+  }
+  94% {
+    rotate: -88deg;
+  }
+}
+
+.cable {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 108%;
+  translate: -50% 0;
+  overflow: visible;
+  z-index: -1;
+}
+
+.plug {
+  transition: transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateX(-10px) rotate(-8deg);
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+}
+
+.scene:hover .plug {
+  animation: jiggle 600ms var(--ease-out, ease);
+}
+
+.cablePlugged .plug {
+  transform: translateX(3px) rotate(0deg);
+  animation: none;
+}
+
+@keyframes jiggle {
+  30% {
+    transform: translateX(-4px) rotate(-2deg);
+  }
+  60% {
+    transform: translateX(-12px) rotate(-10deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fallen,
+  .scene:hover .plug {
+    animation: none;
+  }
+}

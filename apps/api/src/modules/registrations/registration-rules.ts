@@ -121,3 +121,30 @@ export function reminderMoment(startsAt: Date): Date {
   const dayBefore = new Date(fromJakartaInput(day, '12:00').getTime() - 86_400_000);
   return fromJakartaInput(jakartaDateInput(dayBefore), '09:00');
 }
+
+export type LifecycleStage = 'reminder' | 'starting' | 'thanks';
+
+/** When each lifecycle email's window opens for the event's current times. */
+export function lifecycleWindowOpens(startsAt: Date, endsAt: Date): Record<LifecycleStage, Date> {
+  return {
+    reminder: reminderMoment(startsAt),
+    starting: new Date(startsAt.getTime() - 10 * 60_000),
+    thanks: endsAt,
+  };
+}
+
+/**
+ * How far before a stage's window a `<stage>_sent_at` has to be before it counts as "sent for an earlier
+ * schedule". Moving an event to another day shifts every window by 24 hours or more, so the email goes out
+ * again. Nudging the time on the same day (starting 20 minutes late, running 30 minutes over) must not send a
+ * second "starting now" or thank you email.
+ */
+export const LIFECYCLE_STALE_MS = 6 * 3_600_000;
+
+/** Sent times before this belong to an earlier schedule. Also the email_logs dedupe cutoff for a re-send. */
+export const lifecycleStaleBefore = (windowOpens: Date): Date => new Date(windowOpens.getTime() - LIFECYCLE_STALE_MS);
+
+/** Did this stage already go out for the event's current schedule? */
+export function lifecycleStageSent(sentAt: Date | null, windowOpens: Date): boolean {
+  return !!sentAt && sentAt.getTime() >= lifecycleStaleBefore(windowOpens).getTime();
+}

@@ -1,6 +1,6 @@
 import { publicationUpdateInput, speakerUpdateInput } from '@zemi/shared';
 import { describe, expect, it } from 'vitest';
-import { blankToNull, dropUnchanged, isUniqueViolation, presentOnly } from './content.util.js';
+import { assertNotBlank, blankToNull, dropUnchanged, isUniqueViolation, presentOnly } from './content.util.js';
 
 describe('presentOnly', () => {
   it('drops defaults that zod partial() fills in, so a PATCH never wipes authors or visibility', () => {
@@ -37,5 +37,21 @@ describe('blankToNull', () => {
     expect(blankToNull('  ')).toBeNull();
     expect(blankToNull(' x ')).toBe('x');
     expect(blankToNull(undefined)).toBeNull();
+  });
+});
+
+describe('assertNotBlank', () => {
+  it('rejects spaces-only required text with an issue on the field, lets real text and absent values through', () => {
+    expect(() => assertNotBlank('Rina', ['fullName'], 'Needs a name.')).not.toThrow();
+    expect(() => assertNotBlank(undefined, ['fullName'], 'Needs a name.')).not.toThrow();
+    try {
+      assertNotBlank('   ', ['authors', 2, 'fullName'], 'Needs a name.');
+      expect.unreachable();
+    } catch (err) {
+      const e = err as { getStatus(): number; code: string; details?: unknown };
+      expect(e.getStatus()).toBe(400);
+      expect(e.code).toBe('validation');
+      expect(e.details).toEqual([{ path: ['authors', 2, 'fullName'], message: 'Needs a name.', code: 'custom' }]);
+    }
   });
 });

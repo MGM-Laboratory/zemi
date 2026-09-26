@@ -12,7 +12,7 @@ import {
   type StreamState,
   type StreamStatusSnapshot,
 } from '@zemi/shared';
-import { and, eq, inArray, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import { AppError, conflict, notFound } from '../../common/errors.js';
 import { timingSafeEqualStr } from '../../common/crypto.js';
 import { CryptoService } from '../../common/crypto.service.js';
@@ -63,6 +63,8 @@ export type AuthDecision = { allowed: true } | { allowed: false; reason: string 
 const GATE_TTL_MS = 1000;
 const RECONCILE_MS = 10_000;
 const HEALTH_TICK_MS = 3000;
+/** Live with no signal this long after the event's end time: nobody is coming back, end it. */
+const ABANDONED_MS = 20 * 60_000;
 /** Reconcile leaves a key alone for this long after a hook touched it (hooks win races). */
 const HOOK_GRACE_MS = 15_000;
 const PREVIEW_TTL_SEC = 600;
@@ -366,15 +368,20 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
     return this.toConfig(row);
   }
 
-  /** POST /admin/events/:id/stream/end */
-  async end(eventId: string, principal: Principal, ip: string | null): Promise<StreamConfig> {
+  /**
+   * POST /admin/events/:id/stream/end, or the reconcile auto end (as 'system', with `at` = when the
+   * signal went away, so the session and the recording don't run on past the last real minute).
+   */
+  async end(eventId: string, principal: Principal | 'system', ip: string | null, opts: { at?: Date } = {}): Promise<StreamConfig> {
     const event = await this.event(eventId);
     await this.ensure(eventId);
     const { row, sessionId } = await this.db.transaction(async (tx) => {
       const [cur] = await tx.select().from(eventStreams).where(eq(eventStreams.eventId, eventId)).for('update');
       if (!cur) throw notFound("We couldn't find that event.");
       if (cur.state !== 'live') throw new AppError(409, 'not_live', "You're not live right now, so there's nothing to end.");
-      const now = new Date();
+      const nowMs = Date.now();
+      const floor = cur.liveStartedAt?.getTime() ?? 0;
+      const now = new Date(opts.at ? Math.min(nowMs, Math.max(floor, opts.at.getTime())) : nowMs);
       if (cur.currentSessionId) {
         await tx
           .update(streamSessions)
@@ -401,8 +408,8 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
       action: 'stream.end',
       resourceType: 'event',
       resourceId: eventId,
-      summary: `Ended the stream for "${event.title}"`,
-      meta: { sessionId },
+      summary: principal === 'system' ? `Ended the stream for "${event.title}" (no signal for a while after the event)` : `Ended the stream for "${event.title}"`,
+      meta: { sessionId, auto: principal === 'system' },
       ip,
     });
     await this.broadcast(row, event);
@@ -620,6 +627,35 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
   }
 
   /**
+   * Nobody pressed End: still `live`, no signal for 20 minutes, and the event's time is over. End it,
+   * so the site stops showing the slate and the recording gets stitched.
+   */
+  private async endAbandoned(): Promise<void> {
+    const now = Date.now();
+    const rows = await this.db
+      .select({ eventId: eventStreams.eventId, streamKey: eventStreams.streamKey, updatedAt: eventStreams.updatedAt })
+      .from(eventStreams)
+      .innerJoin(events, eq(events.id, eventStreams.eventId))
+      .where(
+        and(
+          eq(eventStreams.state, 'live'),
+          eq(eventStreams.ingestOnline, false),
+          lt(eventStreams.updatedAt, new Date(now - ABANDONED_MS)),
+          lt(events.endsAt, new Date(now - ABANDONED_MS)),
+        ),
+      );
+    for (const r of rows) {
+      // The row's updatedAt is the offline flip (or later); the in-memory offline time is sharper when we have it.
+      const lostAt = this.offlineAt.get(r.streamKey) ?? r.updatedAt.getTime();
+      if (now - lostAt < ABANDONED_MS) continue;
+      this.logger.warn(`Event ${r.eventId}: live with no signal for 20 minutes after its end time, ending it`);
+      await this.end(r.eventId, 'system', null, { at: new Date(lostAt) }).catch((err: unknown) =>
+        this.logger.error(`Auto end failed: ${(err as Error).message}`),
+      );
+    }
+  }
+
+  /**
    * Every 10s: compare MediaMTX's live paths with `ingestOnline` and fix drift (missed hooks after a
    * restart of either side). A MediaMTX that doesn't answer changes nothing.
    */
@@ -656,6 +692,7 @@ export class StreamService implements OnApplicationBootstrap, OnModuleDestroy {
         }
         for (const [key, t] of this.hookTouched) if (now - t > 10 * 60_000) this.hookTouched.delete(key);
       }
+      await this.endAbandoned();
       await this.recordings.syncAttached();
     } catch (err) {
       this.logger.warn(`Reconcile failed: ${(err as Error).message}`);

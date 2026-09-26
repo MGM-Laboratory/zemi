@@ -72,8 +72,9 @@ export const BROADCAST_SANITIZE: sanitizeHtml.IOptions = {
     em: (tagName) => ({ tagName, attribs: {} }),
     i: () => ({ tagName: 'em', attribs: {} }),
   },
-  // Drop links whose href was stripped (javascript: and friends).
-  exclusiveFilter: (frame) => frame.tag === 'a' && !frame.attribs.href,
+  // Drop links whose href was stripped (javascript: and friends) and images whose src was (http:, data:),
+  // so no email shows a dead link or a broken image box.
+  exclusiveFilter: (frame) => (frame.tag === 'a' && !frame.attribs.href) || (frame.tag === 'img' && !frame.attribs.src),
 };
 
 export function sanitizeBroadcastHtml(html: string): string {

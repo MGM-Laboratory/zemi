@@ -1,0 +1,361 @@
+/* Publications pages. Tokens come from globals.css; every var() has a fallback. */
+
+:global(html:not([data-zemi-js])) .enter {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ------------------------------------------------------------------ page */
+
+.page {
+  position: relative;
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, var(--color-graph, #eef1f6) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-graph, #eef1f6) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+/* Fade the grid out at the bottom so the footer lands on plain paper. */
+.page::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent, #fff);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ list row */
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px 28px;
+  padding: 22px 18px;
+  margin-inline: -18px;
+  border-radius: 24px;
+  transition:
+    background-color 280ms var(--ease-out, ease),
+    box-shadow 280ms var(--ease-out, ease),
+    transform 380ms var(--ease-out, ease);
+}
+
+@media (min-width: 768px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 26px 24px;
+    margin-inline: -24px;
+  }
+}
+
+.item + .item > .row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: var(--color-line, #ececea);
+  transition: opacity 200ms;
+}
+
+.row:hover,
+.row:has(:focus-visible) {
+  background: #fff;
+  box-shadow: var(--shadow-3);
+  transform: translateY(-3px);
+  z-index: 1;
+}
+
+.row:hover::before,
+.item:hover + .item > .row::before,
+.row:has(:focus-visible)::before,
+.item:has(:focus-visible) + .item > .row::before {
+  opacity: 0;
+}
+
+.row:has([data-card-link]:focus-visible) {
+  outline: 2px solid var(--color-focus, #3a6dc5);
+  outline-offset: 2px;
+}
+
+.rowTitle {
+  font-variation-settings:
+    'CASL' var(--row-casl, 0),
+    'MONO' 0;
+  transition: font-variation-settings 450ms var(--ease-out, ease);
+}
+
+.row:hover .rowTitle,
+.row:has(:focus-visible) .rowTitle {
+  --row-casl: 0.85;
+}
+
+.rowArrow {
+  transition:
+    transform 300ms var(--ease-out, ease),
+    background-color 200ms,
+    color 200ms;
+}
+
+.row:hover .rowArrow,
+.row:has(:focus-visible) .rowArrow {
+  transform: translateX(4px) rotate(-45deg);
+  background: var(--color-ink, #0e1116);
+  color: #fff;
+}
+
+/* Author links sit above the stretched title link. */
+.lift {
+  position: relative;
+  z-index: 20;
+}
+
+/* ------------------------------------------------------------------ year groups */
+
+.yearHead {
+  position: sticky;
+  top: calc(var(--nav-h, 72px) + 8px);
+  z-index: 2;
+}
+
+/* ------------------------------------------------------------------ tile (grid view) */
+
+.tileShape {
+  position: absolute;
+  right: -14%;
+  bottom: -16%;
+  width: 58%;
+  opacity: 0.13;
+  pointer-events: none;
+  transition:
+    transform 700ms var(--ease-out, ease),
+    opacity 400ms;
+}
+
+:global(.group\/card):hover .tileShape {
+  transform: rotate(22deg) scale(1.08);
+  opacity: 0.22;
+}
+
+.fold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(225deg, #fff 0 50%, var(--color-line, #ececea) 50% 100%);
+  border-bottom-left-radius: 14px;
+  box-shadow: -2px 2px 6px rgb(14 17 22 / 0.06);
+  transition:
+    width 400ms var(--ease-out, ease),
+    height 400ms var(--ease-out, ease);
+  pointer-events: none;
+}
+
+:global(.group\/card):hover .fold {
+  width: 60px;
+  height: 60px;
+}
+
+/* ------------------------------------------------------------------ floating preview */
+
+.preview {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  width: clamp(180px, 15vw, 260px);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.previewInner {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 30px 70px -24px rgb(14 17 22 / 0.35),
+    0 6px 18px -6px rgb(14 17 22 / 0.12);
+  background: #fff;
+}
+
+/* ------------------------------------------------------------------ paper cover (no image) */
+
+.paper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  padding: 9% 9% 8%;
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, var(--color-graph, #eef1f6) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-graph, #eef1f6) 1px, transparent 1px);
+  background-size: 12px 12px;
+  container-type: inline-size;
+}
+
+.paperTitle {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(0.9rem, 9.5cqi, 2.2rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  font-variation-settings:
+    'CASL' 0.5,
+    'MONO' 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.paperShape {
+  position: absolute;
+  right: -12%;
+  bottom: -10%;
+  width: 62%;
+}
+
+/* ------------------------------------------------------------------ detail */
+
+.measure {
+  max-width: 68ch;
+}
+
+.abstract {
+  font-size: clamp(1.0625rem, 1.2vw, 1.1875rem);
+  line-height: 1.7;
+  color: var(--color-ink-2, #3b4150);
+}
+
+.abstract > p:first-child::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 4.3em;
+  line-height: 0.86;
+  padding-top: 0.05em;
+  margin: 0 0.08em 0 -0.02em;
+  color: var(--color-ink, #0e1116);
+  font-variation-settings:
+    'CASL' 1,
+    'MONO' 0;
+}
+
+.meta dt {
+  font-family: var(--font-mono);
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-3, #6b7280);
+}
+
+.meta dd {
+  overflow-wrap: anywhere;
+}
+
+.cover {
+  transform: rotate(-2.5deg);
+  transition: transform 700ms var(--ease-out, ease);
+}
+
+.cover:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.02);
+}
+
+/* ------------------------------------------------------------------ cite box */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--color-surface-muted, #f7f7f5);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+@media (min-width: 1024px) {
+  .tabs {
+    -webkit-mask-image: none;
+    mask-image: none;
+    flex-wrap: wrap;
+    border-radius: 22px;
+  }
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  flex: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9063rem;
+  color: var(--color-ink-2, #3b4150);
+  transition: color 200ms;
+  outline: none;
+}
+
+.tab:hover {
+  color: var(--color-ink, #0e1116);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-focus, #3a6dc5);
+  outline-offset: -2px;
+}
+
+.tab[aria-selected='true'] {
+  color: #fff;
+}
+
+.tabPill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--color-ink, #0e1116);
+}
+
+.citation {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .rowArrow,
+  .rowTitle,
+  .tileShape,
+  .fold,
+  .cover {
+    transition: none;
+  }
+  .row:hover,
+  .row:has(:focus-visible) {
+    transform: none;
+  }
+  .cover,
+  .cover:hover {
+    transform: none;
+  }
+}

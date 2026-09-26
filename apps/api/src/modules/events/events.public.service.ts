@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { SLUG_MAX, type EventCard, type EventDetail, type Paginated } from '@zemi/shared';
+import { isValidSlug, type EventCard, type EventDetail, type Paginated } from '@zemi/shared';
 import { and, asc, count, desc, eq, gt, isNull, sql } from 'drizzle-orm';
 import { notFound, pageToLimitOffset, paginated, SlugService } from '../../common/index.js';
 import { AppConfig } from '../../config/app-config.js';
@@ -81,12 +81,13 @@ export class EventsPublicService {
 
   /**
    * EventDetail by slug, `{ redirect }` for an old slug (or a differently cased one), 404 otherwise.
-   * The slug is not validated up front: anything that doesn't resolve is a plain 404.
+   * Anything that can't be a slug (even lowercased) is a plain 404 without a lookup: every current and
+   * old slug went through `ensureUniqueSlug`, and junk like a NUL byte would make Postgres throw.
    */
   async bySlug(raw: string): Promise<EventDetail | { redirect: string }> {
     const slug = (raw ?? '').trim();
     const missing = () => notFound("We couldn't find that Friday. Maybe it moved?");
-    if (!slug || slug.length > SLUG_MAX * 2) throw missing();
+    if (!isValidSlug(slug.toLowerCase())) throw missing();
 
     let resolved = await this.slugs.resolveSlug('event', slug);
     const lower = slug.toLowerCase();

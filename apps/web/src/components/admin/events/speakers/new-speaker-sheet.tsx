@@ -22,11 +22,23 @@ const schema = z.object({
   headline: z.string().max(200),
   defaultOrganization: z.string().max(200),
   defaultPosition: z.string().max(200),
-  email: z.string().refine((s) => s === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s), 'That email looks off. Mind checking it?'),
+  email: z
+    .string()
+    .refine(
+      (s) => s === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s),
+      'That email looks off. Mind checking it?',
+    ),
 });
 type Values = z.infer<typeof schema>;
 
-const EMPTY: Values = { fullName: '', nickname: '', headline: '', defaultOrganization: '', defaultPosition: '', email: '' };
+const EMPTY: Values = {
+  fullName: '',
+  nickname: '',
+  headline: '',
+  defaultOrganization: '',
+  defaultPosition: '',
+  email: '',
+};
 
 export interface NewSpeakerSheetProps {
   open: boolean;
@@ -40,7 +52,12 @@ export interface NewSpeakerSheetProps {
  * Minimal "add a person" form (POST /admin/speakers). The full profile (bio, links, photo)
  * lives in the speakers area; this is just enough to put them on the lineup.
  */
-export function NewSpeakerSheet({ open, onOpenChange, initialName = '', onCreated }: NewSpeakerSheetProps) {
+export function NewSpeakerSheet({
+  open,
+  onOpenChange,
+  initialName = '',
+  onCreated,
+}: NewSpeakerSheetProps) {
   const qc = useQueryClient();
   const refetchMe = useRefetchMe();
   const [saving, setSaving] = useState(false);
@@ -72,10 +89,16 @@ export function NewSpeakerSheet({ open, onOpenChange, initialName = '', onCreate
       let lastErr: unknown = null;
       for (let i = 0; i < 3 && !created; i++) {
         try {
-          created = await api.post<SpeakerAdmin>('/admin/speakers', { ...body, slug: i ? `${base.slice(0, 90)}-${i + 1}` : base });
+          created = await api.post<SpeakerAdmin>('/admin/speakers', {
+            ...body,
+            slug: i ? `${base.slice(0, 90)}-${i + 1}` : base,
+          });
         } catch (err) {
           lastErr = err;
-          const slugTaken = isApiError(err) && err.isConflict && (Boolean(err.fieldErrors.slug) || /slug/i.test(err.message));
+          const slugTaken =
+            isApiError(err) &&
+            err.isConflict &&
+            (Boolean(err.fieldErrors.slug) || /slug/i.test(err.message));
           if (!slugTaken) throw err;
         }
       }
@@ -120,28 +143,61 @@ export function NewSpeakerSheet({ open, onOpenChange, initialName = '', onCreate
       >
         <div className="flex items-center gap-3 rounded-2xl bg-surface-muted p-3">
           <Avatar name={name || '?'} size={44} variant="shape" />
-          <p className="text-sm text-ink-3">{name ? `Hi, ${name.split(' ')[0]}.` : 'Type a name and they get a shape.'}</p>
+          <p className="text-sm text-ink-3">
+            {name ? `Hi, ${name.split(' ')[0]}.` : 'Type a name and they get a shape.'}
+          </p>
         </div>
         <FormError errors={form.formState.errors} />
-        <FormField control={form.control} name="fullName" label="Full name" required maxLength={160}>
+        <FormField
+          control={form.control}
+          name="fullName"
+          label="Full name"
+          required
+          maxLength={160}
+        >
           {(field) => <Input {...field} autoFocus autoComplete="off" placeholder="Rani Wijaya" />}
         </FormField>
-        <FormField control={form.control} name="nickname" label="Nickname" optional hint="What people call them on Fridays.">
+        <FormField
+          control={form.control}
+          name="nickname"
+          label="Nickname"
+          optional
+          hint="What people call them on Fridays."
+        >
           {(field) => <Input {...field} placeholder="Rani" />}
         </FormField>
         <FormField control={form.control} name="headline" label="Headline" optional maxLength={200}>
           {(field) => <Input {...field} placeholder="PhD student, loves messy traffic data" />}
         </FormField>
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField control={form.control} name="defaultOrganization" label="Organization" optional>
+          <FormField
+            control={form.control}
+            name="defaultOrganization"
+            label="Organization"
+            optional
+          >
             {(field) => <Input {...field} placeholder="MGM Laboratory" />}
           </FormField>
           <FormField control={form.control} name="defaultPosition" label="Position" optional>
             {(field) => <Input {...field} placeholder="PhD candidate" />}
           </FormField>
         </div>
-        <FormField control={form.control} name="email" label="Email" optional hint="Private. Only admins see it.">
-          {(field) => <Input {...field} type="email" inputMode="email" autoComplete="off" placeholder="rani@example.com" />}
+        <FormField
+          control={form.control}
+          name="email"
+          label="Email"
+          optional
+          hint="Private. Only admins see it."
+        >
+          {(field) => (
+            <Input
+              {...field}
+              type="email"
+              inputMode="email"
+              autoComplete="off"
+              placeholder="rani@example.com"
+            />
+          )}
         </FormField>
         <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
       </form>

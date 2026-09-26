@@ -57,7 +57,11 @@ const isHttpUrl = (s: string) => {
 
 const detailsSchema = z
   .object({
-    title: z.string().trim().min(1, 'Give it a title. Something people would click.').max(200, 'Keep the title under 200 characters.'),
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Give it a title. Something people would click.')
+      .max(200, 'Keep the title under 200 characters.'),
     slug: slugSchema,
     number: z.number().int().min(0).max(100000).nullable(),
     summary: z.string().max(400, 'Keep the summary under 400 characters.'),
@@ -67,7 +71,12 @@ const detailsSchema = z
     mode: z.enum(EVENT_MODES),
     venueId: z.string().nullable(),
     roomNote: z.string().max(200, 'Keep the room note under 200 characters.'),
-    mapsUrl: z.string().refine((s) => s === '' || isHttpUrl(s), 'That link looks off. It should start with https://'),
+    mapsUrl: z
+      .string()
+      .refine(
+        (s) => s === '' || isHttpUrl(s),
+        'That link looks off. It should start with https://',
+      ),
     onlineNote: z.string().max(300, 'Keep the online note under 300 characters.'),
     accent: accentSchema,
     tags: z.array(z.string().min(1).max(40)).max(20, 'Twenty tags is the max.'),
@@ -81,7 +90,11 @@ const detailsSchema = z
     if (v.startsAt && v.endsAt && new Date(v.endsAt) <= new Date(v.startsAt)) {
       ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'It has to end after it starts.' });
     }
-    if (v.registrationClosesAt && v.endsAt && new Date(v.registrationClosesAt) > new Date(v.endsAt)) {
+    if (
+      v.registrationClosesAt &&
+      v.endsAt &&
+      new Date(v.registrationClosesAt) > new Date(v.endsAt)
+    ) {
       ctx.addIssue({
         code: 'custom',
         path: ['registrationClosesAt'],
@@ -116,10 +129,18 @@ function toValues(e: EventAdmin): DetailsValues {
   };
 }
 
-const NULLABLE_TEXT = new Set<keyof DetailsValues>(['summary', 'roomNote', 'mapsUrl', 'onlineNote']);
+const NULLABLE_TEXT = new Set<keyof DetailsValues>([
+  'summary',
+  'roomNote',
+  'mapsUrl',
+  'onlineNote',
+]);
 
 /** Only the fields that changed, in the API's shape ('' becomes null for nullable text). */
-function toPatch(values: DetailsValues, dirty: Partial<Record<keyof DetailsValues, unknown>>): EventUpdateInput {
+function toPatch(
+  values: DetailsValues,
+  dirty: Partial<Record<keyof DetailsValues, unknown>>,
+): EventUpdateInput {
   const patch: Record<string, unknown> = {};
   for (const key of Object.keys(values) as Array<keyof DetailsValues>) {
     if (!dirty[key]) continue;
@@ -158,7 +179,10 @@ function readDraft(id: string): StoredDraft | null {
 
 function writeDraft(id: string, values: DetailsValues) {
   try {
-    window.localStorage.setItem(draftKey(id), JSON.stringify({ values, savedAt: new Date().toISOString() } satisfies StoredDraft));
+    window.localStorage.setItem(
+      draftKey(id),
+      JSON.stringify({ values, savedAt: new Date().toISOString() } satisfies StoredDraft),
+    );
   } catch {
     /* private mode or full storage: the form still works */
   }
@@ -201,7 +225,8 @@ export function EventDetailsForm() {
   const draft = useMemo(() => {
     if (draftHandled || !stored) return null;
     const newer = new Date(stored.savedAt).getTime() > new Date(event.updatedAt).getTime();
-    const differs = JSON.stringify({ ...toValues(event), ...stored.values }) !== JSON.stringify(toValues(event));
+    const differs =
+      JSON.stringify({ ...toValues(event), ...stored.values }) !== JSON.stringify(toValues(event));
     return newer && differs ? stored : null;
   }, [draftHandled, stored, event]);
 
@@ -229,11 +254,17 @@ export function EventDetailsForm() {
   }, [event.updatedAt]);
 
   const everPublished = Boolean(event.publishedAt) || event.visibility !== 'draft';
-  const venue: Venue | null = useMemo(() => (venues.data ?? []).find((v) => v.id === values.venueId) ?? null, [venues.data, values.venueId]);
+  const venue: Venue | null = useMemo(
+    () => (venues.data ?? []).find((v) => v.id === values.venueId) ?? null,
+    [venues.data, values.venueId],
+  );
   const mapsFromVenue = Boolean(venue?.mapsUrl && values.mapsUrl === venue.mapsUrl);
 
   const onValid = async (v: DetailsValues) => {
-    const patch = toPatch(v, formState.dirtyFields as Partial<Record<keyof DetailsValues, unknown>>);
+    const patch = toPatch(
+      v,
+      formState.dirtyFields as Partial<Record<keyof DetailsValues, unknown>>,
+    );
     if (!Object.keys(patch).length) {
       form.reset(v);
       return;
@@ -265,7 +296,10 @@ export function EventDetailsForm() {
       setSaving(false);
     }
   };
-  const submit = () => form.handleSubmit(onValid, () => notify.error('A few fields need a look before this can save.'))();
+  const submit = () =>
+    form.handleSubmit(onValid, () =>
+      notify.error('A few fields need a look before this can save.'),
+    )();
 
   const discard = () => {
     form.reset(toValues(event));
@@ -285,8 +319,10 @@ export function EventDetailsForm() {
     const prevMaps = venue?.mapsUrl ?? '';
     setValue('venueId', venueId, { shouldDirty: true });
     // Prefill the maps link from the room, unless someone typed their own.
-    if (v?.mapsUrl && (!values.mapsUrl || values.mapsUrl === prevMaps)) setValue('mapsUrl', v.mapsUrl, { shouldDirty: true, shouldValidate: true });
-    if (!v && values.mapsUrl && values.mapsUrl === prevMaps) setValue('mapsUrl', '', { shouldDirty: true });
+    if (v?.mapsUrl && (!values.mapsUrl || values.mapsUrl === prevMaps))
+      setValue('mapsUrl', v.mapsUrl, { shouldDirty: true, shouldValidate: true });
+    if (!v && values.mapsUrl && values.mapsUrl === prevMaps)
+      setValue('mapsUrl', '', { shouldDirty: true });
   };
 
   const mode = values.mode as EventMode;
@@ -340,7 +376,8 @@ export function EventDetailsForm() {
               </div>
             }
           >
-            A local draft from {formatRelative(draft.savedAt)} is newer than the saved event. Only this browser has it.
+            A local draft from {formatRelative(draft.savedAt)} is newer than the saved event. Only
+            this browser has it.
           </Callout>
         ) : null}
         <FormError errors={formState.errors} className="mb-6" />
@@ -348,12 +385,24 @@ export function EventDetailsForm() {
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           {/* Basics */}
           <Card className="xl:col-start-1 xl:row-start-1">
-            <CardHeader title="The basics" description="What people see first on the card and the event page." />
+            <CardHeader
+              title="The basics"
+              description="What people see first on the card and the event page."
+            />
             <div className="space-y-5">
               <FormField control={control} name="title" label="Title" required maxLength={200}>
-                {(field) => <Input {...field} placeholder="What is this Friday about?" autoComplete="off" />}
+                {(field) => (
+                  <Input {...field} placeholder="What is this Friday about?" autoComplete="off" />
+                )}
               </FormField>
-              <FormField control={control} name="slug" label="Link" hint={everPublished ? 'It is public already. Change it only if you have to.' : undefined}>
+              <FormField
+                control={control}
+                name="slug"
+                label="Link"
+                hint={
+                  everPublished ? 'It is public already. Change it only if you have to.' : undefined
+                }
+              >
                 {(field) => (
                   <SlugField
                     value={field.value}
@@ -372,14 +421,39 @@ export function EventDetailsForm() {
                   name="number"
                   label="Number"
                   optional
-                  hint={values.number != null ? `Shows as Zemi #${values.number}.` : 'Like Zemi #42.'}
+                  hint={
+                    values.number != null ? `Shows as Zemi #${values.number}.` : 'Like Zemi #42.'
+                  }
                 >
-                  {(field) => <NumberInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} min={0} max={100000} placeholder="42" />}
+                  {(field) => (
+                    <NumberInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      min={0}
+                      max={100000}
+                      placeholder="42"
+                    />
+                  )}
                 </FormField>
                 <div className="hidden sm:block" />
               </div>
-              <FormField control={control} name="summary" label="Summary" optional maxLength={400} hint="One or two sentences for cards and link previews.">
-                {(field) => <Textarea {...field} minRows={2} maxRows={6} placeholder="Traffic data is messy. Here is how a graph model survived Jakarta." />}
+              <FormField
+                control={control}
+                name="summary"
+                label="Summary"
+                optional
+                maxLength={400}
+                hint="One or two sentences for cards and link previews."
+              >
+                {(field) => (
+                  <Textarea
+                    {...field}
+                    minRows={2}
+                    maxRows={6}
+                    placeholder="Traffic data is messy. Here is how a graph model survived Jakarta."
+                  />
+                )}
               </FormField>
             </div>
           </Card>
@@ -388,7 +462,10 @@ export function EventDetailsForm() {
           <div className="xl:col-start-2 xl:row-span-4 xl:row-start-1">
             <div className="space-y-6 xl:sticky xl:top-[calc(var(--admin-topbar-h)+7rem)]">
               <Card>
-                <CardHeader title="Cover" description="4:5, like a poster. Crop and adjust after you drop it." />
+                <CardHeader
+                  title="Cover"
+                  description="4:5, like a poster. Crop and adjust after you drop it."
+                />
                 <FormField control={control} name="coverAssetId" label="Cover image" hideLabel>
                   {(field) => (
                     <ImageUploadCrop
@@ -405,11 +482,24 @@ export function EventDetailsForm() {
               <Card>
                 <CardHeader title="Look and tags" />
                 <div className="space-y-5">
-                  <FormField control={control} name="accent" label="Accent" hint="Tints the card, the cover frame and little details.">
+                  <FormField
+                    control={control}
+                    name="accent"
+                    label="Accent"
+                    hint="Tints the card, the cover frame and little details."
+                  >
                     {(field) => <AccentPicker value={field.value} onChange={field.onChange} />}
                   </FormField>
-                  <FormField control={control} name="tags" label="Tags" optional hint="Enter or comma adds one. People can filter by them.">
-                    {(field) => <TagsInput value={field.value} onChange={field.onChange} max={20} />}
+                  <FormField
+                    control={control}
+                    name="tags"
+                    label="Tags"
+                    optional
+                    hint="Enter or comma adds one. People can filter by them."
+                  >
+                    {(field) => (
+                      <TagsInput value={field.value} onChange={field.onChange} max={20} />
+                    )}
                   </FormField>
                 </div>
               </Card>
@@ -418,7 +508,10 @@ export function EventDetailsForm() {
 
           {/* When and where */}
           <Card className="xl:col-start-1 xl:row-start-2">
-            <CardHeader title="When and where" description="Times are Jakarta time (WIB) for everyone." />
+            <CardHeader
+              title="When and where"
+              description="Times are Jakarta time (WIB) for everyone."
+            />
             <div className="space-y-5">
               <JakartaDateTimeFields
                 value={{ startsAt: values.startsAt, endsAt: values.endsAt }}
@@ -454,7 +547,14 @@ export function EventDetailsForm() {
                     <FormField control={control} name="venueId" label="Room" optional>
                       {(field) => <VenueSelect value={field.value} onChange={pickVenue} />}
                     </FormField>
-                    <FormField control={control} name="roomNote" label="Room note" optional maxLength={200} hint="Like 'Third floor, the door with the plant'.">
+                    <FormField
+                      control={control}
+                      name="roomNote"
+                      label="Room note"
+                      optional
+                      maxLength={200}
+                      hint="Like 'Third floor, the door with the plant'."
+                    >
                       {(field) => <Input {...field} placeholder="Third floor, left of the lift" />}
                     </FormField>
                   </div>
@@ -463,9 +563,15 @@ export function EventDetailsForm() {
                     name="mapsUrl"
                     label="Google Maps link"
                     optional
-                    hint={mapsFromVenue ? 'From the room. Change it if the entrance is somewhere else.' : 'Helps first-timers find the building.'}
+                    hint={
+                      mapsFromVenue
+                        ? 'From the room. Change it if the entrance is somewhere else.'
+                        : venue?.mapsUrl && !values.mapsUrl
+                          ? "Empty uses the room's link. Paste another one if the entrance is somewhere else."
+                          : 'Helps first-timers find the building.'
+                    }
                     action={
-                      venue?.mapsUrl && !mapsFromVenue && !readOnly ? (
+                      venue?.mapsUrl && values.mapsUrl && !mapsFromVenue && !readOnly ? (
                         <button
                           type="button"
                           onClick={() =>
@@ -482,7 +588,14 @@ export function EventDetailsForm() {
                       ) : null
                     }
                   >
-                    {(field) => <Input {...field} inputMode="url" placeholder="https://maps.app.goo.gl/..." leading={<MapPinned />} />}
+                    {(field) => (
+                      <Input
+                        {...field}
+                        inputMode="url"
+                        placeholder={venue?.mapsUrl ?? 'https://maps.app.goo.gl/...'}
+                        leading={<MapPinned />}
+                      />
+                    )}
                   </FormField>
                 </>
               ) : null}
@@ -495,7 +608,14 @@ export function EventDetailsForm() {
                   maxLength={300}
                   hint="Shown next to the livestream. Like 'Questions go in the chat'."
                 >
-                  {(field) => <Textarea {...field} minRows={2} maxRows={5} placeholder="Questions go in the chat. We read them out loud." />}
+                  {(field) => (
+                    <Textarea
+                      {...field}
+                      minRows={2}
+                      maxRows={5}
+                      placeholder="Questions go in the chat. We read them out loud."
+                    />
+                  )}
                 </FormField>
               ) : null}
             </div>
@@ -514,7 +634,11 @@ export function EventDetailsForm() {
                     onCheckedChange={field.onChange}
                     disabled={readOnly}
                     label="Registration is open"
-                    description={field.value ? 'People can register once the event is published.' : 'The form is closed. Existing tickets still work.'}
+                    description={
+                      field.value
+                        ? 'People can register once the event is published.'
+                        : 'The form is closed. Existing tickets still work.'
+                    }
                   />
                 )}
               />
@@ -549,11 +673,32 @@ export function EventDetailsForm() {
                   }
                 >
                   {(field) => (
-                    <NumberInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} min={1} max={100000} unit="seats" placeholder="No cap" />
+                    <NumberInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      min={1}
+                      max={100000}
+                      unit="seats"
+                      placeholder="No cap"
+                    />
                   )}
                 </FormField>
-                <FormField control={control} name="registrationClosesAt" label="Closes at" optional hint="Empty means it stays open until the session ends.">
-                  {(field) => <JakartaDateTimeInput value={field.value} onChange={field.onChange} onBlur={field.onBlur} presets={closesPresets} />}
+                <FormField
+                  control={control}
+                  name="registrationClosesAt"
+                  label="Closes at"
+                  optional
+                  hint="Empty means it stays open until the session ends."
+                >
+                  {(field) => (
+                    <JakartaDateTimeInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      presets={closesPresets}
+                    />
+                  )}
                 </FormField>
               </div>
               <Controller
@@ -574,7 +719,10 @@ export function EventDetailsForm() {
 
           {/* Description */}
           <Card className="xl:col-start-1 xl:row-start-4">
-            <CardHeader title="Description" description="The long version for the event page. Type / for headings, lists and images." />
+            <CardHeader
+              title="Description"
+              description="The long version for the event page. Type / for headings, lists and images."
+            />
             <FormField control={control} name="description" label="Description" hideLabel>
               {(field) => (
                 <BlockEditor
@@ -589,7 +737,15 @@ export function EventDetailsForm() {
           </Card>
         </div>
 
-        {!readOnly ? <FormSaveBar form={form} saving={saving} onSave={() => void submit()} onDiscard={discard} saveLabel="Save details" /> : null}
+        {!readOnly ? (
+          <FormSaveBar
+            form={form}
+            saving={saving}
+            onSave={() => void submit()}
+            onDiscard={discard}
+            saveLabel="Save details"
+          />
+        ) : null}
       </ReadOnlyScope>
     </form>
   );

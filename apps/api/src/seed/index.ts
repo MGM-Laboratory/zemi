@@ -11,12 +11,12 @@
  *
  * Env knobs: SEED_RANDOM (default 20240906), SEED_NOW (ISO instant), SEED_RECORDING_LOOPS (default 31,
  * 1 = the raw 4 minute clip), SEED_CONCURRENCY (4), SEED_SAFE_EMAILS (default on in production),
- * SEED_LIFECYCLE_SENT (default on in production), SEED_ENV_FILE (path, or "none").
+ * SEED_LIFECYCLE_SENT (default on in production), SEED_ENV_FILE (path, or "none"), SEED_SKIP_MEDIA (rows only).
  * See docs/features/api-site-seed.md.
  */
 import 'reflect-metadata';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, statfs } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +38,7 @@ import { AssetsService } from '../modules/assets/assets.service.js';
 import { JobsService } from '../modules/jobs/jobs.service.js';
 import { ContentResetService } from '../modules/site/content-reset.service.js';
 import { SiteService } from '../modules/site/site.service.js';
+import { StorageService } from '../modules/storage/storage.service.js';
 import {
   linkPublications,
   seedDocumentation,
@@ -67,7 +68,7 @@ function findApiDir(): string {
   let dir = dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 8; i++) {
     const pkg = join(dir, 'package.json');
-    if (existsSync(pkg) && JSON.parse(readFileSync(pkg, 'utf8')).name === '@zemi/api') return dir;
+    if (existsSync(pkg) && (JSON.parse(readFileSync(pkg, 'utf8')) as { name?: string }).name === '@zemi/api') return dir;
     dir = resolve(dir, '..');
   }
   throw new Error('Could not find apps/api (package.json named @zemi/api) above the seeder');
@@ -99,10 +100,18 @@ async function ingestAll(
     recording: null,
   };
 
+  // A failed upload (full disk, bucket hiccup) leaves the slot empty instead of stopping the seed.
+  const put = <K>(map: Map<K, string>, key: K, id: string | null) => {
+    if (id) map.set(key, id);
+  };
+  const pushId = (list: string[], id: string | null) => {
+    if (id) list.push(id);
+  };
+
   // Videos first: they take longest to process.
   for (const clip of section('videos')) {
-    ids.clips.push(
-      await media.ingest({
+    pushId(ids.clips, 
+      await media.tryIngest({
         filePath: file(clip),
         filename: `${slugify(clip.title ?? clip.id)}.mp4`,
         purpose: 'documentation',
@@ -126,7 +135,7 @@ async function ingestAll(
           path,
         );
       }
-      const id = await media.ingest({
+      const id = await media.tryIngest({
         filePath: path,
         filename: 'zemi-session-recording.mp4',
         purpose: 'recording',
@@ -136,7 +145,7 @@ async function ingestAll(
         credit: rec.credit ?? null,
         label: 'recording',
       });
-      ids.recording = { id, durationSec: (rec.durationSec ?? 240) * Math.max(1, loops) };
+      if (id) ids.recording = { id, durationSec: (rec.durationSec ?? 240) * Math.max(1, loops) };
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -145,12 +154,12 @@ async function ingestAll(
   const speakers = section('speakers');
   for (let i = 0; i < SPEAKERS.length; i++) {
     const item = speakers[i];
-    const s = SPEAKERS[i]!;
+    const s = SPEAKERS[i];
     if (!item) break;
     if (item.gender && item.gender !== s.gender)
       log(`  warning: ${item.id} is ${item.gender} but ${s.fullName} is listed as ${s.gender}`);
     ids.speakerAvatars.push(
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(item),
         filename: `${slugify(s.fullName)}.jpg`,
         purpose: 'speaker-avatar',
@@ -164,9 +173,9 @@ async function ingestAll(
   for (const a of MANUAL_AUTHORS) {
     const item = a.portrait ? byPath.get(a.portrait) : undefined;
     if (!item) continue;
-    ids.authorAvatars.set(
+    put(ids.authorAvatars, 
       a.portrait!,
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(item),
         filename: `${slugify(a.fullName)}.jpg`,
         purpose: 'author-avatar',
@@ -180,9 +189,9 @@ async function ingestAll(
   for (const m of TEAM) {
     const item = byPath.get(m.portrait);
     if (!item) continue;
-    ids.teamAvatars.set(
+    put(ids.teamAvatars, 
       m.portrait,
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(item),
         filename: `${slugify(m.name)}.jpg`,
         purpose: 'team-avatar',
@@ -194,9 +203,9 @@ async function ingestAll(
     );
   }
   for (const c of section('covers')) {
-    ids.covers.set(
+    put(ids.covers, 
       c.id,
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(c),
         filename: `${c.id}.jpg`,
         purpose: 'event-cover',
@@ -210,9 +219,9 @@ async function ingestAll(
   const usedPubCovers = new Set(PUBLICATIONS.map((p) => p.cover).filter(Boolean));
   for (const c of section('pubCovers')) {
     if (!usedPubCovers.has(c.id)) continue;
-    ids.pubCovers.set(
+    put(ids.pubCovers, 
       c.id,
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(c),
         filename: `${c.id}.jpg`,
         purpose: 'publication-cover',
@@ -224,24 +233,22 @@ async function ingestAll(
     );
   }
   for (const d of section('docs')) {
-    ids.docs.push({
-      id: await media.ingest({
-        filePath: file(d),
-        filename: `${d.id}.jpg`,
-        purpose: 'documentation',
-        mime: d.mime,
-        alt: d.alt ?? null,
-        credit: d.credit ?? null,
-        label: d.id,
-      }),
-      scene: d.scene ?? 'default',
+    const id = await media.tryIngest({
+      filePath: file(d),
+      filename: `${d.id}.jpg`,
+      purpose: 'documentation',
+      mime: d.mime,
+      alt: d.alt ?? null,
+      credit: d.credit ?? null,
+      label: d.id,
     });
+    if (id) ids.docs.push({ id, scene: d.scene ?? 'default' });
   }
   for (const pdf of section('pdfs')) {
     const title = String(pdf.title ?? pdf.id);
-    ids.pdfs.set(
+    put(ids.pdfs, 
       pdf.id,
-      await media.ingest({
+      await media.tryIngest({
         filePath: file(pdf),
         filename: `${slugify(title, 70)}.pdf`,
         purpose: 'publication-pdf',
@@ -252,6 +259,73 @@ async function ingestAll(
     );
   }
   return ids;
+}
+
+/**
+ * Checks that would otherwise fail halfway, after `--reset` already emptied the database: the seed
+ * media is on disk, the bucket takes writes (MinIO refuses them on a nearly full drive), and the temp
+ * folder has room for the looped recording.
+ */
+async function preflight(storage: StorageService, assetsDir: string, loops: number, skipMedia: boolean): Promise<Manifest> {
+  const problems: string[] = [];
+  let manifest: Manifest | null = null;
+  try {
+    manifest = await readManifest(assetsDir);
+    const missing = Object.values(manifest.sections)
+      .flatMap((s) => s.items)
+      .filter((i) => !existsSync(join(assetsDir, i.path)));
+    if (missing.length) problems.push(`${missing.length} seed files are missing, e.g. ${missing[0].path}`);
+  } catch (err) {
+    problems.push(`Could not read ${join(assetsDir, 'manifest.json')}: ${(err as Error).message}`);
+  }
+  const probe = `seed-probe/${Date.now().toString(36)}.txt`;
+  if (!skipMedia) {
+    try {
+      await storage.putBuffer(probe, 'Zemi seeder write check. Safe to delete.', { contentType: 'text/plain' });
+      await storage.delete(probe);
+    } catch (err) {
+      problems.push(`The bucket refuses writes: ${(err as Error).message}`);
+    }
+  }
+  const rec = manifest?.sections.recordings?.items[0];
+  if (rec && loops > 1 && !skipMedia) {
+    const need = rec.bytes * loops * 1.2;
+    try {
+      const fs = await statfs(tmpdir());
+      const free = fs.bavail * fs.bsize;
+      if (free < need) problems.push(`The temp folder needs about ${mb(need)} for the looped recording and has ${mb(free)} free (try SEED_RECORDING_LOOPS=1)`);
+    } catch {
+      /* statfs is best effort */
+    }
+  }
+  if (problems.length || !manifest) {
+    throw new PreflightError(`Seeder preflight failed, nothing was changed:\n  - ${problems.join('\n  - ')}`);
+  }
+  return manifest;
+}
+
+class PreflightError extends Error {}
+
+const mb = (bytes: number) => `${Math.round(bytes / 1_048_576)} MB`;
+
+/**
+ * Seeded history must never be dated after "now" (admin lists sort by it, analytics bucket by it).
+ * The cutoff is the later of "now" and the clock at the end of the run, so rows that real services or
+ * teammates wrote while the seeder ran (logins, the reset's own audit entry) don't count. Audit rows
+ * count only when the seeder wrote them (meta.seed).
+ */
+async function futureRows(db: Db, now: Date): Promise<string[]> {
+  const cutoff = new Date(Math.max(now.getTime(), Date.now())).toISOString();
+  const tables = ['speakers', 'events', 'publications', 'registrations', 'checkins', 'event_media', 'event_streams', 'stream_sessions', 'contact_messages', 'audit_logs', 'admins'];
+  const out: string[] = [];
+  for (const t of tables) {
+    const onlySeeded = t === 'audit_logs' ? sql` and meta->>'seed' = 'true'` : sql``;
+    const [row] = await db.execute<{ n: number }>(
+      sql`select count(*)::int as n from ${sql.identifier(t)} where created_at > ${cutoff}::timestamptz${onlySeeded}`,
+    );
+    if (row && row.n > 0) out.push(`${t} ${row.n}`);
+  }
+  return out;
 }
 
 async function summary(db: Db, app: INestApplicationContext): Promise<void> {
@@ -347,10 +421,21 @@ async function main(): Promise<void> {
     const [existing] = await db.select({ n: count() }).from(schema.events);
     if ((existing?.n ?? 0) > 0 && !reset) {
       console.error(
-        `\nThere are already ${existing!.n} events. Run "pnpm --filter @zemi/api seed:reset" to wipe content and seed again.\n`,
+        `\nThere are already ${existing.n} events. Run "pnpm --filter @zemi/api seed:reset" to wipe content and seed again.\n`,
       );
       exitCode = 1;
     } else {
+      const now = process.env.SEED_NOW ? new Date(process.env.SEED_NOW) : new Date();
+      if (Number.isNaN(now.getTime())) throw new Error('SEED_NOW is not a valid date');
+      const rng = new Rng(Number(process.env.SEED_RANDOM ?? 20240906));
+      const assetsDir = join(apiDir, 'seed', 'assets');
+      const loops = Math.max(1, Math.min(60, Number(process.env.SEED_RECORDING_LOOPS ?? 31) || 1));
+      const concurrency = Math.max(1, Math.min(8, Number(process.env.SEED_CONCURRENCY ?? 4) || 4));
+      // Everything that can fail cheaply fails here, before the reset deletes anything.
+      // Rows only, no uploads (fast checks of the data logic, e.g. against a scratch database).
+      const skipMedia = bool(process.env.SEED_SKIP_MEDIA, false);
+      const manifest = await preflight(app.get(StorageService), assetsDir, loops, skipMedia);
+
       if (reset) {
         const r = await app
           .get(ContentResetService)
@@ -358,14 +443,6 @@ async function main(): Promise<void> {
         const rows = Object.values(r.deleted).reduce((a, b) => a + b, 0);
         log(`Reset: removed ${rows} rows and ${r.bucketObjects} files.`);
       }
-
-      const now = process.env.SEED_NOW ? new Date(process.env.SEED_NOW) : new Date();
-      if (Number.isNaN(now.getTime())) throw new Error('SEED_NOW is not a valid date');
-      const rng = new Rng(Number(process.env.SEED_RANDOM ?? 20240906));
-      const assetsDir = join(apiDir, 'seed', 'assets');
-      const manifest = await readManifest(assetsDir);
-      const loops = Math.max(1, Math.min(60, Number(process.env.SEED_RECORDING_LOOPS ?? 31) || 1));
-      const concurrency = Math.max(1, Math.min(8, Number(process.env.SEED_CONCURRENCY ?? 4) || 4));
 
       log('Uploading media...');
       const media = new SeedMedia(
@@ -375,7 +452,9 @@ async function main(): Promise<void> {
         log,
         concurrency,
       );
-      const mediaIds = await ingestAll(media, manifest, assetsDir, loops);
+      const mediaIds: MediaIds = skipMedia
+        ? { speakerAvatars: [], authorAvatars: new Map(), teamAvatars: new Map(), covers: new Map(), pubCovers: new Map(), docs: [], pdfs: new Map(), clips: [], recording: null }
+        : await ingestAll(media, manifest, assetsDir, loops);
       log(
         `  ${media.count} files uploaded, processing with concurrency ${concurrency} while rows go in`,
       );
@@ -444,8 +523,16 @@ async function main(): Promise<void> {
       for (const f of result.failed)
         console.error(`  FAILED ${f.label}: ${f.error ?? 'still processing'}`);
       if (result.failed.length) exitCode = 2;
+      if (media.uploadFailures.length) {
+        console.error(
+          `  ${media.uploadFailures.length} files could not be uploaded (first: ${media.uploadFailures[0].error}). The rows went in without them; fix the bucket and run seed:reset again.`,
+        );
+        exitCode = 2;
+      }
 
       await summary(db, app);
+      const future = await futureRows(db, now);
+      if (future.length) log(`  warning: rows dated after now: ${future.join(', ')}`);
 
       log('\nDemo admins (log in at /admin with the passphrase):');
       for (const a of admins) {
@@ -488,6 +575,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  console.error(err);
+  console.error(err instanceof PreflightError ? `\n${err.message}\n` : err);
   process.exit(1);
 });

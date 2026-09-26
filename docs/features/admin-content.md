@@ -82,9 +82,18 @@ Sections (with a sticky section nav, error dots per section):
 6. **Content**: abstract textarea with a live word count, body `BlockEditor`, keywords `TagsInput`
    (30 max, 60 chars, case kept), language and license with suggestions.
 7. **Cite this**: every `CITATION_FORMATS` entry through `formatCitation` from `@zemi/shared`, live as
-   you type (`useDeferredValue`), copy per format, "See every format at once". On 2xl screens it sits
-   in a sticky third column.
+   you type (`useDeferredValue`), copy per format, "See every format at once". The source is built with
+   the shared `publicationToCitationSource` and the same options the public page passes (its own URL as
+   the fallback when there is no DOI or publisher link, today's WIB date as `accessedAt`), so status,
+   thesis degree and the publisher-link fallback match. "Suggest" for the citation key uses the shared
+   `makeCitationKey`. On 2xl screens it sits in a sticky third column.
 8. **Related events** (edit only, read-only list to the event workspace).
+
+Duplicate DOI heads-up: once the DOI field holds a valid DOI, the editor searches the list
+(`GET /admin/publications?search=<doi>`, the list search covers DOIs) and, on an exact match with another
+publication, shows a yellow note with its title and an "Open it" link (new tab, so unsaved work stays).
+It warns, it never blocks: the API has no unique DOI rule. The create page does not autofocus the title,
+so pasting a DOI first does not flash a "required" error on a field nobody has touched.
 
 Fill from DOI: `GET /admin/publications/doi?doi=`, then a diff dialog. Each changed field shows
 "now" and "from Crossref"; empty fields are ticked by default, fields you already typed are not.
@@ -108,10 +117,13 @@ shows Venues to event editors too) get a read-only Sheet and no create/delete.
 ## Media library
 
 Grid tiles per kind: image variants with LQIP, video poster with duration and a play badge (a
-missing poster falls back quietly), document/audio "paper" tiles on graph paper. Badges for
+missing poster falls back quietly), document/audio "paper" tiles on graph paper. An image that has no
+variants yet stays photo-shaped: a shimmering tile with an image glyph while processing, a red tile with
+a broken-image glyph when it failed. Badges for
 processing/failed and "No alt". Processing tiles refresh every 5 s until they settle.
-The Sheet shows the preview (image on a checkerboard, `<video>` with WebM + MP4, PDF in an iframe,
-`<audio>`), editable alt / caption / credit (`PATCH /admin/assets/:id`), facts (file name, type,
+The Sheet shows the preview (image on a checkerboard, `<video>` with WebM + MP4, PDF in an iframe when
+`navigator.pdfViewerEnabled` is not false, otherwise a card with "Open the file" since Android Chrome and
+headless shells would download a framed PDF; `<audio>`), editable alt / caption / credit (`PATCH /admin/assets/:id`), facts (file name, type,
 size, dimensions, length, uploaded, id), every public variant URL with copy and open, "Original"
 download, **Re-crop** for images (the kit's crop dialog on the private original, locked to the
 purpose's aspect, then `recropAsset` and a toast when the new sizes are live) and delete with a
@@ -127,44 +139,147 @@ warning that every place using it turns empty. Without `media.library` the page 
 - After a create, `/auth/me` is refetched so the new ownership grant is in the ability before the
   record opens.
 - On phones, tables become cards; filter selects shrink to share a row.
+- Tables pick their columns by width (`useMediaQuery`) so nothing scrolls sideways from 360px up:
+  speaker names wrap to 2 lines, speakers drop "Updated" under 1280px and, on phones, keep name, talks
+  and the menu, with a visibility chip under the name and no column/density buttons. Publications fold
+  "Where" under the title under 1280px and show "Updated" from 1536px. SSR renders the narrow set and
+  the client switches after hydration; the sweeps logged no console errors (so no hydration
+  mismatch), but the first paint on a laptop was not measured.
 
 ## Verified (Playwright, real shared API on :4400, superadmin and a limited admin)
 
-Screenshots in the scratchpad `shots/admin-content/`.
+Screenshots in the scratchpad `shots/admin-content/`. The resume run's shots start with `r-` and `r2-`.
 
-- Speakers list (grid and table), new, edit at 390, 820, 1440 and 2560. **Created a speaker with an
-  avatar crop** (seed photo, zoomed in the crop dialog, uploaded, processed, saved, then reopened).
-- **Created a publication with DOI fill** (`10.1038/nature14539` pasted as a doi.org link): the
-  diff dialog offered 13 changes, applying filled title, journal, volume, issue, pages, publisher,
-  date, ISSN, URL, language and 3 authors (Yann LeCun matched a directory speaker), then a directory
-  speaker and a manual author were added, corresponding toggled, keywords and abstract filled, saved,
-  and reopened at 390, 820, 1440 and 2560. The APA preview read
-  "LeCun, Y., Bengio, Y., Hinton, G., ... (2015). Deep learning. Nature, 521(7553), 436-444."
-- **Created a venue** in the Sheet (kind, building, floor, seats, address, maps link, notes) and
-  reopened it at 390 and 820.
-- Media library grid and detail Sheet at 1440 and 390.
-- A limited admin (speakers view only, publications view + edit, `venues.manage`, no media library):
-  speaker page read-only with the note and no Save, publication visibility locked, media shows
-  "Showing your uploads", `/admin/speakers/new` shows the no-access state.
-- No horizontal scroll at any tested width after fixes, no page errors from these pages.
-- `pnpm --filter @zemi/web typecheck`: no errors in these files.
+**Redone after the incident** (Postgres rebuilt and re-seeded, S3 now versitygw instead of MinIO,
+2026-09-26 around 03:50 WIB). Every test record below was deleted through the UI afterwards, so the seed
+data is untouched.
 
-Not verified: speaker and publication delete through the UI (the dialogs are wired and typed; I did
-not want to delete teammates' seed rows), re-crop from the media Sheet end to end, PDF preview with a
-real PDF asset, 2560 for venues and media.
+- **Width sweep** at 360, 390, 820, 1024, 1280, 1440 and 2560 over speakers (grid and table),
+  publications, venues, media, speaker new and publication new: no page or table scrolls sideways, no
+  console errors, no 5xx. Shots read at 390, 820, 1440 and 2560.
+- **Created a speaker with an avatar crop**: seed photo, zoomed in the crop dialog, uploaded, processed
+  on versitygw, saved. The API returned a 483x483 avatar with three WebP sizes and the GitHub link. Edit
+  page shot at 390, 820, 1440, 2560.
+- **Created a publication with DOI fill** (`https://doi.org/10.1038/nature14539` pasted): the diff dialog
+  offered 13 changes, all ticked because the form was empty. Applying filled title, journal, volume,
+  issue, pages, publisher, date (2015-05-27), ISSN, URL, language and 3 authors. Then a directory speaker
+  and a manual author (with organization) were added, corresponding toggled, keywords and abstract
+  filled, saved (201, redirect in about 260 ms), reopened at 390, 820, 1440, 2560. The saved record had
+  every field. The live APA preview read "LeCun, Y., Bengio, Y., Hinton, G., ..., & Courville, A. (2015).
+  Deep learning. Nature, 521(7553), 436-444. https://doi.org/10.1038/nature14539". With the new seed no
+  Crossref author matches a directory speaker, so all three came in as manual authors.
+- A second save with the same slug came back 409 and landed as an inline field error ("The address ...
+  is already taken"), no toast.
+- **Duplicate DOI note**: typing a seed DOI (`10.5555/ZEMI.2026.001`, upper case on purpose) on the new
+  page shows the note at 1440, 390 and 360; the twin's own edit page shows none. With the form dirty,
+  "Open it" opened a new tab with no "Leave without saving?" prompt, and the first tab kept its URL and
+  unsaved changes (the dirty guard skips `target=_blank`).
+- **Created a venue** in the Sheet (kind, building, floor, seats, address, maps link with its "Open"
+  link, notes), toast "... is ready for Fridays.", reopened in the Sheet at 390, 820, 1440, 2560.
+- **Deletes through the UI**: the speaker dialog said "not on any talks yet, 2 papers list them as an
+  author", the toast reported "2 papers kept their name as a plain author", and the paper still listed
+  the name afterwards. The publication dialog named its public URL; the venue dialog said no events use
+  it. The busy seed room "Classroom 3.12" asks to type its name and says 29 events lose the room
+  (cancelled, nothing deleted). The media Sheet deleted the test avatar (the API then answers 404).
+- **Re-crop from the media Sheet**, end to end: crop `{x:14, y:14, 483x483}` became `{x:44, y:44, 423x423}`,
+  the toasts went "Re-cropping..." then "The new version is live everywhere it is used.", new variants
+  shown in the Sheet.
+- **PDF in the media Sheet** with a real seed PDF: headless Chromium has no PDF viewer, so the fallback
+  card with "Open the file" shows, plus the file row with "Open".
+- Processing and failed image tiles checked with a mocked list response at 390 and 1440.
+- Empty states (search with no hits) for speakers, publications, media and venues.
+
+- **Permissions on the new seed**, with a temporary admin created and then deleted through
+  `/admin/admins` (speakers view only, publications view + edit, `venues.manage`, no media library):
+  speaker page read-only with the note, no Save, no Delete; publication editable with visibility locked
+  ("Changing visibility needs publish access...") and no Delete; media shows "Showing your uploads";
+  `/admin/speakers/new` shows the no-access state; venues keep "New room".
+- Final width sweep after the last edits (same 7 widths, same routes): no sideways scroll, no console
+  errors. One later partial sweep logged React's "state update on a component that hasn't mounted yet"
+  once on `/admin/speakers/new` at 360 while teammates' saves were hot-reloading the dev server; ten
+  more loads of that page at 360, 820 and 1440 did not bring it back.
+
+`pnpm --filter @zemi/web typecheck`: clean for this area (the last run fails only on another team's
+in-progress `app/(public)/page.tsx` import).
+
+Not verified: a PDF inside the iframe in a browser that has a PDF viewer (only the headless fallback
+was seen), and BlockNote image upload inside the speaker bio or publication body.
 
 ## Known gaps
 
-- `ReadOnlyScope` only reaches the `fields` package. Kit `Input`/`Textarea`/`Select` read read-only
-  from their `<Field>` only, so this area wraps `FormField` in `ScopedFormField`. Other teams will hit
-  the same thing (see Requests).
+- The kit's `<Field>` now honours `<ReadOnlyScope>` itself, so `ScopedFormField` is redundant (it is
+  harmless and was left in place; it can be swapped back to the kit `FormField` any time).
+- An `?asset=<id>` deep link to someone else's file still shows Delete, Re-crop and Original; the API
+  answers 403 with a clear message. The `Asset` payload has no uploader field, so the web cannot hide them.
 - In-app navigation guard covers anchors (sidebar, breadcrumbs, back links). Keyboard jumps (`g s`),
   the command palette and the browser back button are not intercepted; `beforeunload` still covers
   reload and tab close.
 - No upload button in the media library itself; files arrive through the fields that use them.
 - Speaker list sorting is the select, not clickable table headers (the API sorts one way per key).
 
+## Requests
+
+- ~~**web-admin (kit):** make `Input`, `Textarea` and `Select` honour `<ReadOnlyScope>`.~~ Done in the kit
+  (`Field` reads `ReadOnlyScopeContext`).
+- **web-admin (kit):** a `<Field>` hands one `id` and its invalid state to every control inside, so a
+  composite editor wrapped in `FormField` (link rows, author rows) gets duplicate ids and every row turns
+  red when one row has an error. This area now uses a plain `Controller` plus a local `FieldGroup` for
+  those; the kit `LinksEditor` could also give its rows their own ids. Also worth adding an optional
+  `createdBy` (or `canEdit`) to `Asset` so the media sheet can hide actions on other people's files.
+- **api-content:** consider a soft duplicate check for DOIs (for example a `duplicateOf` hint on create,
+  or a unique index on `lower(doi)` if the team wants a hard rule). Today two publications can share a
+  DOI; the editor only warns.
+- **`app/providers.tsx` owner (dev only):** the TanStack Query devtools button sits bottom right on every
+  page in dev and covers the last Sheet button at some sizes. Moving it (bottom left is taken by the
+  Next dev badge, so maybe top right) would clear the admin Sheets. Not a production issue, noted so nobody files it
+  as a layout bug.
+
 ## Shared contract
 
 - Additive: `SpeakerPublic.publications[].id?: string` (optional), so the speaker editor can link to
   the admin publication page. `pnpm --filter @zemi/shared build` was run. No schema.ts change.
+
+## Review (2026-09-26)
+
+Reviewed against SPEC, DESIGN, the shared contract and the task, with Playwright on :3300 and the shared API.
+Every test record (two publications, three speakers, one limited admin) was deleted afterwards; seed counts
+are back to 60 publications and 40 speakers.
+
+Fixed:
+- **Clearing the year left a stale month and day.** PATCH bodies are built from dirty fields only, so
+  clearing the year sent `{"publishedYear":null}` and the server kept month 5, day 10 (reproduced). Year,
+  month and day now travel together whenever any of them changed. Re-checked: the body is all three nulls
+  and the stored record matches.
+- **"Add X as a new speaker" from the authors picker sent `slug: slugify(name)`**, so any name whose slug
+  already existed answered 409 (checked with curl), and names that slugify to nothing would 400. The slug
+  is left out now and the API makes a unique one: adding "Larasati Anindya." gave 201 and
+  `larasati-anindya-2`.
+- **Server author errors landed nowhere.** The API reports `authors.N.speakerId` and `authors.N.avatarAssetId`;
+  the rows only showed `speaker`, `fullName` and `url`, and the toast is skipped when there are field errors,
+  so a deleted speaker only produced a red dot. Rows now show those messages ("That speaker is gone. Pick
+  them again?", checked by deleting a speaker while it was on an open form).
+- **Duplicate ids and red spill in composite editors.** Author rows, publication link rows and speaker link
+  rows sat inside one `FormField`, so they all shared one `id` (probe found 2 to 12 duplicates per page) and
+  all turned red when one row had an error. They use `Controller` + `FieldGroup` now: no duplicate ids on
+  either editor, only the broken row is red.
+- **Cite preview matched the public page only partly.** It skipped the publisher-link and public-URL
+  fallback, `status` ("in press") and the thesis degree guess. It now goes through `publicationToCitationSource`
+  (no DOI, no URL: APA ends with the public `/publications/<slug>` link, as on the site). "Suggest" uses
+  `makeCitationKey` instead of a local copy that broke on particles and "Family, Given" names.
+- **Speaker create autofocus** scrolled phones and tablets past the photo and visibility cards and would pop
+  the keyboard. The name is focused only from 1024px up (checked at 390, 820, 1440).
+- Publication link rows squashed the label box to about 55px on phones; below 640px the row is now kind and
+  delete, then the URL, then the label, each full width (checked at 390 and 1440).
+- A11y: publication row menus were all called "More actions"; they now name the paper. The section-nav error
+  dot used `aria-label` on a bare span; it has screen-reader text now.
+
+Checked and fine: typecheck (only another team's `components/public/home/up-next.tsx` fails), sweep of all 9
+routes at 390, 820, 1440 and 2560 (no sideways scroll, no 4xx/5xx, no error screens; the sweep now fails on
+an error screen), DOI fill at 390 (13 changes, 3 authors, APA as expected, 201, redirect), a view-only admin
+(read-only note, no Save/Add/Delete, no console errors), no en or em dashes or banned words in this area,
+asset FKs are `set null` (event media `cascade`), so the delete warning is accurate.
+
+Still open: React's "state update on a component that hasn't mounted yet" warning showed once more (speaker
+edit at 820, during a sweep while teammates' edits were recompiling). 20 more cold loads at 360 and 820 did
+not bring it back, so the source is still unknown.
+

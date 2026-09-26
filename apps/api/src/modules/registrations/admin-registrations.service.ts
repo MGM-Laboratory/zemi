@@ -392,7 +392,8 @@ export class AdminRegistrationsService {
   async resend(id: string, actor: Actor): Promise<ResendResult> {
     const { reg, event } = await this.registrationFor(actor.ability, id, 'registrations.manage');
     if (reg.status !== 'registered') throw new AppError(422, 'cancelled', 'This seat is cancelled. Restore it first, then resend.');
-    const mail = await this.mailer.sendConfirmation(reg, event, { resend: true });
+    if (event.row.cancelledAt) throw new AppError(422, 'event_cancelled', "This event is cancelled, so there's no ticket to send.");
+    const mail = await this.mailer.sendConfirmation(reg, event, { resend: true, resendReason: 'organizer' });
     await this.audit.log({
       principal: actor.principal,
       action: 'registration.resend',
@@ -421,10 +422,11 @@ export class AdminRegistrationsService {
     const items = [];
     switch (input.action) {
       case 'resend': {
+        if (event.row.cancelledAt) throw new AppError(422, 'event_cancelled', "This event is cancelled, so there's no ticket to send.");
         emails = { sent: 0, logged: 0, failed: 0 };
         const settings = await this.ctx.emailSettings();
         for (const reg of rows.filter((r) => r.status === 'registered')) {
-          const mail = await this.mailer.sendConfirmation(reg, event, { resend: true, settings });
+          const mail = await this.mailer.sendConfirmation(reg, event, { resend: true, resendReason: 'organizer', settings });
           emails[mail.status] += 1;
           affected += 1;
         }

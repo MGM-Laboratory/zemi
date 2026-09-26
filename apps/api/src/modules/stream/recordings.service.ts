@@ -5,6 +5,7 @@ import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnModuleI
 import {
   fromJakartaInput,
   jakartaDateInput,
+  type Ability,
   type Principal,
   type Recording,
   type RecordingChapter,
@@ -12,22 +13,24 @@ import {
   type StreamAdminEvent,
   type StreamSessionAdmin,
 } from '@zemi/shared';
-import { and, asc, desc, eq, gte, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, lt, ne, notExists, sql } from 'drizzle-orm';
 import { toVideoRef } from '../../common/asset-refs.js';
-import { AppError, badRequest, conflict, notFound, unprocessable } from '../../common/errors.js';
+import { AppError, badRequest, conflict, forbidden, notFound, unprocessable } from '../../common/errors.js';
 import { concatCopy, FfmpegError, poster, posterTime, probe, storyboard, trimCopy } from '../../common/ffmpeg.js';
 import { withTmpDir } from '../../common/tmp.js';
 import { AppConfig } from '../../config/app-config.js';
 import { DB, type Db } from '../../db/client.js';
-import { assets, events, eventStreams, recordingSegments, rundownItems, streamSessions, type AssetVariants } from '../../db/schema.js';
+import { assets, eventMedia, events, eventStreams, recordingSegments, rundownItems, streamSessions, type AssetVariants } from '../../db/schema.js';
 import { AuditService } from '../audit/audit.service.js';
 import { JobsService } from '../jobs/jobs.service.js';
 import { channels, RealtimeService } from '../realtime/realtime.service.js';
 import { RevalidateService, tags } from '../revalidate/revalidate.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import {
+  coverageGaps,
   finalizeBackoffSec,
   isSegmentFilename,
+  keptSeconds,
   parseDurationSec,
   parseLivePath,
   parseSegmentFilename,
@@ -58,6 +61,8 @@ export interface FinalizeJob {
   attempt?: number;
   /** Admin pressed Reprocess: skip the wait, keep a good recording when there is nothing to re-stitch. */
   reprocess?: boolean;
+  /** Epoch ms the wait starts from when it isn't `endedAt` (late segments revived a finished session). */
+  since?: number;
 }
 
 export type SessionRow = typeof streamSessions.$inferSelect;
@@ -84,6 +89,9 @@ function friendlyError(err: unknown): string {
   const msg = (err as Error)?.message ?? '';
   if (/No video/i.test(msg)) return 'The recording had no video in it.';
   if (/ENOSPC/i.test(msg)) return 'The server ran out of disk space while stitching. Try Reprocess in a bit.';
+  if (/StorageFull|free drive threshold|QuotaExceeded|EntityTooLarge/i.test(msg) || (err as { name?: string })?.name === 'XMinioStorageFull') {
+    return 'The storage bucket is full, so we could not save the video. Free up some space, then hit Reprocess.';
+  }
   return 'Something broke while we stitched the recording. Try Reprocess.';
 }
 
@@ -129,10 +137,11 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
     });
   }
 
-  enqueueFinalize(sessionId: string, opts: { delaySec?: number; attempt?: number; reprocess?: boolean } = {}): Promise<string | null> {
+  enqueueFinalize(sessionId: string, opts: { delaySec?: number; attempt?: number; reprocess?: boolean; since?: number } = {}): Promise<string | null> {
     const data: FinalizeJob = { sessionId };
     if (opts.attempt) data.attempt = opts.attempt;
     if (opts.reprocess) data.reprocess = true;
+    if (opts.since) data.since = opts.since;
     return this.jobs.send<FinalizeJob>(FINALIZE_QUEUE, data, { startAfter: opts.delaySec, singletonKey: sessionId });
   }
 
@@ -170,6 +179,11 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       }
     }
     const s3Key = `recordings/raw/${key}/${filename}`;
+    const [seen] = await this.db
+      .select({ id: recordingSegments.id })
+      .from(recordingSegments)
+      .where(and(eq(recordingSegments.streamKey, key), eq(recordingSegments.filename, filename)))
+      .limit(1);
     await this.storage.putFile(s3Key, input.filePath, { contentType: 'video/mp4', cacheControl: 'private, no-store' });
     const [row] = await this.db
       .insert(recordingSegments)
@@ -180,7 +194,48 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       })
       .returning({ id: recordingSegments.id });
     this.logger.debug(`Stored segment ${key.slice(0, 6)}.../${filename} (${Math.round(size / 1024)} KB, ${durationSec ?? '?'}s)`);
+    if (!seen) await this.reviveLate(key, startedAt, durationSec);
     return { stored: true, id: row?.id };
+  }
+
+  /**
+   * A segment that shows up after its session finished (the bucket or the API was down longer than
+   * the finalize wait, and the media server's sweeper delivered the backlog later) sends the session
+   * back to `waiting` when the raw segments now in hand make a longer recording than the one it has
+   * (`none`, `failed` or `ready`; never a shorter one, and never while someone else is on it).
+   */
+  private async reviveLate(streamKey: string, startedAt: Date, durationSec: number | null): Promise<void> {
+    const end = new Date(startedAt.getTime() + (durationSec && durationSec > 0 ? durationSec : 60) * 1000);
+    try {
+      const candidates = await this.db
+        .select({ session: streamSessions, assetDuration: assets.durationSec })
+        .from(streamSessions)
+        .leftJoin(assets, eq(assets.id, streamSessions.recordingAssetId))
+        .where(
+          and(
+            eq(streamSessions.streamKey, streamKey),
+            inArray(streamSessions.recordingStatus, ['none', 'failed', 'ready']),
+            lt(streamSessions.startedAt, end),
+            gt(streamSessions.endedAt, startedAt),
+          ),
+        );
+      for (const { session: s, assetDuration } of candidates) {
+        if (this.running.has(s.id)) continue;
+        const plans = planCuts((await this.segmentsFor(s)).map(spanOf), s.startedAt, s.endedAt!);
+        if (keptSeconds(plans) <= (assetDuration ?? 0) + 5) continue;
+        const [row] = await this.db
+          .update(streamSessions)
+          .set({ recordingStatus: 'waiting', error: null })
+          .where(and(eq(streamSessions.id, s.id), eq(streamSessions.recordingStatus, s.recordingStatus)))
+          .returning({ id: streamSessions.id });
+        if (!row) continue;
+        this.logger.log(`Late segment for session ${s.id} (${s.recordingStatus}): collecting again`);
+        await this.enqueueFinalize(s.id, { delaySec: 30, since: Date.now() });
+        void this.publishSession(s.id);
+      }
+    } catch (err) {
+      this.logger.warn(`Could not revive sessions for ${streamKey.slice(0, 6)}...: ${(err as Error).message}`);
+    }
   }
 
   /* -------------------------------------------------------------------------------- views */
@@ -340,7 +395,7 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       throw new AppError(409, 'processing', "We're stitching this one right now. Try again in a minute.");
     }
     await this.db.delete(streamSessions).where(eq(streamSessions.id, s.id));
-    if (s.recordingAssetId) await this.deleteAsset(s.recordingAssetId);
+    const assetDeleted = s.recordingAssetId ? await this.releaseAsset(s.recordingAssetId) : false;
     await this.deleteUnneededSegments(await this.segmentsFor(s), s.streamKey);
     if (s.isPrimary) await this.promotePrimary(s.eventId);
     await this.audit.log({
@@ -349,7 +404,7 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       resourceType: 'event',
       resourceId: s.eventId,
       summary: `Deleted a recording${s.title ? ` ("${s.title}")` : ''}`,
-      meta: { sessionId: s.id, assetId: s.recordingAssetId },
+      meta: { sessionId: s.id, assetId: s.recordingAssetId, assetDeleted },
       ip,
     });
     this.realtime.publish(channels.stream(s.eventId), { type: 'recording-removed', sessionId: s.id } satisfies StreamAdminEvent);
@@ -392,10 +447,14 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
     event: { id: string; startsAt: Date; endsAt: Date },
     input: { assetId: string; title?: string | null },
     principal: Principal,
+    ability: Ability,
     ip: string | null,
   ): Promise<StreamSessionAdmin> {
     const [asset] = await this.db.select().from(assets).where(eq(assets.id, input.assetId)).limit(1);
     if (!asset) throw notFound("We couldn't find that video.");
+    // Same rule as gallery attach: asset ids show up in public /media URLs, so knowing one isn't enough.
+    const mayUse = ability.isSuperadmin || ability.has('media.library') || (!!asset.createdBy && asset.createdBy === principal.id);
+    if (!mayUse) throw forbidden('You can only attach videos you uploaded yourself.');
     if (asset.kind !== 'video') throw unprocessable("That file isn't a video. Upload an MP4, MOV or WebM.");
     if (asset.status === 'failed') throw unprocessable("That video didn't process. Try uploading it again.");
     const [dupe] = await this.db
@@ -480,10 +539,15 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
     return rows.filter((seg) => overlaps(seg, { startedAt: s.startedAt, endedAt: end }));
   }
 
-  /** Has everything up to `endedAt` arrived, or is it clear nothing more is coming? */
+  /**
+   * Has everything from `startedAt` to `endedAt` arrived, or is it clear nothing more is coming?
+   * A hole in the middle can be OBS dropping (fine) or a segment still queued on the media server
+   * (bucket or API was down), so holes wait the full MAX_WAIT before we stitch around them.
+   */
   private async segmentsReady(s: SessionRow, endedAt: Date): Promise<{ ready: boolean; why: string }> {
-    const segs = await this.segmentsFor({ ...s, endedAt });
-    if (segmentsCover(segs.map(spanOf), endedAt)) return { ready: true, why: 'covered' };
+    const spans = (await this.segmentsFor({ ...s, endedAt })).map(spanOf);
+    if (!coverageGaps(spans, s.startedAt, endedAt).length) return { ready: true, why: 'covered' };
+    if (segmentsCover(spans, endedAt)) return { ready: false, why: 'a piece in the middle is missing, giving late uploads time' };
     const [stream] = await this.db
       .select({ streamKey: eventStreams.streamKey, ingestOnline: eventStreams.ingestOnline })
       .from(eventStreams)
@@ -511,9 +575,9 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
     if (s.recordingStatus === 'waiting' && !data.reprocess) {
       const check = await this.segmentsReady(s, endedAt);
       if (!check.ready) {
-        if (Date.now() - endedAt.getTime() < MAX_WAIT_MS) {
+        if (Date.now() - Math.max(endedAt.getTime(), data.since ?? 0) < MAX_WAIT_MS) {
           const attempt = (data.attempt ?? 0) + 1;
-          await this.enqueueFinalize(s.id, { delaySec: finalizeBackoffSec(attempt), attempt });
+          await this.enqueueFinalize(s.id, { delaySec: finalizeBackoffSec(attempt), attempt, since: data.since });
           this.logger.debug(`Session ${s.id}: ${check.why}; checking again (attempt ${attempt})`);
           return;
         }
@@ -604,16 +668,7 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       const base = `assets/${assetId}`;
       const variants: AssetVariants = { rev: Date.now().toString(36), mp4: `${base}/video.mp4` };
       await this.storage.putFile(`${base}/video.mp4`, out, { contentType: 'video/mp4' });
-      const posterPath = join(dir, 'poster.webp');
-      await poster(out, posterPath, { atSec: posterTime(duration), signal });
-      await this.storage.putFile(`${base}/poster.webp`, posterPath, { contentType: 'image/webp' });
-      variants.poster = `${base}/poster.webp`;
-      if (duration > 0) {
-        const sbPath = join(dir, 'storyboard.webp');
-        const sb = await storyboard(out, sbPath, { durationSec: duration, signal });
-        await this.storage.putFile(`${base}/storyboard.webp`, sbPath, { contentType: 'image/webp' });
-        variants.storyboard = { key: `${base}/storyboard.webp`, ...sb };
-      }
+      Object.assign(variants, await this.thumbnails(out, dir, base, duration, signal));
       const { size } = await stat(out);
       const day = jakartaDateInput(s.startedAt);
       const label = event?.number ? `zemi-${event.number}` : (event?.slug ?? 'zemi');
@@ -652,18 +707,57 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
         await this.deleteAsset(assetId);
         return;
       }
-      if (attached.oldAssetId && attached.oldAssetId !== assetId) await this.deleteAsset(attached.oldAssetId);
-      await this.deleteUnneededSegments(plans.map((p) => p.segment.row), s.streamKey, s.id);
+      if (attached.oldAssetId && attached.oldAssetId !== assetId) await this.releaseAsset(attached.oldAssetId);
+      // With a hole in it, keep the raw segments a while (the hourly cleanup takes them after 2h), so a
+      // late upload can revive the session and re-stitch the whole thing.
+      const gaps = coverageGaps(plans.map((p) => p.segment), s.startedAt, endedAt);
+      if (!gaps.length) await this.deleteUnneededSegments(plans.map((p) => p.segment.row), s.streamKey, s.id);
+      else this.logger.warn(`Session ${s.id}: recording has ${gaps.length} hole(s), keeping its raw segments for a while`);
       await this.audit.log({
         principal: 'system',
         action: 'recording.ready',
         resourceType: 'event',
         resourceId: s.eventId,
         summary: `Recording ready (${Math.round(duration / 60)} min)`,
-        meta: { sessionId: s.id, assetId, durationSec: duration, sizeBytes: size, segments: plans.length },
+        meta: { sessionId: s.id, assetId, durationSec: duration, sizeBytes: size, segments: plans.length, gaps: gaps.length },
       });
       void this.revalidate.revalidate([tags.events, tags.event(s.eventId)]);
     });
+  }
+
+  /**
+   * Poster + storyboard for a recording. Both are nice to have: a clip too odd for them (a few
+   * seconds long, say) still ships as a video, with whatever of the two worked.
+   */
+  private async thumbnails(
+    src: string,
+    dir: string,
+    base: string,
+    duration: number,
+    signal?: AbortSignal,
+  ): Promise<Pick<AssetVariants, 'poster' | 'storyboard'>> {
+    const out: Pick<AssetVariants, 'poster' | 'storyboard'> = {};
+    try {
+      const posterPath = join(dir, 'poster.webp');
+      await poster(src, posterPath, { atSec: posterTime(duration), signal });
+      await this.storage.putFile(`${base}/poster.webp`, posterPath, { contentType: 'image/webp' });
+      out.poster = `${base}/poster.webp`;
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      this.logger.warn(`No poster for ${base} (${Math.round(duration)}s): ${(err as Error).message}`);
+    }
+    if (duration > 0) {
+      try {
+        const sbPath = join(dir, 'storyboard.webp');
+        const sb = await storyboard(src, sbPath, { durationSec: duration, signal });
+        await this.storage.putFile(`${base}/storyboard.webp`, sbPath, { contentType: 'image/webp' });
+        out.storyboard = { key: `${base}/storyboard.webp`, ...sb };
+      } catch (err) {
+        if (signal?.aborted) throw err;
+        this.logger.warn(`No storyboard for ${base} (${Math.round(duration)}s): ${(err as Error).message}`);
+      }
+    }
+    return out;
   }
 
   /** Reprocess without raw segments: rebuild poster + storyboard + duration from the stored video. */
@@ -679,16 +773,7 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       const duration = info.durationSec ?? 0;
       const base = `assets/${asset.id}`;
       const variants: AssetVariants = { ...asset.variants, rev: Date.now().toString(36) };
-      const posterPath = join(dir, 'poster.webp');
-      await poster(src, posterPath, { atSec: posterTime(duration), signal });
-      await this.storage.putFile(`${base}/poster.webp`, posterPath, { contentType: 'image/webp' });
-      variants.poster = `${base}/poster.webp`;
-      if (duration > 0) {
-        const sbPath = join(dir, 'storyboard.webp');
-        const sb = await storyboard(src, sbPath, { durationSec: duration, signal });
-        await this.storage.putFile(`${base}/storyboard.webp`, sbPath, { contentType: 'image/webp' });
-        variants.storyboard = { key: `${base}/storyboard.webp`, ...sb };
-      }
+      Object.assign(variants, await this.thumbnails(src, dir, base, duration, signal));
       await this.db
         .update(assets)
         .set({ status: 'ready', error: null, variants, width: info.video.width, height: info.video.height, durationSec: duration || null })
@@ -706,6 +791,38 @@ export class RecordingsService implements OnModuleInit, OnApplicationBootstrap {
       await this.storage.deletePrefix(`assets/${assetId}/`);
     } catch (err) {
       this.logger.error(`Could not delete asset ${assetId}: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * A recording let go of its video (deleted, or re-stitched into a new one). Delete the asset only
+   * when nothing else uses it, in one statement: purpose `recording`, no session points at it (the
+   * seeded sessions share one), and no gallery item holds it (event_media cascades on asset delete).
+   * Anything else is just detached, so a documentation or site video someone attached never
+   * disappears with the recording. Returns true when the asset was deleted.
+   */
+  private async releaseAsset(assetId: string): Promise<boolean> {
+    try {
+      const gone = await this.db
+        .delete(assets)
+        .where(
+          and(
+            eq(assets.id, assetId),
+            eq(assets.purpose, 'recording'),
+            notExists(this.db.select({ one: sql`1` }).from(streamSessions).where(eq(streamSessions.recordingAssetId, assetId))),
+            notExists(this.db.select({ one: sql`1` }).from(eventMedia).where(eq(eventMedia.assetId, assetId))),
+          ),
+        )
+        .returning({ id: assets.id });
+      if (!gone.length) {
+        this.logger.log(`Kept asset ${assetId}: it isn't a recording-only file, or something else still uses it`);
+        return false;
+      }
+      await this.storage.deletePrefix(`assets/${assetId}/`);
+      return true;
+    } catch (err) {
+      this.logger.error(`Could not release asset ${assetId}: ${(err as Error).message}`);
+      return false;
     }
   }
 

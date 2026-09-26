@@ -17,7 +17,7 @@ export function SpeakerTalksCard({ talks }: { talks: SpeakerTalk[] }) {
     <Card padding="none" className="overflow-hidden">
       <div className="px-5 pt-5">
         <CardHeader
-          className="mb-3"
+          className="mb-3 flex-nowrap"
           title="Talks"
           description="Filled in from event line-ups. Edit them on the event."
           actions={talks.length ? <Badge size="sm" tone="blue">{talks.length}</Badge> : null}
@@ -73,7 +73,7 @@ export function SpeakerPublicationsCard({ publications }: { publications: Speake
     <Card padding="none" className="overflow-hidden">
       <div className="px-5 pt-5">
         <CardHeader
-          className="mb-3"
+          className="mb-3 flex-nowrap"
           title="Publications"
           description="Papers and projects that list them as an author."
           actions={publications.length ? <Badge size="sm" tone="green">{publications.length}</Badge> : null}

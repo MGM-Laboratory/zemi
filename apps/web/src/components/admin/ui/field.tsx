@@ -23,6 +23,12 @@ export interface FieldContextValue {
 
 const FieldContext = createContext<FieldContextValue | null>(null);
 
+/**
+ * Set by `<ReadOnlyScope>` (fields/read-only.tsx). It lives here so every `<Field>` inside a
+ * scope turns read-only too, unless the Field says otherwise with an explicit `readOnly`.
+ */
+export const ReadOnlyScopeContext = createContext(false);
+
 export function useFieldContext(): FieldContextValue | null {
   return useContext(FieldContext);
 }
@@ -91,7 +97,7 @@ export function Field({
   required = false,
   optional = false,
   disabled = false,
-  readOnly = false,
+  readOnly: readOnlyProp,
   count,
   action,
   id: forcedId,
@@ -101,6 +107,8 @@ export function Field({
   children,
 }: FieldProps) {
   const auto = useId();
+  const scopeReadOnly = useContext(ReadOnlyScopeContext);
+  const readOnly = readOnlyProp ?? scopeReadOnly;
   const id = forcedId ?? `f${auto.replace(/:/g, '')}`;
   const hasError = Boolean(error);
   const errorText = typeof error === 'boolean' ? null : error;

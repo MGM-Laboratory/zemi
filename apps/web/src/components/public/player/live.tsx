@@ -18,7 +18,10 @@ export interface LiveFeed {
   ingestOnline: boolean;
   viewers: number;
   startedAt: string | null;
+  /** From `live.state` or the SSE, latest wins. Null when neither said anything yet. */
   streamState: StreamState | null;
+  /** Public HLS url pushed by the SSE (appears when the event goes live). */
+  hlsUrl: string | null;
   connection: LiveConnection;
 }
 
@@ -32,12 +35,19 @@ export function useLiveFeed(opts: {
   eventId?: string;
   live?: PlayerLiveInfo;
   onReaction?: (kind: string, count: number) => void;
+  /** True while the viewer is actually watching (video playing), so heartbeats continue in PiP or a hidden tab. */
+  isWatching?: () => boolean;
 }): LiveFeed {
   const { enabled, eventId, live, onReaction } = opts;
+  const watchingRef = useRef(opts.isWatching);
+  useEffect(() => {
+    watchingRef.current = opts.isWatching;
+  });
   const sse = useLiveEvent(enabled ? eventId : null, { onReaction });
   const [ingest, setIngest] = useState(live?.ingestOnline ?? true);
   const [viewers, setViewers] = useState(live?.viewers ?? 0);
   const [startedAt, setStartedAt] = useState<string | null>(live?.startedAt ?? null);
+  const [streamState, setStreamState] = useState<StreamState | null>(live?.state ?? null);
 
   useEffect(() => {
     if (live) setIngest(live.ingestOnline);
@@ -48,21 +58,26 @@ export function useLiveFeed(opts: {
   useEffect(() => {
     setStartedAt(live?.startedAt ?? null);
   }, [live?.startedAt]);
+  useEffect(() => {
+    if (live?.state) setStreamState(live.state);
+  }, [live?.state]);
 
   useEffect(() => {
     if (!sse.stream) return;
     setIngest(sse.stream.ingestOnline);
+    setStreamState(sse.stream.state);
     if (sse.stream.liveStartedAt) setStartedAt(sse.stream.liveStartedAt);
   }, [sse.stream]);
   useEffect(() => {
     if (typeof sse.viewers === 'number') setViewers(sse.viewers);
   }, [sse.viewers]);
 
+  const ended = streamState === 'ended';
   useEffect(() => {
-    if (!enabled || !eventId) return;
+    if (!enabled || !eventId || ended) return;
     const viewerId = getViewerId();
     const beat = () => {
-      if (document.visibilityState === 'visible') void heartbeat(eventId, viewerId);
+      if (document.visibilityState === 'visible' || watchingRef.current?.()) void heartbeat(eventId, viewerId);
     };
     beat();
     const id = setInterval(beat, HEARTBEAT_MS);
@@ -74,9 +89,9 @@ export function useLiveFeed(opts: {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [enabled, eventId]);
+  }, [enabled, eventId, ended]);
 
-  return { ingestOnline: ingest, viewers, startedAt, streamState: sse.stream?.state ?? null, connection: sse.connection };
+  return { ingestOnline: ingest, viewers, startedAt, streamState, hlsUrl: sse.stream?.hlsUrl ?? null, connection: sse.connection };
 }
 
 /** Seconds since `startedAt`, ticking once a second. */

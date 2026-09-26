@@ -2,11 +2,13 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  jakartaDateInput,
   PUBLICATION_STATUSES,
   PUBLICATION_TYPE_LABELS,
   PUBLICATION_TYPES,
   publicationInput,
   publicationUpdateInput,
+  SLUG_PATTERN,
   type PublicationAdmin,
   type PublicationInput,
   type PublicationStatus,
@@ -16,11 +18,12 @@ import { Copy, ExternalLink, MoreHorizontal, Trash2, Wand2 } from 'lucide-react'
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { useWatch, type Control, type FieldErrors, type UseFormReturn } from 'react-hook-form';
+import { Controller, useWatch, type Control, type FieldErrors, type UseFormReturn } from 'react-hook-form';
 import { BlockEditor, FILE_ACCEPT, FileUpload, ImageUploadCrop, ReadOnlyScope, SlugField, TagsInput } from '@/components/admin/fields';
 import {
   Badge,
   Button,
+  Callout,
   Card,
   DateText,
   DropdownMenu,
@@ -46,11 +49,11 @@ import { useAbility, useRefetchMe } from '@/lib/admin/ability';
 import { api, errorMessage } from '@/lib/admin/api';
 import { useBreadcrumbs } from '@/lib/admin/breadcrumbs';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
-import { useAdminMutation } from '@/lib/admin/hooks';
+import { useAdminMutation, useDebouncedValue } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
 import { publicPaths, SITE_URL } from '@/lib/admin/paths';
 import { adminKeys } from '@/lib/admin/query-keys';
-import { EditorCard, EditorSkeleton, NoCreateAccess, ReadOnlyNote, SectionNav, VisibilityField, type EditorSection } from '../shared/content-ui';
+import { EditorCard, EditorSkeleton, FieldGroup, NoCreateAccess, ReadOnlyNote, SectionNav, VisibilityField, type EditorSection } from '../shared/content-ui';
 import { cleanDoi, DOI_PATTERN, pickDirty, wordCount } from '../shared/form-utils';
 import { effectiveActions } from '../shared/types';
 import { useDirtyGuard } from '../shared/use-dirty-guard';
@@ -71,6 +74,7 @@ import {
   publicationToForm,
   STATUS_LABELS,
   suggestCitationKey,
+  useDoiTwins,
   usePublication,
   type PublicationFormValues,
 } from './publication-data';
@@ -181,6 +185,13 @@ function PublicationForm({ pub }: { pub?: PublicationAdmin }) {
         return;
       }
       const patch = pickDirty(input as unknown as Record<string, unknown>, form.formState.dirtyFields as Record<string, unknown>) as Partial<PublicationInput>;
+      // Year, month and day travel together: clearing the year also clears month and day in formToInput,
+      // but those two are not "dirty", so without this the server would keep a month with no year.
+      if ('publishedYear' in patch || 'publishedMonth' in patch || 'publishedDay' in patch) {
+        patch.publishedYear = input.publishedYear;
+        patch.publishedMonth = input.publishedMonth;
+        patch.publishedDay = input.publishedDay;
+      }
       if (!canPublish) delete patch.visibility;
       if (!Object.keys(patch).length) {
         notify.info('Nothing changed, so nothing to save.');
@@ -293,7 +304,7 @@ function PublicationForm({ pub }: { pub?: PublicationAdmin }) {
                   {(field) => <Select<PublicationStatus> value={field.value} onValueChange={(v) => v && field.onChange(v)} options={STATUS_OPTIONS} />}
                 </FormField>
                 <FormField control={control} name="title" label="Title" required maxLength={400} className="sm:col-span-2">
-                  {(field) => <Textarea {...field} value={field.value ?? ''} autosize minRows={1} maxRows={4} placeholder="Deep learning" autoFocus={isCreate} className="font-semibold" />}
+                  {(field) => <Textarea {...field} value={field.value ?? ''} autosize minRows={1} maxRows={4} placeholder="Deep learning" className="font-semibold" />}
                 </FormField>
                 <FormField control={control} name="subtitle" label="Subtitle" optional maxLength={400} className="sm:col-span-2">
                   {(field) => <Input {...field} value={field.value ?? ''} placeholder="The part after the colon" />}
@@ -317,16 +328,21 @@ function PublicationForm({ pub }: { pub?: PublicationAdmin }) {
 
             {/* Authors */}
             <EditorCard id="authors" title="Authors" description="In byline order. Drag to reorder. Speakers link to their Zemi page.">
-              <FormField control={control} name="authors" label="Authors" hideLabel>
-                {(field, state) => (
-                  <AuthorsEditor
-                    value={field.value ?? []}
-                    onChange={field.onChange}
-                    errors={errors.authors as never}
-                    listError={state.error && !Array.isArray(errors.authors) ? state.error.message : undefined}
-                  />
+              {/* A plain Controller, not FormField: a Field would hand one id and one error state to every row. */}
+              <Controller
+                control={control}
+                name="authors"
+                render={({ field, fieldState }) => (
+                  <FieldGroup label="Authors" hideLabel>
+                    <AuthorsEditor
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      errors={errors.authors as never}
+                      listError={fieldState.error && !Array.isArray(errors.authors) ? fieldState.error.message : undefined}
+                    />
+                  </FieldGroup>
                 )}
-              </FormField>
+              />
             </EditorCard>
 
             {/* Where it appeared */}
@@ -336,7 +352,7 @@ function PublicationForm({ pub }: { pub?: PublicationAdmin }) {
 
             {/* Identifiers */}
             <EditorCard id="identifiers" title="Identifiers" description="The numbers that make it findable. A DOI can fill most of this page for you.">
-              <IdentifierFields form={form} readOnly={!canEdit} />
+              <IdentifierFields form={form} readOnly={!canEdit} selfId={pub?.id} />
             </EditorCard>
 
             {/* Files and links */}
@@ -349,9 +365,20 @@ function PublicationForm({ pub }: { pub?: PublicationAdmin }) {
                   <FormField control={control} name="url" label="Publisher link" optional hint="The official page, like the journal's article page.">
                     {(field) => <UrlInput value={field.value ?? ''} onChange={field.onChange} onBlur={field.onBlur} placeholder="https://www.nature.com/articles/..." />}
                   </FormField>
-                  <FormField control={control} name="links" label="More links" optional hint="Code, data, slides, a video. Paste a URL and we guess the kind.">
-                    {(field) => <PubLinksEditor value={field.value ?? []} onChange={field.onChange} errors={errors.links as never} />}
-                  </FormField>
+                  <Controller
+                    control={control}
+                    name="links"
+                    render={({ field, fieldState }) => (
+                      <FieldGroup
+                        label="More links"
+                        optional
+                        hint="Code, data, slides, a video. Paste a URL and we guess the kind."
+                        error={!Array.isArray(errors.links) ? fieldState.error?.message : undefined}
+                      >
+                        <PubLinksEditor value={field.value ?? []} onChange={field.onChange} errors={errors.links as never} />
+                      </FieldGroup>
+                    )}
+                  />
                 </div>
                 <FormField control={control} name="coverAssetId" label="Cover" optional>
                   {(field) => (
@@ -504,7 +531,11 @@ function SlugWithTitle({ control, savedSlug, isCreate }: { control: Ctl; savedSl
 
 function LiveCite({ control }: { control: Ctl }) {
   const values = useWatch({ control }) as Partial<PublicationFormValues>;
-  return <CitePreview source={formToCitation(values)} />;
+  // Same options the public page passes: its own URL when there is no DOI or publisher link, and today's date.
+  const [accessedAt] = useState(() => jakartaDateInput(new Date()));
+  const slug = values.slug?.trim();
+  const fallbackUrl = slug && SLUG_PATTERN.test(slug) ? `${SITE_URL}${publicPaths.publication(slug)}` : null;
+  return <CitePreview source={formToCitation(values, { fallbackUrl, accessedAt })} />;
 }
 
 function WordCount({ text }: { text: string }) {
@@ -564,12 +595,13 @@ function VenueFields({ control }: { control: Ctl }) {
   );
 }
 
-function IdentifierFields({ form, readOnly }: { form: Form; readOnly: boolean }) {
+function IdentifierFields({ form, readOnly, selfId }: { form: Form; readOnly: boolean; selfId?: string }) {
   const control = form.control;
   const doi = useWatch({ control, name: 'doi' }) ?? '';
   const arxiv = useWatch({ control, name: 'arxivId' }) ?? '';
   const clean = cleanDoi(doi);
   const doiOk = DOI_PATTERN.test(clean);
+  const twins = useDoiTwins(useDebouncedValue(clean, 400), selfId);
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
@@ -596,7 +628,8 @@ function IdentifierFields({ form, readOnly }: { form: Form; readOnly: boolean })
                 spellCheck={false}
                 autoCapitalize="none"
                 placeholder="10.1038/nature14539"
-                wrapperClassName="flex-1"
+                // flex-1 only in the row layout: in a column, a zero flex-basis squashes the input on phones.
+                wrapperClassName="min-w-0 sm:flex-1"
                 onBlur={() => {
                   if (field.value && cleanDoi(field.value) !== field.value) field.onChange(cleanDoi(field.value));
                   field.onBlur();
@@ -614,6 +647,7 @@ function IdentifierFields({ form, readOnly }: { form: Form; readOnly: boolean })
             </div>
           )}
         </FormField>
+        {twins.length ? <DoiTwinsNote twins={twins} /> : null}
       </div>
       <FormField control={control} name="isbn" label="ISBN" optional hint="Books and chapters.">
         {(field) => <Input {...field} value={field.value ?? ''} mono placeholder="978-3-16-148410-0" />}
@@ -661,6 +695,29 @@ function IdentifierFields({ form, readOnly }: { form: Form; readOnly: boolean })
         )}
       </FormField>
     </div>
+  );
+}
+
+function DoiTwinsNote({ twins }: { twins: ReturnType<typeof useDoiTwins> }) {
+  const [first, ...rest] = twins;
+  if (!first) return null;
+  return (
+    <Callout
+      tone="yellow"
+      className="mt-3"
+      title={twins.length === 1 ? 'This DOI is already on the shelf.' : `This DOI is already on the shelf ${twins.length} times.`}
+      action={
+        <Button type="button" size="sm" variant="secondary" iconRight={<ExternalLink />} asChild>
+          <a href={adminRoutes.publication(first.id)} target="_blank" rel="noopener noreferrer">
+            Open it
+          </a>
+        </Button>
+      }
+    >
+      <span className="font-medium text-ink-2">{first.title}</span>
+      {first.publishedYear ? ` (${first.publishedYear})` : null}
+      {rest.length ? `, plus ${rest.length} more` : null}. Saving still works, but you may be about to add a twin.
+    </Callout>
   );
 }
 

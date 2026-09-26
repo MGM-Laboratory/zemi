@@ -1,10 +1,12 @@
 import { Button, Callout, Divider, Heading, InfoRow, Layout, Text, useEmailContext } from '../../mail/templates/components/index.js';
-import { MessageBody } from './contact-notification.js';
 
+/**
+ * The sender's message is deliberately NOT echoed: the address is unverified, so an echo would let anyone
+ * mail their own text (and links) to a stranger from our domain. Name and topic only.
+ */
 export interface ContactAutoReplyProps {
   name: string;
   topic: string;
-  message: string;
   officeHours: string;
   /** From the email settings, e.g. "See you Friday,\nThe Zemi crew". */
   signature: string;
@@ -16,11 +18,11 @@ export interface ContactAutoReplyProps {
     /** "13:15 to 15:15 WIB" */
     time: string;
     venue: string | null;
+    /** hybrid: room + livestream, offline: room only, online: livestream only. */
+    mode?: 'hybrid' | 'offline' | 'online';
     url: string;
   } | null;
 }
-
-const MAX_ECHO = 1500;
 
 /** One friendly paragraph per contact topic. Unknown topics get the general one. */
 function topicLine(topic: string): string {
@@ -37,18 +39,24 @@ function topicLine(topic: string): string {
   return 'We read everything that comes in, even the slightly random ones. Especially those, honestly.';
 }
 
+function whereLine(e: NonNullable<ContactAutoReplyProps['nextEvent']>): string | null {
+  if (e.mode === 'online') return 'Online only, on the livestream';
+  if (!e.venue) return e.mode === 'offline' ? null : 'On the livestream';
+  return e.mode === 'offline' ? `${e.venue}, in person only` : `${e.venue}, and on the livestream`;
+}
+
 function firstName(name: string): string {
   const parts = name.trim().split(/\s+/);
   const first = parts[0] ?? '';
   // Balinese birth-order names and honorifics make a bad greeting on their own.
-  if (parts.length > 1 && /^(i|ni|dr\.?|prof\.?|ir\.?|mr\.?|ms\.?|mrs\.?)$/i.test(first)) return parts[1]!;
-  return first || 'there';
+  const pick = parts.length > 1 && /^(i|ni|dr\.?|prof\.?|ir\.?|mr\.?|ms\.?|mrs\.?)$/i.test(first) ? parts[1] : first;
+  // Only something that looks like a name goes in the greeting (no links, addresses or essays).
+  return /^[\p{L}\p{M}'’-]{1,40}$/u.test(pick) ? pick : 'there';
 }
 
 /** To the sender, right after they use the contact form. */
-export function ContactAutoReplyEmail({ name, topic, message, officeHours, signature, nextEvent }: ContactAutoReplyProps) {
+export function ContactAutoReplyEmail({ name, topic, officeHours, signature, nextEvent }: ContactAutoReplyProps) {
   const { webUrl } = useEmailContext();
-  const echo = message.length > MAX_ECHO ? `${message.slice(0, MAX_ECHO).trimEnd()}...` : message;
   const signatureLines = signature.split(/\r?\n/);
   return (
     <Layout
@@ -61,10 +69,6 @@ export function ContactAutoReplyEmail({ name, topic, message, officeHours, signa
       <Callout tone="yellow">
         We are around {officeHours.charAt(0).toLowerCase() + officeHours.slice(1)}. Need to add something? Just reply to this email.
       </Callout>
-      <Text size="small" muted>
-        Here is what you sent us:
-      </Text>
-      <MessageBody message={echo} />
       {nextEvent ? (
         <>
           <Divider />
@@ -73,7 +77,7 @@ export function ContactAutoReplyEmail({ name, topic, message, officeHours, signa
           <InfoRow label="When">
             {nextEvent.date}, {nextEvent.time}
           </InfoRow>
-          {nextEvent.venue ? <InfoRow label="Where">{nextEvent.venue}, and on the livestream</InfoRow> : null}
+          {whereLine(nextEvent) ? <InfoRow label="Where">{whereLine(nextEvent)}</InfoRow> : null}
           <Button href={nextEvent.url}>Save me a seat</Button>
         </>
       ) : (

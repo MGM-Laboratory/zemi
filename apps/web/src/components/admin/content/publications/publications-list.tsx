@@ -89,6 +89,8 @@ export function PublicationsList() {
   const router = useRouter();
   const ability = useAbility();
   const wide = useMediaQuery('(min-width: 768px)');
+  const xl = useMediaQuery('(min-width: 1280px)');
+  const xxl = useMediaQuery('(min-width: 1536px)');
   const [params, setParams] = useQueryStates(
     {
       q: parseAsString.withDefault(''),
@@ -122,34 +124,44 @@ export function PublicationsList() {
               <Link href={adminRoutes.publication(p.id)} className="line-clamp-2 font-semibold text-ink hover:text-blue focus-visible:outline-2 focus-visible:outline-focus">
                 {p.title}
               </Link>
-              <p className="truncate text-sm text-ink-3">{authorLine(p)}</p>
+              <p className="line-clamp-1 text-sm text-ink-3">{authorLine(p)}</p>
+              {xl ? null : (
+                <p className="line-clamp-1 text-sm text-ink-4">
+                  {[p.containerTitle, PUBLICATION_TYPE_LABELS[p.type] ?? p.type].filter(Boolean).join(', ')}
+                </p>
+              )}
             </div>
           </div>
         ),
       },
-      {
-        id: 'where',
-        header: 'Where',
-        enableSorting: false,
-        cell: ({ row: { original: p } }) => (
-          <div className="min-w-0 text-sm">
-            <p className="max-w-[16rem] truncate text-ink-2">{p.containerTitle || <span className="text-ink-4">Not set</span>}</p>
-            <p className="text-ink-4">{PUBLICATION_TYPE_LABELS[p.type] ?? p.type}</p>
-          </div>
-        ),
-      },
+      // On tablets and small laptops "where" moves under the title so nothing scrolls sideways.
+      ...(xl
+        ? [
+            {
+              id: 'where',
+              header: 'Where',
+              enableSorting: false,
+              cell: ({ row: { original: p } }) => (
+                <div className="min-w-0 text-sm">
+                  <p className="line-clamp-1 max-w-[16rem] text-ink-2">{p.containerTitle || <span className="text-ink-4">Not set</span>}</p>
+                  <p className="line-clamp-1 text-ink-4">{PUBLICATION_TYPE_LABELS[p.type] ?? p.type}</p>
+                </div>
+              ),
+            } satisfies ColumnDef<PublicationRow>,
+          ]
+        : []),
       {
         id: 'year',
         header: 'Year',
         enableSorting: false,
-        meta: { width: '5.5rem' },
+        meta: { width: '4.75rem' },
         cell: ({ row: { original: p } }) => <span className="mono tabular-nums">{p.publishedYear ?? <span className="text-ink-4">?</span>}</span>,
       },
       {
         id: 'status',
         header: 'Status',
         enableSorting: false,
-        meta: { width: '10rem' },
+        meta: { width: '8.5rem' },
         cell: ({ row: { original: p } }) => (
           <div className="flex flex-wrap items-center gap-1">
             {p.visibility ? <StatusChip kind="visibility" value={p.visibility} size="sm" /> : null}
@@ -165,9 +177,9 @@ export function PublicationsList() {
         id: 'extras',
         header: 'Has',
         enableSorting: false,
-        meta: { width: '8rem', label: 'PDF and DOI' },
+        meta: { width: '8.25rem', label: 'PDF and DOI' },
         cell: ({ row: { original: p } }) => (
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             {p.hasPdf ? (
               <Badge size="sm" tone="red" icon={<FileText />}>
                 PDF
@@ -188,13 +200,17 @@ export function PublicationsList() {
         meta: { width: '8rem' },
         cell: ({ row: { original: p } }) => <AvatarStack people={(p.authors ?? []).map((a) => ({ name: a.fullName, image: a.avatar }))} max={3} size={26} />,
       },
-      {
-        id: 'updatedAt',
-        header: 'Updated',
-        enableSorting: false,
-        meta: { width: '8rem' },
-        cell: ({ row: { original: p } }) => <DateText value={p.updatedAt} format="relative" className="text-sm text-ink-3" />,
-      },
+      ...(xxl
+        ? [
+            {
+              id: 'updatedAt',
+              header: 'Updated',
+              enableSorting: false,
+              meta: { width: '8rem' },
+              cell: ({ row: { original: p } }) => <DateText value={p.updatedAt} format="relative" className="text-sm text-ink-3" />,
+            } satisfies ColumnDef<PublicationRow>,
+          ]
+        : []),
       {
         id: 'actions',
         header: () => <span className="sr-only">Actions</span>,
@@ -204,7 +220,7 @@ export function PublicationsList() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ability],
+    [ability, xl, xxl],
   );
 
   const clear = () => void setParams({ q: null, type: null, year: null, vis: null, page: null });
@@ -409,7 +425,7 @@ function RowMenu({ row, actions, onDelete }: { row: PublicationRow; actions: Set
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton label="More actions" size="sm">
+        <IconButton label={`More for ${row.title.length > 60 ? `${row.title.slice(0, 60).trimEnd()}...` : row.title}`} size="sm">
           <MoreHorizontal />
         </IconButton>
       </DropdownMenuTrigger>

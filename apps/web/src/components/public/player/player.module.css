@@ -16,8 +16,13 @@
   position: relative;
   display: block;
   width: 100%;
+  /* Never taller than the screen (landscape phones, short windows): shrink, keep 16:9. */
+  max-width: max(280px, calc((100svh - 24px) * 16 / 9));
+  margin-inline: auto;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  /* clip, not hidden: focusing an animating control must never scroll the player's contents. */
+  overflow: clip;
   isolation: isolate;
   container: player / inline-size;
   border-radius: clamp(14px, 1.6vw, 28px);
@@ -48,6 +53,7 @@
 .root:fullscreen {
   width: 100%;
   height: 100%;
+  max-width: none;
   aspect-ratio: auto;
   border-radius: 0;
 }
@@ -55,6 +61,7 @@
 .root:-webkit-full-screen {
   width: 100%;
   height: 100%;
+  max-width: none;
   aspect-ratio: auto;
   border-radius: 0;
 }
@@ -824,10 +831,15 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
 }
 
 .previewChapter {
+  display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
   font-family: var(--font-display, system-ui);
   font-size: clamp(12px, 1.25cqi, 18px);
   font-weight: 800;
@@ -956,6 +968,8 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   align-items: center;
   justify-content: center;
   padding: var(--pad);
+  /* Clear the title bar on top and the control bar below. */
+  padding-top: calc(var(--pad) + clamp(16px, 3cqi, 56px));
   padding-bottom: calc(var(--pad) + var(--ctrl) + 16px);
   background: radial-gradient(120% 90% at 50% 40%, #1a1f29, #0e1116 70%);
   text-align: center;
@@ -1308,7 +1322,8 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   bottom: calc(var(--pad) + var(--ctrl) + 2 * var(--bar-pad) + 12px);
 }
 
-.floatChip[data-position='top-right'] {
+.floatChip[data-position='top-right'],
+.root[data-mode='live'] .floatChip[data-position='top-right'] {
   top: var(--pad);
   right: var(--pad);
   bottom: auto;
@@ -1600,6 +1615,11 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   border: 1px solid var(--player-line);
   box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
   transform-origin: 100% 100%;
+  transition: width 320ms var(--ease);
+}
+
+.menu[data-page='chapters'] {
+  width: min(clamp(300px, 44cqi, 460px), calc(100cqi - 2 * var(--pad)));
 }
 
 .root:fullscreen .menu {
@@ -1698,6 +1718,64 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   border-radius: 13px 13px 6px 6px;
 }
 
+/* "More below" cue for small players: a sticky fade with a nudging chevron. Takes no layout space. */
+.menuMore {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 26px;
+  margin-top: -26px;
+  padding-bottom: 2px;
+  border-radius: 0 0 19px 19px;
+  background: linear-gradient(to bottom, rgba(14, 17, 22, 0), rgba(14, 17, 22, 0.92) 78%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms var(--ease);
+}
+
+.menu[data-more='true'] .menuMore {
+  opacity: 1;
+}
+
+.menuMoreIcon {
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  animation: menu-more-nudge 1.4s var(--ease) infinite;
+}
+
+@keyframes menu-more-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+/* Long pages (chapters) scroll under the back row, so it stays reachable at every size. */
+.menuBack {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: #171b22;
+}
+
+.menuBack:focus,
+.menuBack:focus-visible {
+  background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)) #171b22;
+}
+
+@media (hover: hover) {
+  .menuBack:hover {
+    background: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)) #171b22;
+  }
+}
+
 .menuBack .menuLabel {
   font-family: var(--font-display, system-ui);
   font-weight: 850;
@@ -1753,15 +1831,27 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
 }
 
 .chapterTitle {
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.chapterMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
 }
 
 .chapterTime {
   color: var(--player-dim);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .chapterNow {
@@ -1893,6 +1983,14 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   .hideNarrow {
     display: none;
   }
+  .title {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+  .chapterThumb {
+    width: 64px;
+    height: 36px;
+  }
   .volumeSlot {
     display: none;
   }
@@ -1920,6 +2018,9 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   .menu {
     width: clamp(300px, 22cqi, 460px);
   }
+  .menu[data-page='chapters'] {
+    width: clamp(380px, 30cqi, 560px);
+  }
   .menuItem {
     min-height: 52px;
     font-size: 17px;
@@ -1942,7 +2043,8 @@ html[data-custom-cursor] .root:fullscreen[data-idle] * {
   .bigPlayHalo::after,
   .slateActor,
   .liveDot::after,
-  .rippleArrows i {
+  .rippleArrows i,
+  .menuMoreIcon {
     animation: none !important;
   }
 }

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   SITE_SETTING_SCHEMAS,
+  type EventMode,
   type Faq,
   type ImageRef,
   type Principal,
@@ -59,6 +60,8 @@ function toFaq(row: FaqRow): Faq {
 export class SiteService {
   private publicCache: { at: number; value: PublicSite } | null = null;
   private publicInflight: Promise<PublicSite> | null = null;
+  /** Bumped by every change, so a build that started before the change can't cache (or serve) stale data. */
+  private publicGeneration = 0;
 
   constructor(
     @Inject(DB) private readonly db: Db,
@@ -101,9 +104,9 @@ export class SiteService {
     await this.db
       .insert(siteSettings)
       .values({ key, value: value as Record<string, unknown>, updatedBy: ctx.principal.name })
-      .onConflictDoUpdate({ target: siteSettings.key, set: { value: value as Record<string, unknown>, updatedBy: ctx.principal.name, updatedAt: new Date() } });
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value: value, updatedBy: ctx.principal.name, updatedAt: new Date() } });
 
-    const fields = changedFields(before as Record<string, unknown>, value as Record<string, unknown>);
+    const fields = changedFields(before, value);
     await this.audit.log({
       principal: ctx.principal,
       action: 'site.update',
@@ -227,7 +230,7 @@ export class SiteService {
       .returning();
     await this.audit.log({ principal: ctx.principal, action: 'team.create', resourceType: 'team', resourceId: row.id, summary: `Added ${row.name} to the team`, ip: ctx.ip });
     this.changed();
-    return (await this.toTeam([row]))[0]!;
+    return (await this.toTeam([row]))[0];
   }
 
   async updateTeamMember(id: string, input: Partial<TeamCreate>, ctx: Ctx): Promise<TeamMember> {
@@ -242,7 +245,7 @@ export class SiteService {
     }
     if (input.links !== undefined) set.links = input.links;
     if (input.visibility !== undefined) set.visibility = input.visibility;
-    if (!Object.keys(set).length) return (await this.toTeam([existing]))[0]!;
+    if (!Object.keys(set).length) return (await this.toTeam([existing]))[0];
     const [row] = await this.db.update(teamMembers).set(set).where(eq(teamMembers.id, id)).returning();
     await this.audit.log({
       principal: ctx.principal,
@@ -254,7 +257,7 @@ export class SiteService {
       ip: ctx.ip,
     });
     this.changed();
-    return (await this.toTeam([row]))[0]!;
+    return (await this.toTeam([row]))[0];
   }
 
   async removeTeamMember(id: string, ctx: Ctx): Promise<void> {
@@ -330,14 +333,16 @@ export class SiteService {
     const now = Date.now();
     if (this.publicCache && now - this.publicCache.at < PUBLIC_CACHE_MS) return this.publicCache.value;
     if (!this.publicInflight) {
-      this.publicInflight = this.buildPublic()
+      const generation = this.publicGeneration;
+      const build: Promise<PublicSite> = this.buildPublic()
         .then((value) => {
-          this.publicCache = { at: Date.now(), value };
+          if (generation === this.publicGeneration) this.publicCache = { at: Date.now(), value };
           return value;
         })
         .finally(() => {
-          this.publicInflight = null;
+          if (this.publicInflight === build) this.publicInflight = null;
         });
+      this.publicInflight = build;
     }
     return this.publicInflight;
   }
@@ -399,13 +404,15 @@ export class SiteService {
 
   /** Drop the public cache and tell the web. Called after every site change (and the content reset). */
   changed(extraTags: string[] = []): void {
-    this.publicCache = null;
+    this.invalidatePublicCache();
     void this.revalidate.revalidate([tags.site, ...extraTags]);
   }
 
   /** For callers that need a fresh payload right away (tests, the seeder summary). */
   invalidatePublicCache(): void {
+    this.publicGeneration++;
     this.publicCache = null;
+    this.publicInflight = null;
   }
 
   /** Used by the contact flow: who gets the organizer notification. */
@@ -416,9 +423,11 @@ export class SiteService {
   }
 
   /** Next upcoming published event, for the auto-reply ("see you on Friday ..."). */
-  async nextPublicEvent(now = new Date()): Promise<{ title: string; number: number | null; slug: string; startsAt: Date; endsAt: Date; venue: string | null } | null> {
+  async nextPublicEvent(
+    now = new Date(),
+  ): Promise<{ title: string; number: number | null; slug: string; startsAt: Date; endsAt: Date; venue: string | null; mode: EventMode } | null> {
     const [row] = await this.db
-      .select({ title: events.title, number: events.number, slug: events.slug, startsAt: events.startsAt, endsAt: events.endsAt, venue: venues.name })
+      .select({ title: events.title, number: events.number, slug: events.slug, startsAt: events.startsAt, endsAt: events.endsAt, venue: venues.name, mode: events.mode })
       .from(events)
       .leftJoin(venues, eq(venues.id, events.venueId))
       .where(and(eq(events.visibility, 'published'), isNull(events.cancelledAt), gt(events.startsAt, now)))

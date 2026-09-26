@@ -2,6 +2,8 @@
   position: relative;
   display: block;
   width: 100%;
+  max-width: max(280px, calc((100svh - 24px) * 16 / 9));
+  margin-inline: auto;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   isolation: isolate;

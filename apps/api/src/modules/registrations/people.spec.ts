@@ -2,11 +2,15 @@ import { parseTicketPayload } from '@zemi/shared';
 import { describe, expect, it } from 'vitest';
 import { personalize, sanitizeBroadcastHtml, textOf } from './broadcast-html.js';
 import { buildIcs } from './calendar.js';
-import { csvSafe, toCsv, type ExportRow } from './exports.js';
+import { thanksSubject } from '../mail/templates/event-thanks.js';
+import { csvSafe, exportFilename, toCsv, type ExportRow } from './exports.js';
 import { ticketQrSvg } from './qr.js';
 import { arrivals, byHour, timeline, topDomains } from './registration-stats.js';
 import {
   firstName,
+  lifecycleStageSent,
+  lifecycleStaleBefore,
+  lifecycleWindowOpens,
   newQrToken,
   newTicketCode,
   normalizePhone,
@@ -180,6 +184,8 @@ describe('broadcast sanitizing', () => {
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).not.toContain('http://insecure');
     expect(html).toContain('src="https://ok/x.png"');
+    // The http image is dropped entirely, not left as an empty <img> (a broken image box in some clients).
+    expect(html.match(/<img/g)).toHaveLength(1);
     expect(html).toMatch(/<p style="[^"]*font-size: ?16px/);
   });
 
@@ -217,5 +223,78 @@ describe('qr and calendar', () => {
     expect(ics).toContain('DTSTART:20261002T061500Z');
     expect(ics).toContain('SUMMARY:Zemi #12: Robots');
     expect(ics).toContain('STATUS:CONFIRMED');
+  });
+});
+
+describe('small copy helpers', () => {
+  it('does not repeat the Zemi number in export file names', () => {
+    expect(exportFilename({ number: 97, slug: 'zemi-97-participatory-ai' }, 'csv')).toMatch(/^zemi-97-participatory-ai-registrations-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(exportFilename({ number: 12, slug: 'robots' }, 'pdf', 'kertas-absensi')).toMatch(/^zemi-12-robots-kertas-absensi-/);
+    expect(exportFilename({ number: null, slug: 'people-qa' }, 'xlsx')).toMatch(/^zemi-people-qa-registrations-/);
+  });
+
+  it('only thanks people for coming when they came', () => {
+    expect(thanksSubject('Robots', true, 'in-person', false)).toBe('Thanks for coming to Robots');
+    expect(thanksSubject('Robots', false, 'online', true)).toBe('Thanks for tuning in. The recording is up');
+    expect(thanksSubject('Robots', false, 'in-person', false)).toBe('We saved you a seat at Robots');
+    expect(thanksSubject('Robots', false, 'in-person', true)).toBe('Missed Robots? The recording is up');
+  });
+
+  it('keeps the calendar SEQUENCE in step with the event .ics', () => {
+    const ics = buildIcs({
+      eventId: 'e1',
+      title: 'Zemi #12: Robots',
+      number: 12,
+      startsAt: new Date('2026-10-02T06:15:00Z'),
+      endsAt: new Date('2026-10-02T08:15:00Z'),
+      location: null,
+      eventUrl: 'https://zemi.labmgm.org/events/robots',
+      cancelled: false,
+      createdAt: new Date('2026-09-01T00:00:00Z'),
+      updatedAt: new Date('2026-09-01T00:01:40Z'),
+      lines: [],
+    });
+    expect(ics).toContain('SEQUENCE:100');
+    expect(ics).toContain('SUMMARY:Zemi #12: Robots');
+    expect(ics).not.toContain('Zemi: Zemi');
+  });
+});
+
+describe('lifecycle emails after a schedule change', () => {
+  // Friday 2 Oct 2026, 13:15 to 15:15 WIB.
+  const start = new Date('2026-10-02T06:15:00Z');
+  const end = new Date('2026-10-02T08:15:00Z');
+  const sent = lifecycleWindowOpens(start, end);
+  const at = (d: Date, min: number) => new Date(d.getTime() + min * 60_000);
+
+  it('opens reminder, starting and thanks windows from the event times', () => {
+    expect(sent.reminder.toISOString()).toBe('2026-10-01T02:00:00.000Z');
+    expect(sent.starting.toISOString()).toBe('2026-10-02T06:05:00.000Z');
+    expect(sent.thanks.toISOString()).toBe('2026-10-02T08:15:00.000Z');
+  });
+
+  it('sends every stage again when the event moves a week later', () => {
+    const moved = lifecycleWindowOpens(at(start, 7 * 1440), at(end, 7 * 1440));
+    expect(lifecycleStageSent(at(sent.reminder, 1), moved.reminder)).toBe(false);
+    expect(lifecycleStageSent(at(sent.starting, 1), moved.starting)).toBe(false);
+    expect(lifecycleStageSent(at(sent.thanks, 5), moved.thanks)).toBe(false);
+    // and the email_logs cutoff skips the old sends, so everyone hears about the new date
+    expect(lifecycleStaleBefore(moved.starting).getTime()).toBeGreaterThan(at(sent.starting, 1).getTime());
+  });
+
+  it('does not send a second thank you when the end is pushed 30 minutes after it went out', () => {
+    const later = lifecycleWindowOpens(start, at(end, 30));
+    expect(lifecycleStageSent(at(sent.thanks, 5), later.thanks)).toBe(true);
+  });
+
+  it('does not send a second "starting now" when the start slips 20 minutes', () => {
+    const late = lifecycleWindowOpens(at(start, 20), at(end, 20));
+    expect(lifecycleStageSent(at(sent.starting, 1), late.starting)).toBe(true);
+    // a same-day time change keeps the reminder window (09:00 WIB the day before)
+    expect(late.reminder.toISOString()).toBe(sent.reminder.toISOString());
+  });
+
+  it('treats a missing sent time as not sent', () => {
+    expect(lifecycleStageSent(null, sent.reminder)).toBe(false);
   });
 });

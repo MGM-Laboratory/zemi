@@ -1,7 +1,14 @@
 'use client';
 
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { computeEventStatus, type EventAction, type EventAdmin, type EventAdminRow, type EventStatus, type Visibility } from '@zemi/shared';
+import {
+  computeEventStatus,
+  type EventAction,
+  type EventAdmin,
+  type EventAdminRow,
+  type EventStatus,
+  type Visibility,
+} from '@zemi/shared';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { notify } from '@/components/admin/ui/toast';
@@ -32,14 +39,25 @@ export function useEventAdmin(id: string | null | undefined, opts: { enabled?: b
 }
 
 /** Status recomputed on a ticking clock, so "Coming up" flips to "Happening now" without a reload. */
-export function useLiveStatus(e: Pick<EventAdmin, 'startsAt' | 'endsAt' | 'cancelledAt'> & { stream?: { state: EventAdmin['stream']['state'] } } | null | undefined, intervalMs = 15_000): EventStatus | null {
+export function useLiveStatus(
+  e:
+    | (Pick<EventAdmin, 'startsAt' | 'endsAt' | 'cancelledAt'> & {
+        stream?: { state: EventAdmin['stream']['state'] };
+      })
+    | null
+    | undefined,
+  intervalMs = 15_000,
+): EventStatus | null {
   const now = useNow(intervalMs);
   if (!e) return null;
   return computeEventStatus(e, e.stream?.state ?? null, now);
 }
 
 /** Same for list rows (EventAdminRow carries `streamState`). */
-export function rowStatus(row: Pick<EventAdminRow, 'startsAt' | 'endsAt' | 'status' | 'streamState'>, now: Date): EventStatus {
+export function rowStatus(
+  row: Pick<EventAdminRow, 'startsAt' | 'endsAt' | 'status' | 'streamState'>,
+  now: Date,
+): EventStatus {
   if (row.status === 'cancelled') return 'cancelled';
   return computeEventStatus({ startsAt: row.startsAt, endsAt: row.endsAt }, row.streamState, now);
 }
@@ -59,7 +77,13 @@ export interface EventWorkspaceValue {
 
 const WorkspaceContext = createContext<EventWorkspaceValue | null>(null);
 
-export function EventWorkspaceProvider({ value, children }: { value: EventWorkspaceValue; children: ReactNode }) {
+export function EventWorkspaceProvider({
+  value,
+  children,
+}: {
+  value: EventWorkspaceValue;
+  children: ReactNode;
+}) {
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
@@ -71,7 +95,10 @@ export function EventWorkspaceProvider({ value, children }: { value: EventWorksp
  */
 export function useWorkspaceEvent(): EventWorkspaceValue {
   const ctx = useContext(WorkspaceContext);
-  if (!ctx) throw new Error('useWorkspaceEvent must be used inside /admin/events/[id] (the event workspace layout).');
+  if (!ctx)
+    throw new Error(
+      'useWorkspaceEvent must be used inside /admin/events/[id] (the event workspace layout).',
+    );
   return ctx;
 }
 
@@ -121,7 +148,12 @@ export interface EventCreatePayload {
 function isSlugConflict(err: unknown): err is ApiError {
   if (!isApiError(err) || !err.isConflict) return false;
   const d = err.details as { field?: string; constraint?: string } | undefined;
-  return Boolean(err.fieldErrors.slug || d?.field === 'slug' || d?.constraint?.includes('slug') || /slug/i.test(err.message));
+  return Boolean(
+    err.fieldErrors.slug ||
+    d?.field === 'slug' ||
+    d?.constraint?.includes('slug') ||
+    /slug/i.test(err.message),
+  );
 }
 
 /**
@@ -129,7 +161,9 @@ function isSlugConflict(err: unknown): err is ApiError {
  * a unique slug from the title). When an explicit slug is taken, retries with `-2`, `-3`.
  */
 export async function createEvent(input: EventCreatePayload, attempts = 3): Promise<EventAdmin> {
-  const body = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) as EventCreatePayload;
+  const body = Object.fromEntries(
+    Object.entries(input).filter(([, v]) => v !== undefined),
+  ) as EventCreatePayload;
   if (!body.slug) return api.post<EventAdmin>('/admin/events', body);
   let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
@@ -171,7 +205,8 @@ export function useEventActions(id: string) {
   const refetchMe = useRefetchMe();
 
   const publish = useAdminMutation({
-    mutationFn: (vars: { visibility: Visibility; from?: Element | null }) => api.post<unknown>(`/admin/events/${id}/publish`, { visibility: vars.visibility }),
+    mutationFn: (vars: { visibility: Visibility; from?: Element | null }) =>
+      api.post<unknown>(`/admin/events/${id}/publish`, { visibility: vars.visibility }),
     invalidate: [eventDetailKey(id), ...eventListKeys()],
     onMutate: (vars) => patchEventCache(qc, id, (e) => ({ ...e, visibility: vars.visibility })),
     onError: (_err, _vars, rollback) => rollback?.(),
@@ -197,9 +232,11 @@ export function useEventActions(id: string) {
   });
 
   const cancel = useAdminMutation({
-    mutationFn: (vars: { reason: string | null; notify: boolean }) => api.post<unknown>(`/admin/events/${id}/cancel`, vars),
+    mutationFn: (vars: { reason: string | null; notify: boolean }) =>
+      api.post<unknown>(`/admin/events/${id}/cancel`, vars),
     invalidate: [eventDetailKey(id), ...eventListKeys()],
-    successMessage: (_d, v) => (v.notify ? 'Cancelled. Registrants are getting an email.' : 'Cancelled. Nobody was emailed.'),
+    successMessage: (_d, v) =>
+      v.notify ? 'Cancelled. Registrants are getting an email.' : 'Cancelled. Nobody was emailed.',
     onSuccess: (res) => acceptEvent(qc, id, res),
   });
 

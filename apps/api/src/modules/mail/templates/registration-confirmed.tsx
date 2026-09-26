@@ -25,6 +25,8 @@ export interface RegistrationConfirmedProps {
   qrSrc?: string;
   /** Someone asked for their ticket again (duplicate sign-up or an admin resend). */
   resend?: boolean;
+  /** Why it's a resend: they signed up twice (default), or an organizer sent it again. */
+  resendReason?: 'duplicate' | 'organizer';
   /** Added at the door by the crew. */
   walkIn?: boolean;
   checkedIn?: boolean;
@@ -42,6 +44,7 @@ export function RegistrationConfirmed({
   attendanceMode,
   qrSrc = 'cid:qr',
   resend,
+  resendReason = 'duplicate',
   walkIn,
   checkedIn,
   signature = DEFAULT_SIGNATURE,
@@ -64,6 +67,10 @@ export function RegistrationConfirmed({
         <Text size="large">
           The door crew put you on the list for <strong>{event.title}</strong>
           {checkedIn ? ' and checked you in' : ''}. Keep this email, it has your ticket for the records.
+        </Text>
+      ) : resend && resendReason === 'organizer' ? (
+        <Text size="large">
+          Here's your ticket for <strong>{event.title}</strong> one more time, in case the first one got lost in your inbox. Same seat, same code.
         </Text>
       ) : resend ? (
         <Text size="large">

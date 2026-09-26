@@ -175,10 +175,16 @@ export function CheckIcon(p: IconProps) {
   );
 }
 
-export function ChevronIcon({ dir = 'right', ...p }: IconProps & { dir?: 'left' | 'right' }) {
+const CHEVRON: Record<'left' | 'right' | 'down', string> = {
+  right: 'M9.5 5.5L16 12l-6.5 6.5',
+  left: 'M14.5 5.5L8 12l6.5 6.5',
+  down: 'M5.5 9.5L12 16l6.5-6.5',
+};
+
+export function ChevronIcon({ dir = 'right', ...p }: IconProps & { dir?: 'left' | 'right' | 'down' }) {
   return (
     <svg {...base(p)}>
-      <path d={dir === 'right' ? 'M9.5 5.5L16 12l-6.5 6.5' : 'M14.5 5.5L8 12l6.5 6.5'} />
+      <path d={CHEVRON[dir]} />
     </svg>
   );
 }

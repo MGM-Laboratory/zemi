@@ -3,9 +3,11 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   blocksSchema,
+  makeCitationKey,
   PUBLICATION_LINK_KINDS,
   PUBLICATION_STATUSES,
   PUBLICATION_TYPES,
+  publicationToCitationSource,
   slugSchema,
   visibilitySchema,
   type CitationSource,
@@ -13,6 +15,7 @@ import {
   type Paginated,
   type PublicationAdmin,
   type PublicationAuthorInput,
+  type PublicationDetail,
   type PublicationInput,
   type PublicationLinkKind,
   type PublicationStatus,
@@ -112,6 +115,24 @@ export function usePublicationList(p: PublicationListParams) {
 }
 
 /** GET /admin/publications/:id */
+/**
+ * Other publications on the shelf with the same DOI (the list search covers DOIs, then we match exactly).
+ * Only what this admin can view comes back, which is fine for a friendly heads-up.
+ */
+export function useDoiTwins(doi: string, selfId: string | undefined) {
+  const clean = cleanDoi(doi).toLowerCase();
+  const enabled = DOI_PATTERN.test(clean);
+  const query = { search: clean, pageSize: 5, sort: 'recent' as const };
+  const q = useQuery({
+    queryKey: adminKeys.publications.list({ ...query, purpose: 'doi-twins' }),
+    queryFn: async ({ signal }) => toPaginated(await adminFetch<Paginated<PublicationRow> | PublicationRow[]>('/admin/publications', { query, signal }), 1, 5),
+    enabled,
+    staleTime: 30_000,
+  });
+  if (!enabled) return [];
+  return (q.data?.items ?? []).filter((p) => p.id !== selfId && (p.doi ?? '').toLowerCase() === clean);
+}
+
 export function usePublication(id: string | null) {
   return useQuery({
     queryKey: adminKeys.publications.detail(id ?? 'none'),
@@ -344,39 +365,47 @@ export function formToInput(v: PublicationFormValues): PublicationInput {
   };
 }
 
-/** The live "Cite this" source, straight from the form. */
-export function formToCitation(v: Partial<PublicationFormValues>): CitationSource {
-  return {
-    type: v.type ?? 'article',
+/**
+ * The live "Cite this" source, straight from the form. It goes through the same shared
+ * `publicationToCitationSource` the public page uses (publisher-link fallback, status, thesis degree,
+ * keywords for RIS/BibTeX), so the preview matches what visitors copy.
+ */
+export function formToCitation(v: Partial<PublicationFormValues>, opts: { fallbackUrl?: string | null; accessedAt?: string | null } = {}): CitationSource {
+  const names = (v.authors ?? []).map((a) => (a.kind === 'speaker' ? (a.speaker?.fullName ?? '') : (a.fullName ?? '')).trim()).filter(Boolean);
+  // Only the fields publicationToCitationSource reads; `authorsFull` stays empty so it uses `authors`.
+  const detail = {
+    type: v.type ?? 'other',
     title: v.title?.trim() || 'Untitled',
     subtitle: n(v.subtitle),
-    authors: (v.authors ?? []).map((a) => (a.kind === 'speaker' ? (a.speaker?.fullName ?? '') : a.fullName).trim()).filter(Boolean),
+    authors: names.map((fullName) => ({ fullName, avatar: null, speakerSlug: null })),
+    authorsFull: [],
     containerTitle: n(v.containerTitle),
     volume: n(v.volume),
     issue: n(v.issue),
     pages: n(v.pages),
     publisher: n(v.publisher),
-    year: v.publishedYear ?? null,
-    month: v.publishedMonth ?? null,
-    day: v.publishedDay ?? null,
+    publishedYear: v.publishedYear ?? null,
+    publishedMonth: v.publishedYear ? (v.publishedMonth ?? null) : null,
+    publishedDay: v.publishedYear && v.publishedMonth ? (v.publishedDay ?? null) : null,
     doi: n(cleanDoi(v.doi)),
     url: n(v.url),
+    links: (v.links ?? []).filter((l) => l.url?.trim()).map((l) => ({ kind: l.kind, label: l.label || LINK_KIND_LABELS[l.kind], url: l.url.trim() })),
     isbn: n(v.isbn),
     issn: n(v.issn),
     arxivId: n(v.arxivId),
     citationKey: n(v.citationKey),
-  };
+    abstract: n(v.abstract),
+    keywords: v.keywords ?? [],
+    language: n(v.language),
+    status: v.status ?? 'published',
+  } satisfies Partial<PublicationDetail>;
+  return publicationToCitationSource(detail as unknown as PublicationDetail, opts);
 }
 
-/** "lecun2015deep": first author's family name + year + first real title word. */
+/** "lecun2015deep": the shared key maker, so Suggest gives what the API would pick on its own. */
 export function suggestCitationKey(v: Partial<PublicationFormValues>): string {
-  const first = (v.authors ?? [])[0];
-  const name = first ? (first.kind === 'speaker' ? first.speaker?.fullName : first.fullName) : '';
-  const family = (name ?? '').trim().split(/\s+/).pop() ?? '';
-  const stop = new Set(['a', 'an', 'the', 'on', 'of', 'in', 'for', 'and', 'to', 'with', 'towards', 'toward']);
-  const word = (v.title ?? '').toLowerCase().split(/[^a-z0-9]+/i).find((w) => w && !stop.has(w)) ?? 'paper';
-  const ascii = (s: string) => s.normalize('NFKD').replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-  return `${ascii(family) || 'zemi'}${v.publishedYear ?? ''}${ascii(word)}`.slice(0, 80);
+  const src = formToCitation(v);
+  return makeCitationKey({ authors: src.authors, year: src.year, title: v.title?.trim() || 'paper' }).slice(0, 80);
 }
 
 export const SORT_OPTIONS: Array<{ value: PublicationSort; label: string }> = [

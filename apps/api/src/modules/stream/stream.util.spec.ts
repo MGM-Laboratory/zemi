@@ -5,7 +5,9 @@ import { describeTracks } from './stream.service.js';
 import { hasMediaSecret } from './media-secret.guard.js';
 import {
   bitrateFromSamples,
+  coverageGaps,
   isSafeHlsPath,
+  keptSeconds,
   newPrivateKey,
   newStreamKey,
   parseDurationSec,
@@ -145,6 +147,24 @@ describe('recording cuts', () => {
     expect(planCuts([seg('a', 0), seg('b', 60)], new Date(t0 + 59_800), new Date(t0 + 90_000)).map((p) => p.segment.id)).toEqual(['b']);
     expect(segmentsCover([seg('a', 0), seg('b', 60)], new Date(t0 + 119_500))).toBe(true);
     expect(segmentsCover([seg('a', 0)], new Date(t0 + 90_000))).toBe(false);
+  });
+
+  it('finds holes a late upload could still fill', () => {
+    const start = new Date(t0 + 30_000);
+    const end = new Date(t0 + 230_000);
+    expect(coverageGaps([seg('a', 0), seg('b', 60), seg('c', 120), seg('d', 180)], start, end)).toEqual([]);
+    // b never arrived: one hole from 60s to 120s.
+    expect(coverageGaps([seg('a', 0), seg('c', 120), seg('d', 180)], start, end).map((g) => [g.from.getTime() - t0, g.to.getTime() - t0])).toEqual([
+      [60_000, 120_000],
+    ]);
+    // The end isn't there yet, and a 2s wobble between files is not a hole.
+    expect(coverageGaps([seg('a', 0), seg('b', 62)], start, end).map((g) => [g.from.getTime() - t0, g.to.getTime() - t0])).toEqual([[122_000, 230_000]]);
+    expect(coverageGaps([], start, end)).toHaveLength(1);
+  });
+
+  it('adds up what the cuts keep', () => {
+    const plans = planCuts([seg('a', 0), seg('b', 60), seg('c', 120)], new Date(t0 + 30_000), new Date(t0 + 150_000));
+    expect(keptSeconds(plans)).toBeCloseTo(120, 5);
   });
 });
 

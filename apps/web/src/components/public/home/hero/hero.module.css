@@ -1,0 +1,249 @@
+/* Home hero: 13:15, doors open. */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: max(100svh, 640px);
+  overflow: hidden;
+  background:
+    radial-gradient(60% 55% at 78% 30%, rgb(58 109 197 / 0.07), transparent 70%),
+    radial-gradient(40% 40% at 12% 80%, rgb(247 191 51 / 0.08), transparent 70%),
+    var(--color-bg, #fff);
+}
+
+.scene {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0;
+}
+
+.fallback {
+  position: absolute;
+  top: calc(var(--nav-h, 72px) + 6vh);
+  right: var(--page-margin, 24px);
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 767.98px) {
+  .fallback {
+    left: 50%;
+    right: auto;
+    translate: -50% 0;
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  /* Clicks fall through to the characters; only real controls take them. */
+  pointer-events: none;
+  display: grid;
+  gap: 28px;
+  align-items: end;
+  padding-top: calc(var(--nav-h, 72px) + 250px);
+  padding-bottom: clamp(28px, 5vh, 56px);
+}
+
+.content a,
+.content button {
+  pointer-events: auto;
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding-top: calc(var(--nav-h, 72px) + 300px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .content {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 356px);
+    column-gap: clamp(32px, 4vw, 72px);
+    padding-top: calc(var(--nav-h, 72px) + 12svh);
+    /* The Friday clock sits bottom-left on desktop: keep the CTAs clear of it. */
+    padding-bottom: clamp(92px, 11vh, 128px);
+  }
+}
+
+@media (min-width: 1920px) {
+  .content {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 599.98px) {
+  .content {
+    padding-top: calc(var(--nav-h, 72px) + 40px);
+  }
+}
+
+.main {
+  min-width: 0;
+}
+
+.title {
+  max-width: 12.5ch;
+  font-size: clamp(3.25rem, min(10.6vw, 16.5vh), 11rem);
+  color: var(--color-ink, #0e1116);
+  /* Soft white halo so the title stays crisp when a character floats behind it. */
+  text-shadow: 0 0 40px rgb(255 255 255 / 0.85);
+}
+
+@media (min-width: 1024px) {
+  .title {
+    font-size: clamp(3.25rem, min(9.2vw, 16.5vh), 11rem);
+  }
+}
+
+.body {
+  margin-top: clamp(20px, 3.4vh, 36px);
+  text-shadow: 0 0 18px rgb(255 255 255 / 0.9);
+}
+
+.cta {
+  pointer-events: auto;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.miniSlot {
+  pointer-events: auto;
+}
+
+/* --------------------------------------------------------------- doors note */
+
+.doors {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding-left: 4px;
+}
+
+.doors p {
+  max-width: 21rem;
+  text-shadow: 0 0 14px rgb(255 255 255 / 0.95);
+}
+
+/* --------------------------------------------------------------- mini card */
+
+.mini {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--color-line, #ececea);
+  background: rgb(255 255 255 / 0.86);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: var(--shadow-2);
+  transition:
+    transform 420ms var(--ease-out),
+    box-shadow 420ms var(--ease-out),
+    border-color 300ms;
+}
+
+.mini:hover {
+  transform: translateY(-4px) rotate(-0.6deg);
+  box-shadow: var(--shadow-3);
+  border-color: var(--color-line-strong, #d8d8d2);
+}
+
+.mini:active {
+  transform: scale(0.98);
+}
+
+.miniLive {
+  border-color: rgb(217 47 47 / 0.35);
+}
+
+.miniStripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+}
+
+.miniArrow {
+  transition: transform 420ms var(--ease-out);
+}
+
+.mini:hover .miniArrow {
+  transform: translateX(3px) rotate(-8deg) scale(1.08);
+}
+
+/* --------------------------------------------------------------- scroll cue */
+
+.cue {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: clamp(40px, 6vh, 64px);
+  translate: -50% 0;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  color: var(--color-ink-3, #6b7280);
+  transition:
+    color 200ms,
+    background-color 200ms;
+}
+
+.cue:hover {
+  color: var(--color-ink, #0e1116);
+  background: rgb(14 17 22 / 0.05);
+}
+
+.cueMouse {
+  position: relative;
+  width: 18px;
+  height: 28px;
+  border: 1.6px solid currentColor;
+  border-radius: 10px;
+}
+
+.cueMouse span {
+  position: absolute;
+  left: 50%;
+  top: 5px;
+  width: 4px;
+  height: 6px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--color-red, #f94141);
+  animation: cue 1.8s var(--ease-in-out) infinite;
+}
+
+@keyframes cue {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(9px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini,
+  .miniArrow {
+    transition-duration: 1ms;
+  }
+  .mini:hover {
+    transform: none;
+  }
+}

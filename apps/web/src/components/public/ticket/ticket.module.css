@@ -1,0 +1,118 @@
+/* The Zemi ticket card (register success + /tickets/[token]). */
+
+.ticket {
+  --notch: 14px;
+  position: relative;
+  width: 100%;
+  border-radius: 28px;
+  border: 1px solid var(--color-line, #ececea);
+  background-color: #fff;
+  background-image:
+    linear-gradient(to right, var(--color-graph, #eef1f6) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-graph, #eef1f6) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+  box-shadow:
+    0 30px 70px -36px rgb(14 17 22 / 0.35),
+    0 6px 16px -8px rgb(14 17 22 / 0.12);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.stripe {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  background: var(--accent, #3a6dc5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.stripe svg {
+  display: none;
+}
+
+.head {
+  padding: clamp(20px, 5vw, 32px) clamp(20px, 5vw, 32px) clamp(18px, 3vw, 24px)
+    calc(clamp(20px, 5vw, 32px) + 8px);
+}
+
+/* Perforation: dashed line with half-circle notches on both sides. */
+.perf {
+  position: relative;
+  height: 0;
+  margin: 0 22px 0 30px;
+  border-top: 2px dashed var(--color-line-strong, #d8d8d2);
+}
+
+.perf::before,
+.perf::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--notch) * -1 - 1px);
+  width: calc(var(--notch) * 2);
+  height: calc(var(--notch) * 2);
+  border-radius: 999px;
+  background: var(--notch-bg, #fff);
+  border: 1px solid var(--color-line, #ececea);
+}
+
+.perf::before {
+  left: calc(-30px - var(--notch));
+}
+
+.perf::after {
+  right: calc(-22px - var(--notch));
+}
+
+.stub {
+  display: grid;
+  grid-template-columns: minmax(112px, 168px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(16px, 4vw, 28px);
+  padding: clamp(18px, 4vw, 28px) clamp(20px, 5vw, 32px) clamp(20px, 5vw, 32px)
+    calc(clamp(20px, 5vw, 32px) + 8px);
+}
+
+.qr {
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 8px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--color-line, #ececea);
+}
+
+.lg .stub {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  text-align: center;
+}
+
+.lg .qr {
+  width: min(100%, 360px);
+  padding: 12px;
+}
+
+@media (min-width: 720px) {
+  .lg .stub {
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+.ticket[data-void] .qr {
+  opacity: 0.18;
+  filter: grayscale(1);
+}
+
+@media (max-width: 380px) {
+  .stub {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .qr {
+    width: min(100%, 220px);
+  }
+}

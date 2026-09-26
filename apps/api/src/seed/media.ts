@@ -75,8 +75,24 @@ export class SeedMedia {
     private readonly concurrency = 4,
   ) {}
 
+  /** Uploads that failed (full disk, bucket down). The seed carries on without them. */
+  readonly uploadFailures: Array<{ label: string; error: string }> = [];
+
   get count(): number {
     return this.tasks.length;
+  }
+
+  /** `ingest`, but a failed upload is logged and returns null so the rows still go in. */
+  async tryIngest(opts: IngestOptions): Promise<string | null> {
+    try {
+      return await this.ingest(opts);
+    } catch (err) {
+      const label = opts.label ?? opts.filename;
+      const error = (err as Error).message;
+      if (this.uploadFailures.length < 3) this.log(`  upload failed for ${label}: ${error}`);
+      this.uploadFailures.push({ label, error });
+      return null;
+    }
   }
 
   async ingest(opts: IngestOptions): Promise<string> {
@@ -110,7 +126,7 @@ export class SeedMedia {
     const startedAt = Date.now();
     const worker = async () => {
       while (next < local.length) {
-        const task = local[next++]!;
+        const task = local[next++];
         await this.assetsService.process({ assetId: task.id, videoMode: task.videoMode });
         this.done++;
         if (this.done % 20 === 0 || this.done === total) {

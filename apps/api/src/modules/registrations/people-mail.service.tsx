@@ -7,7 +7,7 @@ import { MailService, type MailAttachment, type SendMailInput, type SendMailResu
 import { EventCancelled } from '../mail/templates/event-cancelled.js';
 import { EventReminder } from '../mail/templates/event-reminder.js';
 import { EventStarting } from '../mail/templates/event-starting.js';
-import { EventThanks } from '../mail/templates/event-thanks.js';
+import { EventThanks, thanksSubject } from '../mail/templates/event-thanks.js';
 import { EventUpdate } from '../mail/templates/event-update.js';
 import type { EventEmailInfo } from '../mail/templates/people-parts.js';
 import { RegistrationCancelled } from '../mail/templates/registration-cancelled.js';
@@ -79,7 +79,7 @@ export class PeopleMailer implements OnModuleInit {
   async sendConfirmation(
     reg: RegistrationRow,
     event: EventCtx,
-    opts: { resend?: boolean; walkIn?: boolean; checkedIn?: boolean; settings?: EmailSettings } = {},
+    opts: { resend?: boolean; resendReason?: 'duplicate' | 'organizer'; walkIn?: boolean; checkedIn?: boolean; settings?: EmailSettings } = {},
   ): Promise<SendMailResult> {
     const settings = opts.settings ?? (await this.ctx.emailSettings());
     const info = this.ctx.emailEvent(event);
@@ -112,6 +112,7 @@ export class PeopleMailer implements OnModuleInit {
           attendanceMode={reg.attendanceMode}
           qrSrc={hasQr ? 'cid:qr' : this.ctx.ticketFileUrl(reg.qrToken, 'qr.png')}
           resend={opts.resend}
+          resendReason={opts.resendReason}
           walkIn={opts.walkIn}
           checkedIn={opts.checkedIn}
           signature={settings.signature}
@@ -139,13 +140,23 @@ export class PeopleMailer implements OnModuleInit {
     ];
   }
 
-  /** Did this registration get a ticket email in the last `minutes`? (throttles duplicate sign-ups) */
+  /**
+   * Did this registration get a ticket email in the last `minutes`? (throttles duplicate sign-ups). A failed
+   * attempt doesn't count, so signing up again after a delivery hiccup does retry.
+   */
   async sentConfirmationRecently(registrationId: string, minutes = 10): Promise<boolean> {
     const since = new Date(Date.now() - minutes * 60_000);
     const [row] = await this.db
       .select({ id: emailLogs.id })
       .from(emailLogs)
-      .where(and(eq(emailLogs.registrationId, registrationId), eq(emailLogs.template, TEMPLATES.confirmed), gte(emailLogs.createdAt, since)))
+      .where(
+        and(
+          eq(emailLogs.registrationId, registrationId),
+          eq(emailLogs.template, TEMPLATES.confirmed),
+          gte(emailLogs.createdAt, since),
+          inArray(emailLogs.status, ['sent', 'logged']),
+        ),
+      )
       .limit(1);
     return !!row;
   }
@@ -278,7 +289,7 @@ export class PeopleMailer implements OnModuleInit {
     const info = this.ctx.emailEvent(event);
     return this.sendBatch(regs, (reg) => ({
       to: reg.email,
-      subject: links.recordingUrl ? `Thanks for coming. The recording is up` : `Thanks for coming to ${this.ctx.displayTitle(event.row)}`,
+      subject: thanksSubject(this.ctx.displayTitle(event.row), !!reg.checkedInAt, reg.attendanceMode, !!links.recordingUrl),
       template: TEMPLATES.thanks,
       react: (
         <EventThanks

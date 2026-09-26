@@ -8,7 +8,13 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useWatch } from 'react-hook-form';
 import { z } from 'zod';
-import { DragHandle, PublicationPicker, ReadOnlyScope, SortableList, type PublicationRef } from '@/components/admin/fields';
+import {
+  DragHandle,
+  PublicationPicker,
+  ReadOnlyScope,
+  SortableList,
+  type PublicationRef,
+} from '@/components/admin/fields';
 import { IconButton } from '@/components/admin/ui/button';
 import { Card, CardHeader } from '@/components/admin/ui/card';
 import { Callout, EmptyState } from '@/components/admin/ui/feedback';
@@ -23,12 +29,23 @@ import { cn } from '@/lib/admin/cn';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
 import { adminRoutes } from '@/lib/admin/nav';
 import { detectMove, nullIfEmpty } from '../lib';
-import { acceptEvent, eventDetailKey, eventListKeys, patchEventCache, useWorkspaceEvent } from '../use-event';
+import {
+  acceptEvent,
+  eventDetailKey,
+  eventListKeys,
+  patchEventCache,
+  useWorkspaceEvent,
+} from '../use-event';
 import { useUnsavedChangesGuard } from '../use-unsaved-guard';
 
 const schema = z.object({
   items: z
-    .array(z.object({ publicationId: z.string().min(1), note: z.string().max(300, 'Keep the note under 300 characters.') }))
+    .array(
+      z.object({
+        publicationId: z.string().min(1),
+        note: z.string().max(300, 'Keep the note under 300 characters.'),
+      }),
+    )
     .max(50, 'Fifty is the max for one event.'),
 });
 type Values = z.infer<typeof schema>;
@@ -37,9 +54,14 @@ interface PubInfo extends PublicationRef {
   cover?: ImageRef | null;
 }
 
-const toValues = (e: EventAdmin): Values => ({ items: e.publications.map((p) => ({ publicationId: p.id, note: p.note ?? '' })) });
-const toBody = (v: Values) => ({ items: v.items.map((i) => ({ publicationId: i.publicationId, note: nullIfEmpty(i.note) })) });
-const typeLabel = (t?: string | null) => (t ? ((PUBLICATION_TYPE_LABELS as Record<string, string>)[t] ?? t) : null);
+const toValues = (e: EventAdmin): Values => ({
+  items: e.publications.map((p) => ({ publicationId: p.id, note: p.note ?? '' })),
+});
+const toBody = (v: Values) => ({
+  items: v.items.map((i) => ({ publicationId: i.publicationId, note: nullIfEmpty(i.note) })),
+});
+const typeLabel = (t?: string | null) =>
+  t ? ((PUBLICATION_TYPE_LABELS as Record<string, string>)[t] ?? t) : null;
 
 /**
  * Publications tab: papers, projects and articles this Friday talks about. Pick from the
@@ -62,7 +84,20 @@ export function PublicationsEditor() {
   const refs = useMemo<Record<string, PubInfo>>(
     () => ({
       ...picked,
-      ...Object.fromEntries(event.publications.map((p) => [p.id, { id: p.id, slug: p.slug, title: p.title, type: p.type, publishedYear: p.publishedYear, containerTitle: p.containerTitle, cover: p.cover }])),
+      ...Object.fromEntries(
+        event.publications.map((p) => [
+          p.id,
+          {
+            id: p.id,
+            slug: p.slug,
+            title: p.title,
+            type: p.type,
+            publishedYear: p.publishedYear,
+            containerTitle: p.containerTitle,
+            cover: p.cover,
+          },
+        ]),
+      ),
     }),
     [picked, event.publications],
   );
@@ -83,7 +118,12 @@ export function PublicationsEditor() {
     const rollback = opts.optimistic
       ? patchEventCache(qc, id, (e) => {
           const byId = new Map(e.publications.map((p) => [p.id, p]));
-          return { ...e, publications: values.items.map((i) => byId.get(i.publicationId)).filter((p): p is EventAdmin['publications'][number] => Boolean(p)) };
+          return {
+            ...e,
+            publications: values.items
+              .map((i) => byId.get(i.publicationId))
+              .filter((p): p is EventAdmin['publications'][number] => Boolean(p)),
+          };
         })
       : null;
     try {
@@ -101,7 +141,11 @@ export function PublicationsEditor() {
     }
   };
 
-  const submit = () => form.handleSubmit((v) => save(v), () => notify.error('A note or two needs a look before this can save.'))();
+  const submit = () =>
+    form.handleSubmit(
+      (v) => save(v),
+      () => notify.error('A note or two needs a look before this can save.'),
+    )();
 
   const add = (p: PublicationRef | null) => {
     if (!p) return;
@@ -110,7 +154,10 @@ export function PublicationsEditor() {
       return;
     }
     setPicked((r) => ({ ...r, [p.id]: p }));
-    append({ publicationId: p.id, note: '' }, { shouldFocus: true, focusName: `items.${items.length}.note` });
+    append(
+      { publicationId: p.id, note: '' },
+      { shouldFocus: true, focusName: `items.${items.length}.note` },
+    );
   };
 
   const onReorder = (next: typeof fields) => {
@@ -147,7 +194,14 @@ export function PublicationsEditor() {
           />
           {!readOnly ? (
             <div className="mb-5">
-              <Field label="Link a publication" hint={ability.has('publications.create') ? 'Not in the library yet? Type the title and quick-add it with a link.' : 'Search the library by title, DOI or keyword.'}>
+              <Field
+                label="Link a publication"
+                hint={
+                  ability.has('publications.create')
+                    ? 'Not in the library yet? Type the title and quick-add it with a link.'
+                    : 'Search the library by title, DOI or keyword.'
+                }
+              >
                 <PublicationPicker value={null} onChange={add} exclude={ids} />
               </Field>
             </div>
@@ -173,42 +227,85 @@ export function PublicationsEditor() {
               gap="sm"
               renderItem={(f, { handle, index, isDragging, readOnly: ro }) => {
                 const p = refs[f.publicationId];
-                const meta = [typeLabel(p?.type), p?.containerTitle, p?.publishedYear].filter(Boolean).join(' · ');
+                const meta = [typeLabel(p?.type), p?.containerTitle, p?.publishedYear]
+                  .filter(Boolean)
+                  .join(' · ');
                 const canOpen = ability.can('publication', f.publicationId, 'view');
                 return (
                   <motion.div
                     initial={reduce ? false : { opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={cn('group flex items-start gap-2 rounded-[20px] border border-line bg-white p-3 transition-shadow sm:gap-3', isDragging && 'border-line-strong shadow-[var(--shadow-3)]')}
+                    className={cn(
+                      'group flex items-start gap-2 rounded-[20px] border border-line bg-white p-3 transition-shadow sm:gap-3',
+                      isDragging && 'border-line-strong shadow-[var(--shadow-3)]',
+                    )}
                   >
-                    <DragHandle {...handle} disabled={ro} label={`Drag ${p?.title ?? 'publication'}`} className="mt-1" />
-                    <span className="hidden h-[60px] w-12 shrink-0 overflow-hidden rounded-lg bg-yellow-50 transition-transform duration-300 group-hover:-rotate-3 sm:block" aria-hidden="true">
+                    <DragHandle
+                      {...handle}
+                      disabled={ro}
+                      label={`Drag ${p?.title ?? 'publication'}`}
+                      className="mt-1"
+                    />
+                    <span
+                      className="hidden h-[60px] w-12 shrink-0 overflow-hidden rounded-lg bg-yellow-50 transition-transform duration-300 group-hover:-rotate-3 sm:block"
+                      aria-hidden="true"
+                    >
                       {p?.cover ? (
                         <AdminImage image={p.cover} sizes="96px" className="size-full" />
                       ) : (
-                        <span className="flex size-full items-center justify-center text-[#7a5600]">{p?.type === 'software' || p?.type === 'project' ? <BookOpen className="size-5" /> : <FileText className="size-5" />}</span>
+                        <span className="flex size-full items-center justify-center text-[#7a5600]">
+                          {p?.type === 'software' || p?.type === 'project' ? (
+                            <BookOpen className="size-5" />
+                          ) : (
+                            <FileText className="size-5" />
+                          )}
+                        </span>
                       )}
                     </span>
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           {canOpen ? (
-                            <Link href={adminRoutes.publication(f.publicationId)} className="line-clamp-2 font-semibold text-ink underline-offset-4 hover:underline">
+                            <Link
+                              href={adminRoutes.publication(f.publicationId)}
+                              className="line-clamp-2 font-semibold text-ink underline-offset-4 hover:underline"
+                            >
                               {p?.title ?? 'Unknown publication'}
                             </Link>
                           ) : (
-                            <span className="line-clamp-2 font-semibold text-ink">{p?.title ?? 'Unknown publication'}</span>
+                            <span className="line-clamp-2 font-semibold text-ink">
+                              {p?.title ?? 'Unknown publication'}
+                            </span>
                           )}
-                          {meta ? <p className="truncate text-[0.8125rem] text-ink-3">{meta}</p> : null}
+                          {meta ? (
+                            <p className="truncate text-[0.8125rem] text-ink-3">{meta}</p>
+                          ) : null}
                         </div>
                         {!ro ? (
-                          <IconButton label={`Unlink ${p?.title ?? 'publication'}`} size="sm" variant="danger" onClick={() => remove(index)}>
+                          <IconButton
+                            label={`Unlink ${p?.title ?? 'publication'}`}
+                            size="sm"
+                            variant="danger"
+                            onClick={() => remove(index)}
+                          >
                             <Trash2 />
                           </IconButton>
                         ) : null}
                       </div>
-                      <FormField control={control} name={`items.${index}.note`} label="Note" optional maxLength={300}>
-                        {(field) => <Input {...field} size="sm" placeholder="Like 'the paper behind the second talk'" />}
+                      <FormField
+                        control={control}
+                        name={`items.${index}.note`}
+                        label="Note"
+                        optional
+                        maxLength={300}
+                      >
+                        {(field) => (
+                          <Input
+                            {...field}
+                            size="sm"
+                            placeholder="Like 'the paper behind the second talk'"
+                          />
+                        )}
                       </FormField>
                     </div>
                   </motion.div>
@@ -217,9 +314,15 @@ export function PublicationsEditor() {
             />
           )}
         </Card>
-        {!readOnly ? <FormSaveBar form={form} saving={saving} onSave={() => void submit()} saveLabel="Save publications" /> : null}
+        {!readOnly ? (
+          <FormSaveBar
+            form={form}
+            saving={saving}
+            onSave={() => void submit()}
+            saveLabel="Save publications"
+          />
+        ) : null}
       </ReadOnlyScope>
     </form>
   );
 }
-

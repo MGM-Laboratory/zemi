@@ -1,0 +1,88 @@
+/* Door scanner: a few keyframes the scanner UI needs (guide corners, scan sweep, focus ring). */
+
+.zemi-scan {
+  background: #0e1116;
+  color: #f5f6f8;
+  min-height: 100dvh;
+}
+
+@keyframes zemi-scan-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.035);
+    opacity: 1;
+  }
+}
+
+@keyframes zemi-scan-sweep {
+  0% {
+    transform: translateY(-2%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(98%);
+    opacity: 0;
+  }
+}
+
+@keyframes zemi-scan-focus {
+  0% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes zemi-scan-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.zemi-scan-guide {
+  animation: zemi-scan-breathe 2.4s var(--ease-in-out, ease-in-out) infinite;
+}
+.zemi-scan-sweep {
+  animation: zemi-scan-sweep 2.2s var(--ease-in-out, ease-in-out) infinite;
+}
+.zemi-scan-focus {
+  animation: zemi-scan-focus 700ms var(--ease-out, ease-out) forwards;
+}
+.zemi-scan-countdown {
+  transform-origin: left center;
+  animation-name: zemi-scan-countdown;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zemi-scan-guide,
+  .zemi-scan-sweep {
+    animation: none;
+  }
+  .zemi-scan-sweep {
+    opacity: 0;
+  }
+  .zemi-scan-focus {
+    animation-duration: 1ms;
+  }
+}

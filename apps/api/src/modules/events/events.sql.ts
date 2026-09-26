@@ -39,6 +39,11 @@ export function whenCondition(when: When, now: Date, audience: Audience): SQL | 
   }
 }
 
+/** Postgres text can't hold NUL bytes (a query with one fails with 22021), so drop them from user input. */
+export function stripNul(v: string | null | undefined): string {
+  return (v ?? '').replaceAll('\u0000', '');
+}
+
 /** Speakers the public may see (drafts are hidden everywhere public). */
 const publicSpeaker = sql`${speakers.visibility} <> 'draft'`;
 
@@ -50,7 +55,7 @@ export function searchCondition(
   search: string | null | undefined,
   audience: Audience,
 ): SQL | undefined {
-  const p = searchPattern(search);
+  const p = searchPattern(stripNul(search));
   if (!p) return undefined;
   const speakerMatch = sql`exists (
     select 1 from ${eventSpeakers} inner join ${speakers} on ${speakers.id} = ${eventSpeakers.speakerId}
@@ -66,14 +71,14 @@ export function searchCondition(
     sql`exists (select 1 from unnest(${events.tags}) as t(tag) where t.tag ilike ${p})`,
     speakerMatch,
   ];
-  const n = (search ?? '').trim().match(/^#?(\d{1,6})$/);
+  const n = stripNul(search).trim().match(/^#?(\d{1,6})$/);
   if (n) parts.push(eq(events.number, Number(n[1])));
   return or(...parts);
 }
 
 /** Case-insensitive tag match. */
 export function tagCondition(tag: string | null | undefined): SQL | undefined {
-  const t = (tag ?? '').trim();
+  const t = stripNul(tag).trim();
   if (!t) return undefined;
   return sql`exists (select 1 from unnest(${events.tags}) as t(tag) where lower(t.tag) = lower(${t}))`;
 }
@@ -83,7 +88,7 @@ export function speakerCondition(
   slug: string | null | undefined,
   audience: Audience,
 ): SQL | undefined {
-  const s = (slug ?? '').trim().toLowerCase();
+  const s = stripNul(slug).trim().toLowerCase();
   if (!s) return undefined;
   return sql`exists (
     select 1 from ${eventSpeakers} inner join ${speakers} on ${speakers.id} = ${eventSpeakers.speakerId}
@@ -92,9 +97,10 @@ export function speakerCondition(
   )`;
 }
 
-/** Events that start in this Jakarta calendar year. */
+/** Events that start in this Jakarta calendar year. A year outside 1 to 9999 matches nothing (it would overflow int4). */
 export function yearCondition(year: number | null | undefined): SQL | undefined {
   if (!year) return undefined;
+  if (!Number.isInteger(year) || year < 1 || year > 9999) return sql`false`;
   return sql`extract(year from (${events.startsAt} at time zone 'Asia/Jakarta'))::int = ${year}`;
 }
 

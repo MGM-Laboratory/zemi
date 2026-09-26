@@ -46,6 +46,7 @@ import {
   TapRipple,
   type Flash,
   type Ripple,
+  type SlateVariant,
 } from './overlays';
 import { ReactionBar, ReactionLayer, type ReactionLayerHandle } from './reactions';
 import { Scrubber } from './scrubber';
@@ -177,6 +178,7 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
     onPlay,
     onPause,
     onEnded,
+    onStreamEnd,
     ref,
   } = props;
 
@@ -186,12 +188,6 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const layerRef = useRef<ReactionLayerHandle>(null);
   const settingsBtn = useRef<HTMLButtonElement>(null);
-
-  const srcKey = `${sources.hls ?? ''}|${sources.mp4 ?? ''}|${sources.webm ?? ''}`;
-  const posKey = useMemo(() => {
-    const k = sourceKey(sources.hls || sources.mp4 || sources.webm);
-    return k ? POS_PREFIX + k : null;
-  }, [sources.hls, sources.mp4, sources.webm]);
 
   /* ---------------------------------------------------------------- live feed + reactions */
 
@@ -205,11 +201,29 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
     if (rest > 0) layerRef.current?.burst(kind as ReactionKind, rest);
   }, []);
 
-  const feed = useLiveFeed({ enabled: isLive, eventId, live, onReaction: onIncomingReaction });
-  const streamGone = isLive && (feed.streamState === 'ended' || feed.streamState === 'idle');
-  const engineEnabled = !isLive || (feed.ingestOnline && !streamGone);
+  // Heartbeats keep going while the video plays in a hidden tab or a PiP window (still watching).
+  const isWatching = useCallback(() => {
+    const v = videoRef.current;
+    return !!v && !v.paused && !v.ended;
+  }, []);
+  const feed = useLiveFeed({ enabled: isLive, eventId, live, onReaction: onIncomingReaction, isWatching });
 
-  const engine = useEngine(videoRef, { sources, live: isLive, enabled: engineEnabled });
+  // Live pages render before the event goes public (hlsUrl null); the SSE brings the url later.
+  const hlsSrc = sources.hls || (isLive ? feed.hlsUrl : null) || null;
+  const src = useMemo(() => ({ hls: hlsSrc, mp4: sources.mp4, webm: sources.webm }), [hlsSrc, sources.mp4, sources.webm]);
+  const srcKey = `${src.hls ?? ''}|${src.mp4 ?? ''}|${src.webm ?? ''}`;
+  const posKey = useMemo(() => {
+    const k = sourceKey(src.hls || src.mp4 || src.webm);
+    return k ? POS_PREFIX + k : null;
+  }, [src.hls, src.mp4, src.webm]);
+
+  // `preview` is admins only: the public url answers 403 until Go live (a ?pt= preview url plays).
+  const previewOnly = isLive && feed.streamState === 'preview' && !/[?&]pt=/.test(src.hls ?? '');
+  const streamEnded = isLive && feed.streamState === 'ended';
+  const notOnAir = isLive && (feed.streamState === 'idle' || previewOnly);
+  const engineEnabled = !isLive || (feed.ingestOnline && !streamEnded && !notOnAir && !!src.hls);
+
+  const engine = useEngine(videoRef, { sources: src, live: isLive, enabled: engineEnabled });
   const media = useMedia(videoRef, srcKey);
   const elapsed = useElapsed(isLive ? feed.startedAt : null);
 
@@ -279,7 +293,13 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
   const error = engine.state.error;
   const playing = !media.paused && !media.ended;
   const slateVisible = isLive && !error && (!engineEnabled || (engine.state.reconnecting && !playing) || stalledLong || recovering);
-  const slateVariant: 'lost' | 'waiting' = (!feed.ingestOnline && feed.startedAt) || media.started ? 'lost' : 'waiting';
+  const slateVariant: SlateVariant = streamEnded
+    ? 'ended'
+    : notOnAir || !src.hls
+      ? 'waiting'
+      : (!feed.ingestOnline && feed.startedAt) || media.started
+        ? 'lost'
+        : 'waiting';
   const ended = !isLive && media.ended;
 
   /* ---------------------------------------------------------------- helpers */
@@ -350,6 +370,15 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
   const toggle = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
+    if (streamEnded) {
+      showFlash('The stream has ended');
+      return;
+    }
+    if (isLive && !engineEnabled) {
+      // Nothing is attached (not on air yet, or OBS dropped): say so instead of "Playing".
+      showFlash(slateVariant === 'lost' ? 'No signal right now. Hang tight.' : 'Not on air yet. It starts right here.');
+      return;
+    }
     if (v.paused || v.ended) {
       void play();
       announce('Playing');
@@ -357,7 +386,7 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
       pause();
       announce('Paused');
     }
-  }, [announce, pause, play]);
+  }, [announce, engineEnabled, isLive, pause, play, showFlash, slateVariant, streamEnded]);
 
   const seekTo = useCallback(
     (t: number, opts: { flash?: boolean } = {}) => {
@@ -436,12 +465,25 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
   const jumpToLive = useCallback(() => {
     const v = videoRef.current;
     if (!v || !isLive) return;
+    // The pill, L, End and the right arrow all land here. Only jump when there is an edge to jump to.
+    if (streamEnded) {
+      showFlash('The stream has ended');
+      return;
+    }
+    if (slateVisible || !engineEnabled) {
+      showFlash(slateVariant === 'lost' ? 'No signal right now. Hang tight.' : 'Not on air yet. It starts right here.');
+      return;
+    }
+    if (media.started && !v.paused && !behind) {
+      showFlash('You’re as live as it gets.');
+      return;
+    }
     const edge = engine.liveEdge();
     if (edge !== null) v.currentTime = edge;
     void play();
     setBehind(false);
     showFlash('Back to live');
-  }, [engine, isLive, play, showFlash]);
+  }, [behind, engine, engineEnabled, isLive, media.started, play, showFlash, slateVariant, slateVisible, streamEnded]);
 
   /* ---------------------------------------------------------------- fullscreen, pip, theater */
 
@@ -662,8 +704,10 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
 
   // A pause we didn't ask for (native iOS controls, PiP window, headset) clears the intent.
   const callbacks = useRef({ onPlay, onPause, onEnded });
+  const onStreamEndRef = useRef(onStreamEnd);
   useEffect(() => {
     callbacks.current = { onPlay, onPause, onEnded };
+    onStreamEndRef.current = onStreamEnd;
   });
   useEffect(() => {
     const v = videoRef.current;
@@ -755,8 +799,10 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
     return () => clearTimeout(t);
   }, [resumeAt]);
 
+  // Live, re-attaching after a drop: the viewer was watching, so show the wait, not a play button.
+  const pendingLive = isLive && wantsPlay && media.paused && media.started;
   // Debounced spinner so quick seeks don't flash it.
-  const loadingNow = !error && !slateVisible && !ended && (media.buffering || (wantsPlay && !media.started));
+  const loadingNow = !error && !slateVisible && !ended && (media.buffering || (wantsPlay && !media.started) || pendingLive);
   useEffect(() => {
     if (!loadingNow) {
       setShowSpinner(false);
@@ -822,9 +868,23 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
   useEffect(() => {
     if (prevSlate.current === slateVisible) return;
     prevSlate.current = slateVisible;
-    if (slateVisible) announce('Signal lost, hang tight.');
-    else if (isLive) showFlash('We’re back');
-  }, [announce, isLive, showFlash, slateVisible]);
+    if (slateVisible) {
+      if (slateVariant === 'lost') announce('Signal lost, hang tight.');
+    } else if (isLive && media.started) showFlash('We’re back');
+    else if (isLive) announce('We’re live.');
+  }, [announce, isLive, media.started, showFlash, slateVariant, slateVisible]);
+
+  // The stream ended: stop playback (the slate says so) and tell the page.
+  const prevStreamState = useRef(feed.streamState);
+  useEffect(() => {
+    const prev = prevStreamState.current;
+    prevStreamState.current = feed.streamState;
+    if (!isLive || prev === feed.streamState || feed.streamState !== 'ended') return;
+    wantsPlayRef.current = false;
+    setWantsPlay(false);
+    announce('That’s a wrap. The stream has ended.');
+    onStreamEndRef.current?.();
+  }, [announce, feed.streamState, isLive]);
 
   const [slateSince, setSlateSince] = useState<number | null>(null);
   useEffect(() => {
@@ -847,8 +907,13 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
       }
       poke();
       if (!eventId) return;
-      (ownPending.current[kind] ??= []).push(Date.now());
+      const sentAt = Date.now();
+      (ownPending.current[kind] ??= []).push(sentAt);
       sendReaction(eventId, kind).catch((e: unknown) => {
+        // Not sent, so no echo is coming: don't swallow someone else's reaction for it.
+        const pending = ownPending.current[kind];
+        const at = pending?.indexOf(sentAt) ?? -1;
+        if (pending && at >= 0) pending.splice(at, 1);
         if (isApiError(e) && e.isRateLimited) {
           setCooling(true);
           showFlash('Easy there, one at a time');
@@ -1067,8 +1132,10 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
     : [];
   extras.push({ key: 'keys', label: 'Keyboard shortcuts', value: '?', onSelect: () => { closeMenu(false); setShortcutsOpen(true); } });
 
-  const showBigPlay = !error && !slateVisible && !ended && !scrubbing && (!media.started ? !showSpinner : media.paused && !media.buffering);
-  const showReactions = isLive && (reactionsProp ?? true) && !error && media.started;
+  const showBigPlay =
+    !error && !slateVisible && !ended && !scrubbing && (!media.started ? !showSpinner : media.paused && !media.buffering && !pendingLive);
+  // Small players hide the bar while the slate is up, so the slate copy stays readable.
+  const showReactions = isLive && (reactionsProp ?? true) && !error && media.started && !streamEnded && !(compact && slateVisible);
 
   const style = {
     '--player-accent': ACCENT_HEX[accent],
@@ -1095,6 +1162,11 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
         data-compact={compact ? 'true' : undefined}
         data-reduced={reduced ? 'true' : undefined}
         onKeyDown={onKeyDown}
+        onScroll={(e) => {
+          // Old engines without overflow: clip can still scroll a hidden box when a control takes focus.
+          const el = e.currentTarget;
+          if (el.scrollLeft || el.scrollTop) el.scrollTo(0, 0);
+        }}
         onPointerMove={(e) => {
           if (e.pointerType === 'mouse') poke();
         }}
@@ -1153,14 +1225,14 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
                 engine.retry();
                 void play();
               }}
-              download={sources.mp4}
+              download={src.mp4}
             />
           ) : null}
         </AnimatePresence>
 
-        <AnimatePresence>{ended ? <EndCard key="end" title={title} onReplay={() => void play()} /> : null}</AnimatePresence>
+        <AnimatePresence>{ended ? <EndCard key="end" onReplay={() => void play()} /> : null}</AnimatePresence>
 
-        <BigPlay show={showBigPlay} playing={false} onPress={() => void play()} label={media.started ? 'Play' : `Play ${title}`} />
+        <BigPlay show={showBigPlay} playing={wantsPlay} onPress={() => void play()} label={media.started ? 'Play' : `Play ${title}`} />
 
         <TapRipple ripple={ripple} />
         <Osd flash={flash} />
@@ -1353,10 +1425,10 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
               {isLive ? (
                 <LiveStatus
                   state={slateVisible ? 'offline' : behind ? 'behind' : 'live'}
-                  offlineLabel={slateVariant === 'waiting' ? 'Soon' : 'Live'}
+                  offlineLabel={slateVariant === 'waiting' ? 'Soon' : slateVariant === 'ended' ? 'Wrapped' : 'Live'}
                   onJump={jumpToLive}
                   viewers={feed.viewers}
-                  elapsed={slateVariant === 'waiting' ? null : elapsed}
+                  elapsed={slateVariant === 'lost' || !slateVisible ? elapsed : null}
                   variants={itemVariants}
                 />
               ) : (

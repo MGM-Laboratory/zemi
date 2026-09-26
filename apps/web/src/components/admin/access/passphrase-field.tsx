@@ -87,10 +87,7 @@ export function ScrambleText({ text, className }: { text: string; className?: st
   const frame = useRef<number | null>(null);
 
   useEffect(() => {
-    if (reduce || !text) {
-      setShown(text);
-      return;
-    }
+    if (reduce || !text) return;
     const start = performance.now();
     const settleAt = (i: number) => 160 + i * 22;
     const tick = (now: number) => {
@@ -116,7 +113,7 @@ export function ScrambleText({ text, className }: { text: string; className?: st
   return (
     <span className={className}>
       <span className="sr-only">{text}</span>
-      <span aria-hidden="true">{shown}</span>
+      <span aria-hidden="true">{reduce || !text ? text : shown}</span>
     </span>
   );
 }

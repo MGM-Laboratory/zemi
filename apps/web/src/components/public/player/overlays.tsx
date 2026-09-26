@@ -149,21 +149,40 @@ const SLATE_CAST: Array<{ shape: ShapeName; mood: 'idle' | 'sleepy' | 'surprised
   { shape: 'arch', mood: 'idle', seed: 4 },
 ];
 
+export type SlateVariant = 'lost' | 'waiting' | 'ended';
+
+const SLATE_COPY: Record<SlateVariant, { title: string; body: string }> = {
+  lost: { title: 'Signal lost, hang tight.', body: 'The stream hiccuped. It picks back up right here, no refresh needed.' },
+  waiting: { title: 'Almost on air.', body: 'Mics are getting tested. Grab a coffee, it starts right here.' },
+  ended: { title: 'That’s a wrap.', body: 'The stream is done for today. The recording lands on this page soon.' },
+};
+
 /**
- * Shown while a live stream has no signal. The cast waits on a little bench, stepping at a
- * stop-motion 15fps, while a timer counts how long we've been waiting.
+ * Shown while a live stream has no signal (lost), before it starts (waiting) and after the
+ * admin ends it (ended). The cast waits on a little bench, stepping at a stop-motion 15fps,
+ * while a timer counts how long we've been waiting. When it ends, they cheer once.
  */
-export function SignalSlate({ variant, since }: { variant: 'lost' | 'waiting'; since: number | null }) {
+export function SignalSlate({ variant, since }: { variant: SlateVariant; since: number | null }) {
   const [now, setNow] = useState(() => Date.now());
+  const [cheer, setCheer] = useState(0);
+  const lost = variant === 'lost';
+  const ended = variant === 'ended';
   useEffect(() => {
+    if (!lost || !since) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [lost, since]);
+  useEffect(() => {
+    if (!ended) return;
+    const t = setTimeout(() => setCheer((c) => c + 1), 350);
+    return () => clearTimeout(t);
+  }, [ended]);
   const waited = since ? Math.max(0, Math.floor((now - since) / 1000)) : 0;
-  const lost = variant === 'lost';
+  const copy = SLATE_COPY[variant];
   return (
     <motion.div
       className={styles.slate}
+      data-variant={variant}
       role="status"
       aria-live="polite"
       initial={{ opacity: 0 }}
@@ -175,15 +194,19 @@ export function SignalSlate({ variant, since }: { variant: 'lost' | 'waiting'; s
       <div className={styles.slateCast} aria-hidden="true">
         {SLATE_CAST.map((c, i) => (
           <span key={c.shape} className={styles.slateActor} style={{ animationDelay: `${-i * 0.37}s` }}>
-            <Character shape={c.shape} mood={lost ? c.mood : 'idle'} size="clamp(30px, 8.5cqi, 96px)" seed={c.seed} />
+            <Character
+              shape={c.shape}
+              mood={ended ? 'happy' : lost ? c.mood : 'idle'}
+              size="clamp(30px, 8.5cqi, 96px)"
+              seed={c.seed}
+              cheer={ended && cheer ? cheer + i : undefined}
+            />
           </span>
         ))}
         <span className={styles.slateBench} />
       </div>
-      <p className={styles.slateTitle}>{lost ? 'Signal lost, hang tight.' : 'Almost on air.'}</p>
-      <p className={styles.slateBody}>
-        {lost ? 'The stream hiccuped. It picks back up right here, no refresh needed.' : 'Mics are getting tested. Grab a coffee, it starts right here.'}
-      </p>
+      <p className={styles.slateTitle}>{copy.title}</p>
+      <p className={styles.slateBody}>{copy.body}</p>
       {lost && since ? (
         <p className={styles.slateTimer}>
           <span className={styles.slateDot} aria-hidden="true" />
@@ -196,7 +219,7 @@ export function SignalSlate({ variant, since }: { variant: 'lost' | 'waiting'; s
 
 /* ------------------------------------------------------------------ end card */
 
-export function EndCard({ onReplay, title }: { onReplay(): void; title: string }) {
+export function EndCard({ onReplay }: { onReplay(): void }) {
   const [cheer, setCheer] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setCheer(1), 250);
@@ -217,7 +240,7 @@ export function EndCard({ onReplay, title }: { onReplay(): void; title: string }
         ))}
       </div>
       <p className={styles.stateTitle}>That’s a wrap.</p>
-      <p className={styles.stateBody}>Thanks for watching {title}.</p>
+      <p className={styles.stateBody}>Thanks for watching. See you next Friday.</p>
       <div className={styles.stateActions}>
         <motion.button type="button" className={styles.pillButton} onClick={onReplay} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.95 }}>
           <RetryIcon className={styles.pillIcon} />

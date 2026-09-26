@@ -75,19 +75,19 @@ const ASR =
 
 const MANGROVE =
   'Mangrove maps are usually drawn by hand every few years, while coastlines change every season. We train a segmentation model on Sentinel-2 imagery using weak labels from outdated national maps and a small set of 320 carefully checked tiles. A noise-aware loss and seasonal compositing push the F1 score from 0.71 to 0.86 on an independent field survey. The resulting maps show 3.4 percent net canopy loss across the study coast over four years, concentrated around new aquaculture ponds. ' +
-  'We examine where the weak labels mislead the model, most often at young restoration sites that the old maps never recorded, and show that a few hundred checked tiles correct most of that bias. The pipeline runs on free imagery and a single GPU, so local agencies can update their maps every season instead of every few years. Code and the checked tiles are shared with the paper.';
+  'We examine where the weak labels mislead the model, most often at young restoration sites that the old maps never recorded, and show that a few hundred checked tiles correct most of that bias. The pipeline runs on free imagery and a single GPU, so local agencies can update their maps every season instead of every few years. Code and the checked tiles are shared with the paper. We also compare our maps with the latest national update wherever the two overlap.';
 
 const FEDERATED =
   'Small clinics collect valuable data but cannot share it, and each one alone is too small to train a reliable model. We simulate a federation of 24 clinics using de-identified screening records and compare federated averaging, a personalized variant and local training for predicting missed follow-up visits. The personalized federation reaches an AUROC of 0.83, close to a centralized upper bound of 0.85, while the median clinic training alone reaches only 0.71. ' +
-  'The gains are largest for the smallest clinics and for clinics whose patients differ most from the average, which are exactly the places that benefit least from a single shared model. We also measure communication cost, the effect of clinics dropping out of training rounds, and how much a simple calibration step helps before predictions reach health workers. The thesis closes with practical guidance for health offices that want to try this with real clinics.';
+  'The gains are largest for the smallest clinics and for clinics whose patients differ most from the average, which are exactly the places that benefit least from a single shared model. We also measure communication cost, the effect of clinics dropping out of training rounds, and how much a simple calibration step helps before predictions reach health workers. The thesis closes with practical guidance for health offices that want to try this with real clinics. All code runs on the modest hardware that district health offices already have.';
 
 const BATIK =
   'Batik patterns follow rules: repeating motifs, isen fillers and borders that artisans combine with care. Generic image generators ignore these rules and produce patterns that look right from far away and wrong up close. We condition a diffusion model on a motif layout sketch and a filler vocabulary, trained on 2,300 photographed cloths documented with their makers. In a study with 11 artisans, generated drafts were rated useful as starting points in 64 percent of sessions. ' +
-  'Artisans used the drafts mostly to explore unfamiliar combinations and rejected them when fillers crossed motif boundaries, a failure we trace to low-resolution layout sketches. Every cloth in the training data is credited to its maker, and artisans decided which of their motifs could be used at all. We discuss what co-creation with generative tools should and should not look like for living cultural traditions.';
+  'Artisans used the drafts mostly to explore unfamiliar combinations and rejected them when fillers crossed motif boundaries, a failure we trace to low-resolution layout sketches. Every cloth in the training data is credited to its maker, and artisans decided which of their motifs could be used at all. We discuss what co-creation with generative tools should and should not look like for living cultural traditions. The layout annotation tool and the study protocol are released so other groups can repeat the work.';
 
 const TRAFFIC =
   'Traffic signal controllers are usually tuned for cars in neat lanes, while many Indonesian intersections are dominated by motorcycles that fill every gap. We extend a microscopic simulator with sub-lane motorcycle behavior calibrated from drone video and train cooperative signal agents on a 12 intersection corridor. Compared with the fixed-time plan in use, the learned controllers cut average delay by 19 percent and queue spillback events by 41 percent in simulation. ' +
-  'The improvement holds across weekday and weekend demand, but shrinks when motorcycle shares are misestimated, which makes careful calibration the most important step. We describe how drone footage was turned into trajectories, how agents share information with their neighbors, and which parts of the controller could be deployed on existing signal hardware. The simulator extension is released as open source.';
+  'The improvement holds across weekday and weekend demand, but shrinks when motorcycle shares are misestimated, which makes careful calibration the most important step. We describe how drone footage was turned into trajectories, how agents share information with their neighbors, and which parts of the controller could be deployed on existing signal hardware. The simulator extension is released as open source. A short field visit to two corridor intersections confirmed that the simulated queues look like what signal operators see on busy afternoons, and we list the calibration steps another city would need to repeat.';
 
 export const PUBLICATIONS: PubSeed[] = [
   /* ----------------------------------------------------------- family: floods */
@@ -343,9 +343,9 @@ export const PUBLICATIONS: PubSeed[] = [
     cover: 'pub-cover-13',
   },
   {
-    key: 'consensus-queues', type: 'journal-article', area: 'sys', year: 2022, month: 10, day: 30, status: 'published',
+    key: 'consensus-queues', type: 'journal-article', area: 'sys', year: 2019, month: 10, day: 30, status: 'published',
     title: 'Consensus Protocols Explained Through Queues: A Teaching Case',
-    container: 'Jurnal Ilmu Komputer dan Informasi', volume: '15', issue: '2', pages: '101-112', issn: '2088-7051',
+    container: 'Jurnal Ilmu Komputer dan Informasi', volume: '12', issue: '2', pages: '101-112', issn: '2088-7051',
     keywords: ['distributed systems', 'teaching', 'consensus', 'Raft'],
     authors: ['wahyu*', 'm:hartono'],
     abstract: {
@@ -402,7 +402,7 @@ export const PUBLICATIONS: PubSeed[] = [
     links: ['code'],
   },
   {
-    key: 'rice-drones', type: 'conference-paper', area: 'robo', year: 2023, month: 7, day: 20, status: 'published',
+    key: 'rice-drones', type: 'conference-paper', area: 'robo', year: 2020, month: 7, day: 20, status: 'published',
     title: 'Counting Rice Plants from Low-Altitude Drone Imagery',
     container: 'IEEE International Geoscience and Remote Sensing Symposium', pages: '5521-5524', publisher: 'IEEE',
     keywords: ['precision agriculture', 'drones', 'object counting', 'rice'],
@@ -453,13 +453,13 @@ export const PUBLICATIONS: PubSeed[] = [
     cover: 'pub-cover-07', body: 'book', license: 'CC BY-NC 4.0',
   },
   {
-    key: 'pengantar-ml', type: 'book', area: 'ml', year: 2023, month: 8, day: 1, status: 'published', lang: 'id',
+    key: 'pengantar-ml', type: 'book', area: 'ml', year: 2021, month: 8, day: 1, status: 'published', lang: 'id',
     title: 'Pengantar Pembelajaran Mesin untuk Mahasiswa Indonesia',
     publisher: 'Penerbit Lentera Ilmu', isbn: '978-602-51234-7-9',
     keywords: ['pembelajaran mesin', 'buku ajar', 'pendidikan informatika'],
     authors: ['agus*', 'm:hartono'],
     abstract:
-      'Buku ini ditulis untuk mahasiswa yang ingin memahami pembelajaran mesin dari dasar tanpa harus tenggelam dalam notasi matematika sejak halaman pertama. Setiap bab dimulai dengan masalah nyata dari konteks Indonesia, seperti memprediksi harga cabai, mengelompokkan ulasan produk lokal, atau mengenali jenis batik dari foto, lalu memperkenalkan konsep dan algoritma yang dibutuhkan untuk menyelesaikannya. Materi mencakup regresi, klasifikasi, pengelompokan, evaluasi model, dan dasar jaringan saraf, dilengkapi contoh kode Python yang dapat dijalankan di laptop biasa. Kami memberi perhatian khusus pada kesalahan yang sering dilakukan pemula, misalnya kebocoran data dan evaluasi yang terlalu optimistis. Setiap bab juga memuat diskusi etika singkat tentang dampak model terhadap orang yang datanya digunakan. Buku ini telah dipakai di beberapa kelas pengantar selama tiga semester, dan masukan dari mahasiswa membentuk banyak contoh serta latihan di dalamnya. Kami berharap buku ini membantu lebih banyak mahasiswa merasa percaya diri untuk mulai meneliti dengan data mereka sendiri.',
+      'Buku ini ditulis untuk mahasiswa yang ingin memahami pembelajaran mesin dari dasar tanpa harus tenggelam dalam notasi matematika sejak halaman pertama. Setiap bab dimulai dengan masalah nyata dari konteks Indonesia, seperti memprediksi harga cabai, mengelompokkan ulasan produk lokal, atau mengenali jenis batik dari foto, lalu memperkenalkan konsep dan algoritma yang dibutuhkan untuk menyelesaikannya. Materi mencakup regresi, klasifikasi, pengelompokan, evaluasi model, dan dasar jaringan saraf, dilengkapi contoh kode Python yang dapat dijalankan di laptop biasa. Kami memberi perhatian khusus pada kesalahan yang sering dilakukan pemula, misalnya kebocoran data dan evaluasi yang terlalu optimistis. Setiap bab juga memuat diskusi etika singkat tentang dampak model terhadap orang yang datanya digunakan. Buku ini telah dipakai di beberapa kelas pengantar selama tiga semester, dan masukan dari mahasiswa membentuk banyak contoh serta latihan di dalamnya. Kami berharap buku ini membantu lebih banyak mahasiswa merasa percaya diri untuk mulai meneliti dengan data mereka sendiri. Setiap bab juga dilengkapi latihan bertingkat dan kunci jawaban singkat untuk dosen.',
     cover: 'pub-cover-05', body: 'book',
   },
   {

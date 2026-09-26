@@ -27,7 +27,7 @@ export function EventReminder({ firstName, event, ticketCode, ticketUrl, cancelU
         {label} · {day}
       </Eyebrow>
       <Heading>
-        {day} at {event.startTime}, {firstName}.
+        {day} at {event.startTime} WIB, {firstName}.
       </Heading>
       <Text size="large">
         Quick nudge: <strong>{event.title}</strong> is {when === 'today' ? 'today' : 'tomorrow'}. Half-finished ideas welcome, as always.

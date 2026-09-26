@@ -5,7 +5,8 @@ import { speakerInput, type ImageRef, type SpeakerAdmin, type SpeakerInput } fro
 import { Copy, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { BlockEditor, ImageUploadCrop, LinksEditor, ReadOnlyScope, SlugField } from '@/components/admin/fields';
 import {
   Avatar,
@@ -37,7 +38,7 @@ import { useAdminMutation } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
 import { publicPaths, SITE_URL } from '@/lib/admin/paths';
 import { adminKeys } from '@/lib/admin/query-keys';
-import { EditorCard, EditorSkeleton, NoCreateAccess, ReadOnlyNote, VisibilityField } from '../shared/content-ui';
+import { EditorCard, EditorSkeleton, FieldGroup, NoCreateAccess, ReadOnlyNote, VisibilityField } from '../shared/content-ui';
 import { blankToNull, pickDirty } from '../shared/form-utils';
 import { effectiveActions } from '../shared/types';
 import { useDirtyGuard } from '../shared/use-dirty-guard';
@@ -87,6 +88,13 @@ function SpeakerForm({ speaker }: { speaker?: SpeakerAdmin }) {
   const slug = watch('slug') ?? '';
   const dirty = form.formState.isDirty;
   const { release } = useDirtyGuard(dirty && canEdit);
+
+  // Focus the name on create, but only where it is the first thing on screen. Below lg the photo and
+  // visibility cards come first, and autofocus would scroll past them and pop the phone keyboard.
+  useEffect(() => {
+    if (isCreate && window.matchMedia('(min-width: 1024px)').matches) form.setFocus('fullName');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [avatarImage, setAvatarImage] = useState<ImageRef | null>(speaker?.avatar ?? null);
   const [bioKey, setBioKey] = useState(0);
@@ -290,7 +298,7 @@ function SpeakerForm({ speaker }: { speaker?: SpeakerAdmin }) {
             <EditorCard id="basics" title="The basics" description="How they show up everywhere on the site.">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField control={control} name="fullName" label="Full name" required maxLength={160} className="sm:col-span-2">
-                  {(field) => <Input {...field} value={field.value ?? ''} autoComplete="off" placeholder="Rani Prameswari" autoFocus={isCreate} />}
+                  {(field) => <Input {...field} value={field.value ?? ''} autoComplete="off" placeholder="Rani Prameswari" />}
                 </FormField>
                 <FormField control={control} name="nickname" label="Nickname" optional maxLength={60} hint="What people actually call them.">
                   {(field) => <Input {...field} value={field.value ?? ''} autoComplete="off" placeholder="Rani" />}
@@ -350,9 +358,16 @@ function SpeakerForm({ speaker }: { speaker?: SpeakerAdmin }) {
             </EditorCard>
 
             <EditorCard id="links" title="Links" description="Paste a URL and we pick the icon. Drag to reorder.">
-              <FormField control={control} name="links" label="Links" hideLabel>
-                {(field) => <LinksEditor value={field.value ?? []} onChange={field.onChange} errors={linkErrors} />}
-              </FormField>
+              {/* A plain Controller, not FormField: a Field would hand one id and one error state to every row. */}
+              <Controller
+                control={control}
+                name="links"
+                render={({ field, fieldState }) => (
+                  <FieldGroup label="Links" hideLabel error={!Array.isArray(form.formState.errors.links) ? fieldState.error?.message : undefined}>
+                    <LinksEditor value={field.value ?? []} onChange={field.onChange} errors={linkErrors} />
+                  </FieldGroup>
+                )}
+              />
             </EditorCard>
 
             <EditorCard id="private" title="Private" description="Only the crew sees this. It never shows on the site.">
@@ -379,7 +394,7 @@ function SpeakerForm({ speaker }: { speaker?: SpeakerAdmin }) {
                 {canDelete ? (
                   <Card className="border-red/20">
                     <p className="font-display text-base font-extrabold [font-variation-settings:'CASL'_0.2]">Delete this speaker</p>
-                    <p className="mt-1 text-sm text-ink-3">Takes them off every event line-up. Their talks stay on the events, minus their name.</p>
+                    <p className="mt-1 text-sm text-ink-3">Takes them off every event line-up. The events stay. Papers keep their name as a plain author.</p>
                     <Button type="button" variant="danger-soft" size="sm" className="mt-3" icon={<Trash2 />} onClick={() => setDeleteOpen(true)}>
                       Delete speaker
                     </Button>

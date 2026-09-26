@@ -155,7 +155,7 @@ export function FilterBar({ search, filters, chips = [], onClearAll, actions, cl
     <div className={cn('space-y-3', className)}>
       <div className="flex flex-wrap items-center gap-2">
         {search ? <div className="min-w-[12rem] flex-1 sm:max-w-sm">{search}</div> : null}
-        {filters ? <div className="flex flex-wrap items-center gap-2">{filters}</div> : null}
+        {filters ? <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">{filters}</div> : null}
         {actions ? <div className="ml-auto flex items-center gap-2">{actions}</div> : null}
       </div>
       <AnimatePresence initial={false}>

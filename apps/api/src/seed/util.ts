@@ -7,7 +7,7 @@ const DAY = 86_400_000;
 /** `YYYY-MM-DD` + n days (Jakarta calendar dates, no time zone games). */
 export function addDays(date: string, n: number): string {
   const [y, m, d] = date.split('-').map(Number);
-  const t = new Date(Date.UTC(y!, m! - 1, d!) + n * DAY);
+  const t = new Date(Date.UTC(y, m - 1, d) + n * DAY);
   return t.toISOString().slice(0, 10);
 }
 
@@ -48,5 +48,5 @@ export function words(text: string): number {
 /** Guard for the house rule: no en or em dashes in anything user-facing. */
 export function assertNoDashes(label: string, value: unknown): void {
   const text = typeof value === 'string' ? value : JSON.stringify(value);
-  if (/[–—]/.test(text)) throw new Error(`Seed copy for ${label} contains an en or em dash`);
+  if (/[\u2013\u2014]/.test(text)) throw new Error(`Seed copy for ${label} contains an en or em dash`);
 }

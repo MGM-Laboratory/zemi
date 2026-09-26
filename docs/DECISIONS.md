@@ -19,3 +19,13 @@ Append-only. One line per judgment call: date, area, decision, why.
 - 2026-09-25 security: production boot refuses the two dev secrets (dev superadmin passphrase, dev media secret).
 - 2026-09-25 assets: seed portraits (randomuser.me) are upscaled; documentation photos are AI-generated (codex image generation) and marked as such in the manifest; the wall clock GLB ships at 12:00 with empty pivot nodes named hour_hand/minute_hand for animation.
 - 2026-09-25 schema: events gained reminder_sent_at, starting_sent_at, thanks_sent_at for idempotent lifecycle emails.
+- 2026-09-26 site: public stats count talks as `event_speakers` rows on ended, published, non-cancelled events except moderators; `seatsFilled` is checked-in registrations on those events.
+- 2026-09-26 seed: the 8 seeded recordings share one recording asset (a 124 min loop of the seed clip) to keep the bucket small; deleting a recording must not delete an asset another session still uses.
+- 2026-09-26 seed: the seeder leaves `seo.ogImageAssetId` empty so link previews use the web's PNG `/brand/og-default.png` (the pipeline only emits AVIF/WebP).
+- 2026-09-26 seed: the seeder runs a preflight (seed files present, bucket accepts writes, temp space) before `--reset` deletes anything.
+- 2026-09-26 dev infra: Docker Desktop hung on this machine, so local dev runs natively (scripts/dev/*.sh): Homebrew Postgres 16, MediaMTX binary, and Versity S3 Gateway (POSIX backend) instead of MinIO. MinIO refuses writes above 99% disk use, which broke uploads on a nearly full disk; versitygw has no such cutoff. docker-compose.dev.yml still works where Docker is healthy.
+- 2026-09-26 dev infra: Turbopack's persistent dev cache is off by default (NEXT_DEV_FS_CACHE=1 turns it on) because it grew past 1 GB on a nearly full disk.
+- 2026-09-26 public-events: the /events archive grid defaults to `when=past` (wrapped Fridays) with a Wrapped / Coming up / Everything switch in the URL (`?when=`); public `past` and `upcoming` exclude cancelled events, so cancelled Fridays show under Everything, on the ribbon and on their own page.
+- 2026-09-26 public-events: past event pages show "people saved a seat" from `registrationCount` (when public). There is no public check-in count, so we never claim how many people came.
+- 2026-09-26 public-events: no loading.tsx under /events or /tickets, so old-slug redirects and notFound() keep real 308/404 status codes (a streamed page would downgrade them).
+- 2026-09-26 stream: deleting or re-stitching a recording deletes its video asset only when it is purpose `recording` and no other session or gallery item uses it (otherwise it is detached); attaching a video as a recording uses the gallery rule (superadmin, `media.library`, or the uploader).

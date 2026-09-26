@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ['three'],
   serverExternalPackages: ['@blocknote/core', '@blocknote/react', '@blocknote/server-util'],
   experimental: {
+    // The persistent dev cache grows past 1 GB; this machine is short on disk, and cold dev compiles are fine.
+    turbopackFileSystemCacheForDev: process.env.NEXT_DEV_FS_CACHE === '1',
     // Uploads and SSE go through the /api rewrite. Keep long-lived proxied requests alive.
     proxyTimeout: 30 * 60 * 1000,
     proxyClientMaxBodySize: 2 * 1024 * 1024 * 1024,

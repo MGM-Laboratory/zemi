@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { cn } from '@/lib/utils';
 import { formatClock, SPEEDS, speedLabel, storyboardTile, type ChapterSpan, type Storyboard } from './format';
 import { CheckIcon, ChevronIcon } from './icons';
@@ -60,6 +60,12 @@ export function SettingsMenu(props: SettingsMenuProps) {
   const [height, setHeight] = useState<number | 'auto'>('auto');
   const dir = useRef(1);
   const reduced = useReducedMotion();
+  // Small players only fit a couple of rows: show a fade + chevron while more rows hide below.
+  const [more, setMore] = useState(false);
+  const checkMore = useCallback(() => {
+    const el = panelRef.current;
+    setMore(!!el && el.scrollHeight - el.clientHeight - el.scrollTop > 6);
+  }, []);
 
   // Focus the checked item (or the first) whenever the menu opens or the page changes.
   useEffect(() => {
@@ -68,13 +74,19 @@ export function SettingsMenu(props: SettingsMenuProps) {
       const panel = panelRef.current;
       if (!panel) return;
       const scope = panel.querySelector<HTMLElement>(`[data-page="${page}"]`) ?? panel;
-      const target =
-        scope.querySelector<HTMLElement>(`${ITEM}[aria-checked="true"]`) ?? scope.querySelector<HTMLElement>(ITEM);
+      const checked = scope.querySelector<HTMLElement>(`${ITEM}[aria-checked="true"]`);
+      const target = checked ?? scope.querySelector<HTMLElement>(ITEM);
       target?.focus({ preventScroll: true });
-      target?.scrollIntoView({ block: 'nearest' });
+      // Offsets, not scrollIntoView: the panel height is still springing here, and the sticky
+      // back row would cover the item. Park the checked item just under the back row.
+      let y = 0;
+      for (let el: HTMLElement | null = checked; el && el !== panel; el = el.offsetParent as HTMLElement | null) y += el.offsetTop;
+      const header = scope.querySelector<HTMLElement>('[data-menu-back]')?.offsetHeight ?? 0;
+      panel.scrollTop = checked ? Math.max(0, y - header - 8) : 0;
+      checkMore();
     });
     return () => cancelAnimationFrame(id);
-  }, [open, page]);
+  }, [open, page, checkMore]);
 
   // Close on outside press.
   useEffect(() => {
@@ -97,8 +109,14 @@ export function SettingsMenu(props: SettingsMenuProps) {
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
-  }, [open, page]);
+    // The panel itself springs to its new height (and is capped by the player): re-check the fade.
+    const panelRo = new ResizeObserver(checkMore);
+    if (panelRef.current) panelRo.observe(panelRef.current);
+    return () => {
+      ro.disconnect();
+      panelRo.disconnect();
+    };
+  }, [open, page, checkMore]);
 
   const go = (p: MenuPage) => {
     dir.current = p === 'main' ? -1 : 1;
@@ -154,12 +172,15 @@ export function SettingsMenu(props: SettingsMenuProps) {
           key="menu"
           ref={panelRef}
           className={styles.menu}
+          data-page={page}
           data-lenis-prevent
           initial={{ opacity: 0, y: 12, scale: 0.94 }}
           animate={{ opacity: 1, y: 0, scale: 1, height }}
           exit={{ opacity: 0, y: 8, scale: 0.96, transition: { duration: 0.14 } }}
           transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 36 }}
           onKeyDown={onKeyDown}
+          onScroll={checkMore}
+          data-more={more ? 'true' : undefined}
         >
           <AnimatePresence mode="popLayout" initial={false} custom={dir.current}>
             <motion.div
@@ -181,6 +202,9 @@ export function SettingsMenu(props: SettingsMenuProps) {
               <Page {...props} go={go} />
             </motion.div>
           </AnimatePresence>
+          <span className={styles.menuMore} aria-hidden="true">
+            <ChevronIcon dir="down" className={styles.menuMoreIcon} />
+          </span>
         </motion.div>
       ) : null}
     </AnimatePresence>
@@ -232,7 +256,7 @@ function Page(props: SettingsMenuProps & { go(p: MenuPage): void }) {
   }
 
   const back = (title: string) => (
-    <button type="button" role="menuitem" tabIndex={-1} className={cn(styles.menuItem, styles.menuBack)} onClick={() => go('main')}>
+    <button type="button" role="menuitem" tabIndex={-1} data-menu-back className={cn(styles.menuItem, styles.menuBack)} onClick={() => go('main')}>
       <ChevronIcon dir="left" className={styles.menuChevron} />
       <span className={styles.menuLabel}>{title}</span>
     </button>
@@ -319,7 +343,7 @@ function Page(props: SettingsMenuProps & { go(p: MenuPage): void }) {
     <div role="menu" aria-label="Chapters" className={cn(styles.menuList, styles.menuChapters)}>
       {back('Chapters')}
       {props.spans.map((s) => {
-        const tile = storyboardTile(props.storyboard, s.start + Math.min(5, (s.end - s.start) / 2), 0.5);
+        const tile = storyboardTile(props.storyboard, s.start + Math.min(5, (s.end - s.start) / 2), props.compact ? 0.4 : 0.5);
         const checked = props.currentChapter === s.index;
         return (
           <button
@@ -351,11 +375,13 @@ function Page(props: SettingsMenuProps & { go(p: MenuPage): void }) {
             </span>
             <span className={styles.chapterText}>
               <span className={styles.chapterTitle}>{s.title}</span>
-              <span className={cn(styles.chapterTime, 'mono')}>
-                {formatClock(s.start, props.duration)} to {formatClock(s.end, props.duration)}
+              <span className={styles.chapterMeta}>
+                <span className={cn(styles.chapterTime, 'mono')}>
+                  {formatClock(s.start, props.duration)} to {formatClock(s.end, props.duration)}
+                </span>
+                {checked ? <span className={styles.chapterNow}>Now</span> : null}
               </span>
             </span>
-            {checked ? <span className={styles.chapterNow}>Now</span> : null}
           </button>
         );
       })}

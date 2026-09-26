@@ -1,0 +1,127 @@
+/* 15:15, see you next Friday: colors pour up, ink floods, the footer takes over. */
+
+.closing {
+  position: relative;
+  isolation: isolate;
+  height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  background: var(--color-bg, #fff);
+  color: var(--color-ink, #0e1116);
+  transition: color 400ms;
+}
+
+@media (max-height: 599.98px) {
+  .closing {
+    height: auto;
+    min-height: 100svh;
+  }
+}
+
+.pool {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  inset: 0;
+  background: var(--wave);
+  /* Without JavaScript the colors simply rest as stripes. GSAP takes over from here. */
+  transform: translateY(calc((1 - var(--rest, 0)) * 100%));
+  will-change: transform;
+}
+
+.edge {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% - 1px);
+  width: 200%;
+  height: clamp(28px, 4vw, 64px);
+  animation: slide var(--speed, 8s) linear infinite;
+}
+
+@keyframes slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.rider {
+  position: absolute;
+  top: clamp(-78px, -6vw, -40px);
+  animation: ride 2.6s ease-in-out infinite;
+}
+
+.rider:nth-child(odd) {
+  animation-delay: -1.3s;
+}
+
+@keyframes ride {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(6deg);
+  }
+}
+
+.ink {
+  transform: translateY(100%);
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: calc(var(--nav-h, 72px) + clamp(24px, 5vh, 72px));
+  padding-bottom: 40px;
+}
+
+.title {
+  margin-top: 22px;
+  max-width: 11ch;
+  font-size: clamp(3.25rem, min(10.5vw, 16vh), 11rem);
+  color: inherit;
+  transition: color 400ms;
+}
+
+.body {
+  margin-top: 20px;
+  max-width: 34rem;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  color: var(--color-ink-2, #3b4150);
+  transition: color 400ms;
+}
+
+.flooded {
+  color: #fff;
+}
+
+.flooded .body {
+  color: rgb(245 246 248 / 0.8);
+}
+
+.endMark {
+  height: 0;
+}
+
+@media (max-width: 767.98px) {
+  .content {
+    padding-top: calc(var(--nav-h, 72px) + 96px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge,
+  .rider {
+    animation: none;
+  }
+}

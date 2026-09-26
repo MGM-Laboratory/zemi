@@ -25,12 +25,20 @@ function restOf(req: Request, eventId: string): string {
   return i >= 0 ? path.slice(i + marker.length) : '';
 }
 
-/** Query string for MediaMTX: everything the player sent except our `pt`. */
-function upstreamQuery(req: Request): string {
+/** LL-HLS delivery directives a playlist request may carry (and what their values look like). */
+const HLS_DIRECTIVES: Record<string, RegExp> = { _HLS_msn: /^\d{1,10}$/, _HLS_part: /^\d{1,6}$/, _HLS_skip: /^(YES|v2)$/ };
+
+/**
+ * Query string for MediaMTX. Segments and init files never need one; playlists only pass valid
+ * LL-HLS directives. Everything else (our `pt`, cache busters) is dropped, so a random query
+ * can't bypass the cache or reach the media server.
+ */
+function upstreamQuery(req: Request, rest: string): string {
+  if (!isPlaylistPath(rest)) return '';
   const raw = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?') + 1) : '';
   if (!raw) return '';
-  const q = new URLSearchParams(raw);
-  q.delete('pt');
+  const q = new URLSearchParams();
+  for (const [k, v] of new URLSearchParams(raw)) if (HLS_DIRECTIVES[k]?.test(v) && !q.has(k)) q.append(k, v);
   q.sort();
   return q.toString();
 }
@@ -66,12 +74,12 @@ export class PublicLiveController {
     const gate = await this.stream.gate(eventId);
     if (!gate.exists || !gate.streamKey) throw notLive();
     const preview = !!pt && this.stream.verifyPreviewToken(eventId, pt);
-    if (pt && !preview) throw new AppError(403, 'preview_expired', 'That preview link expired. Refresh the dashboard for a new one.');
+    if (pt && !preview) throw new AppError(403, 'preview_expired', "That preview link doesn't work anymore. Refresh the dashboard for a new one.");
     const publicOk = gate.state === 'live' && gate.visibility !== 'draft';
     const previewOk = preview && (gate.state !== 'idle' || gate.ingestOnline);
     if (!publicOk && !previewOk) throw notLive();
 
-    const result = await this.hls.get(gate.streamKey, rest, upstreamQuery(req));
+    const result = await this.hls.get(gate.streamKey, rest, upstreamQuery(req, rest));
     if (result.status === 404) throw new AppError(404, 'no_signal', 'No signal right now. Hang tight, we are on it.');
     if (result.status !== 200) throw new AppError(502, 'media_unavailable', "The video server isn't answering. Try again in a moment.");
 

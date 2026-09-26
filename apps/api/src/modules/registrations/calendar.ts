@@ -1,4 +1,5 @@
 import { createEvent, type EventAttributes } from 'ics';
+import { calendarTitle } from '../events/ics.js';
 
 export interface CalendarInput {
   eventId: string;
@@ -9,6 +10,9 @@ export interface CalendarInput {
   location: string | null;
   eventUrl: string;
   cancelled: boolean;
+  /** Event row timestamps: SEQUENCE grows with every edit (same rule as the event's own .ics, same UID). */
+  createdAt?: Date;
+  updatedAt?: Date;
   /** Extra lines for the description (ticket code, links). */
   lines: string[];
 }
@@ -19,7 +23,7 @@ export interface CalendarInput {
  * in the viewer's zone, and the description spells out WIB.
  */
 export function buildIcs(input: CalendarInput): string {
-  const title = input.number != null ? `Zemi #${input.number}: ${input.title}` : `Zemi: ${input.title}`;
+  const title = calendarTitle({ number: input.number, title: input.title });
   const attrs: EventAttributes = {
     uid: `event-${input.eventId}@zemi.labmgm.org`,
     productId: 'labmgm.org/zemi',
@@ -34,10 +38,17 @@ export function buildIcs(input: CalendarInput): string {
     description: input.lines.filter(Boolean).join('\n'),
     url: input.eventUrl,
     status: input.cancelled ? 'CANCELLED' : 'CONFIRMED',
-    busyStatus: 'BUSY',
+    busyStatus: input.cancelled ? 'FREE' : 'BUSY',
+    transp: input.cancelled ? 'TRANSPARENT' : 'OPAQUE',
     calName: 'Zemi',
     alarms: input.cancelled ? [] : [{ action: 'display', description: `${title} starts in 30 minutes`, trigger: { minutes: 30, before: true } }],
   };
+  if (input.createdAt && input.updatedAt) {
+    // Same SEQUENCE as modules/events/ics.ts so a ticket .ics and the event .ics never fight over the entry.
+    attrs.sequence = Math.max(0, Math.floor((input.updatedAt.getTime() - input.createdAt.getTime()) / 1000));
+    attrs.created = input.createdAt.getTime();
+    attrs.lastModified = input.updatedAt.getTime();
+  }
   if (input.location) attrs.location = input.location;
   const { error, value } = createEvent(attrs);
   if (error || !value) throw new Error(`Could not build the calendar file: ${error?.message ?? 'unknown error'}`);

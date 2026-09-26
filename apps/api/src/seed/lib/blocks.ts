@@ -29,7 +29,7 @@ export function inline(text: string): InlineNode[] {
       out.push({ type: 'text', text: part.slice(1, -1), styles: { italic: true } });
     } else if (part.startsWith('[')) {
       const m = part.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
-      if (m) out.push({ type: 'link', href: m[2]!, content: [{ type: 'text', text: m[1]!, styles: {} }] });
+      if (m) out.push({ type: 'link', href: m[2], content: [{ type: 'text', text: m[1], styles: {} }] });
       else out.push({ type: 'text', text: part, styles: {} });
     } else {
       out.push({ type: 'text', text: part, styles: {} });

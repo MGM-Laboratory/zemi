@@ -106,7 +106,7 @@ export class AdminStreamController {
   ): Promise<StreamSessionAdmin> {
     assertCan(ability, 'event', id, 'stream.control');
     const event = await this.stream.event(id);
-    return this.recordings.attach(event, body, principal, ip);
+    return this.recordings.attach(event, body, principal, ability, ip);
   }
 
   @Patch('recordings/:id')

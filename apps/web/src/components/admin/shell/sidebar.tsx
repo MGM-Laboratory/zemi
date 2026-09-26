@@ -158,8 +158,10 @@ function NavRow({
         active ? 'bg-surface-muted text-ink' : 'text-ink-2 hover:bg-surface-muted/70 hover:text-ink',
       )}
     >
-      {active && !reduce ? (
-        <motion.span layoutId="zemi-nav-active" className="absolute inset-0 rounded-xl bg-surface-muted" transition={{ type: 'spring', stiffness: 460, damping: 38 }} />
+      {/* Always rendered (the server cannot know about reduced motion, so a conditional span broke
+          hydration); reduced motion only drops the shared-layout slide. */}
+      {active ? (
+        <motion.span layoutId={reduce ? undefined : 'zemi-nav-active'} className="absolute inset-0 rounded-xl bg-surface-muted" transition={{ type: 'spring', stiffness: 460, damping: 38 }} />
       ) : null}
       <span className="relative flex size-6 shrink-0 items-center justify-center">
         {item.icon ? (

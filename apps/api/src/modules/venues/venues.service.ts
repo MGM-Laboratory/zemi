@@ -54,9 +54,12 @@ export class VenuesService {
   ) {}
 
   async list(search?: string | null): Promise<Venue[]> {
-    const p = searchPattern(search);
+    // Postgres text can't hold NUL bytes (the query would fail with 22021).
+    const p = searchPattern(search?.replaceAll('\u0000', ''));
+    // Qualify both sides: in a single-table select Drizzle renders columns unqualified, and
+    // "venue_id" = "id" would then compare events.venue_id with events.id (always 0).
     const eventCount =
-      sql<number>`(select count(*) from ${events} where ${events.venueId} = ${venues.id})`.mapWith(
+      sql<number>`(select count(*) from ${events} where ${events}.${sql.identifier(events.venueId.name)} = ${venues}.${sql.identifier(venues.id.name)})`.mapWith(
         Number,
       );
     const rows = await this.db

@@ -35,7 +35,17 @@ import { DB, type Db, type DbOrTx } from '../../db/client.js';
 import { eventPublications, events, publicationAuthors, publications, speakers } from '../../db/schema.js';
 import { AuditService } from '../audit/audit.service.js';
 import { RevalidateService, tags } from '../revalidate/revalidate.service.js';
-import { assertAssets, blankToNull, dropUnchanged, has, isUniqueViolation, iso, slugTaken, type ContentCtx } from '../speakers/content.util.js';
+import {
+  assertAssets,
+  assertNotBlank,
+  blankToNull,
+  dropUnchanged,
+  has,
+  isUniqueViolation,
+  iso,
+  slugTaken,
+  type ContentCtx,
+} from '../speakers/content.util.js';
 import { SpeakersService, toSpeakerRef, type SpeakerRow } from '../speakers/speakers.service.js';
 import { fetchCrossrefWork, mapCrossrefWork, parseDoiInput } from './crossref.js';
 
@@ -52,6 +62,7 @@ interface LoadedAuthor {
 }
 
 const LOOKUP_LIMIT = 20;
+const TITLE_REQUIRED = 'It needs a title. Spaces alone do not count.';
 
 /** Plain words for the audit log. */
 const TYPE_WORD: Partial<Record<PublicationType, string>> = { 'journal-article': 'paper', 'conference-paper': 'paper', thesis: 'thesis' };
@@ -315,6 +326,12 @@ export class PublicationsService {
     const authors = input.authors ?? [];
     const speakerIds = authors.map((a) => a.speakerId).filter((x): x is string => !!x);
     const issues: Array<{ path: Array<string | number>; message: string; code: 'custom' }> = [];
+    authors.forEach((a, i) => {
+      const name = a.speakerId ? null : (a as { fullName?: string }).fullName;
+      if (typeof name === 'string' && !name.trim()) {
+        issues.push({ path: ['authors', i, 'fullName'], message: 'This author needs a name. Spaces alone do not count.', code: 'custom' });
+      }
+    });
     if (speakerIds.length) {
       const found = await db.select({ id: speakers.id }).from(speakers).where(inArray(speakers.id, [...new Set(speakerIds)]));
       const ok = new Set(found.map((r) => r.id));
@@ -472,6 +489,7 @@ export class PublicationsService {
   }
 
   async create(input: PublicationCreateInput, ctx: ContentCtx): Promise<PublicationAdmin> {
+    assertNotBlank(input.title, ['title'], TITLE_REQUIRED);
     const slug = input.slug ? input.slug : await this.slugs.uniqueSlug('publication', input.title);
     if (input.slug) await this.slugs.ensureUniqueSlug('publication', slug);
     const authors = input.authors ?? [];
@@ -543,6 +561,7 @@ export class PublicationsService {
   async update(id: string, patch: UpdateInput, ctx: ContentCtx): Promise<PublicationAdmin> {
     const current = await this.load(id);
     assertCan(ctx.ability, 'publication', id, 'edit');
+    if (has(patch, 'title')) assertNotBlank(patch.title, ['title'], TITLE_REQUIRED);
     if (has(patch, 'visibility') && patch.visibility && patch.visibility !== current.visibility) {
       assertCan(ctx.ability, 'publication', id, 'publish', 'You can edit this publication, but showing or hiding it needs publish access.');
     }
@@ -667,6 +686,7 @@ export class PublicationsService {
    * link, so an event can reference it right away and someone fills in the rest later.
    */
   async quick(input: QuickInput, ctx: ContentCtx): Promise<PublicationLookupItem> {
+    assertNotBlank(input.title, ['title'], TITLE_REQUIRED);
     const title = input.title.trim();
     const url = blankToNull(input.url);
     const slug = await this.slugs.uniqueSlug('publication', slugify(title));

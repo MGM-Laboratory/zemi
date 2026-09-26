@@ -88,22 +88,22 @@ export function VenuesPage() {
         header: 'Where',
         cell: ({ row: { original: v } }) => (
           <div className="min-w-0 text-sm">
-            <p className="truncate text-ink-2">{[v.building, v.floor ? `floor ${v.floor}` : null].filter(Boolean).join(', ') || <span className="text-ink-4">Not set</span>}</p>
-            {v.address ? <p className="max-w-[22rem] truncate text-ink-4">{v.address}</p> : null}
+            <p className="line-clamp-1 text-ink-2">{[v.building, v.floor ? `floor ${v.floor}` : null].filter(Boolean).join(', ') || <span className="text-ink-4">Not set</span>}</p>
+            {v.address ? <p className="line-clamp-1 max-w-[22rem] text-ink-4 2xl:max-w-[36rem]">{v.address}</p> : null}
           </div>
         ),
       },
       {
         accessorKey: 'capacity',
         header: 'Seats',
-        meta: { align: 'right', width: '7rem' },
+        meta: { align: 'right', width: '5.5rem' },
         sortUndefined: 'last',
         cell: ({ row: { original: v } }) => (v.capacity != null ? <span className="mono tabular-nums">{v.capacity.toLocaleString('en-US')}</span> : <span className="text-ink-4">?</span>),
       },
       {
         accessorKey: 'eventCount',
         header: 'Events',
-        meta: { align: 'right', width: '7rem' },
+        meta: { align: 'right', width: '5.75rem' },
         cell: ({ row: { original: v } }) => (
           <Badge size="sm" tone={v.eventCount ? 'blue' : 'neutral'}>
             {v.eventCount ?? 0}
@@ -114,7 +114,7 @@ export function VenuesPage() {
         id: 'map',
         header: () => <span className="sr-only">Map</span>,
         enableSorting: false,
-        meta: { width: '7rem', stopRowClick: true, align: 'right', label: 'Map' },
+        meta: { width: '6.5rem', stopRowClick: true, align: 'right', label: 'Map' },
         cell: ({ row: { original: v } }) =>
           v.mapsUrl ? (
             <Button size="xs" variant="ghost" icon={<MapPin />} asChild>

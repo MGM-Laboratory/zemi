@@ -287,7 +287,9 @@ export async function storyboard(
   const rows = Math.max(1, Math.ceil(count / columns));
   const png = join(dirname(outputWebp), `storyboard-${Date.now()}.png`);
   const vf = [
-    `fps=1/${interval}`,
+    // eof_action=pass: the last partial interval still gets its tile (and a clip shorter than
+    // half an interval gets one at all, instead of ffmpeg writing nothing).
+    `fps=1/${interval}:eof_action=pass`,
     `scale=${tileWidth}:${tileHeight}:force_original_aspect_ratio=decrease`,
     `pad=${tileWidth}:${tileHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
     `tile=${columns}x${rows}`,

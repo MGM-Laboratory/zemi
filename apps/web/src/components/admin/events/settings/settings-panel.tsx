@@ -15,7 +15,11 @@ import { cn } from '@/lib/admin/cn';
 import { VISIBILITY_COPY } from '../lib';
 import { useEventActions, useWorkspaceEvent } from '../use-event';
 
-const VIS_ICON: Record<Visibility, string> = { draft: 'Only admins', published: 'Everyone', unlisted: 'Link only' };
+const VIS_ICON: Record<Visibility, string> = {
+  draft: 'Only admins',
+  published: 'Everyone',
+  unlisted: 'Link only',
+};
 
 /**
  * Settings tab: visibility, cancel or restore, duplicate, delete. Every destructive action
@@ -36,7 +40,6 @@ export function EventSettingsPanel() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const reg = event.counts.registrations;
   const people = `${reg} ${reg === 1 ? 'person' : 'people'}`;
-
 
   const canPublish = can('publish');
   const canDelete = can('delete');
@@ -69,7 +72,11 @@ export function EventSettingsPanel() {
               label: (
                 <span className="flex items-center gap-2">
                   {VISIBILITY_COPY[v].label}
-                  {v === event.visibility ? <span className="label rounded-full bg-surface-muted px-1.5 py-0.5 text-[0.625rem] text-ink-3">Now</span> : null}
+                  {v === event.visibility ? (
+                    <span className="label rounded-full bg-surface-muted px-1.5 py-0.5 text-[0.625rem] text-ink-3">
+                      Now
+                    </span>
+                  ) : null}
                 </span>
               ),
               description: (
@@ -90,15 +97,23 @@ export function EventSettingsPanel() {
                   if (event.visibility === 'published' && vis === 'draft') {
                     const ok = await confirm({
                       title: 'Unpublish this Friday?',
-                      description: 'It disappears from the site and new registrations stop. People who already registered keep their tickets, and nobody gets an email.',
+                      description:
+                        'It disappears from the site and new registrations stop. People who already registered keep their tickets, and nobody gets an email.',
                       confirmLabel: 'Unpublish',
                     });
                     if (!ok) return;
                   }
-                  actions.publish.mutate({ visibility: vis, from: applyRef.current }, { onSettled: () => setPicked(null) });
+                  actions.publish.mutate(
+                    { visibility: vis, from: applyRef.current },
+                    { onSettled: () => setPicked(null) },
+                  );
                 }}
               >
-                {vis === 'published' ? 'Publish it' : vis === 'unlisted' ? 'Make it unlisted' : 'Move back to draft'}
+                {vis === 'published'
+                  ? 'Publish it'
+                  : vis === 'unlisted'
+                    ? 'Make it unlisted'
+                    : 'Move back to draft'}
               </Button>
               <Button variant="ghost" onClick={() => setPicked(null)}>
                 Never mind
@@ -112,7 +127,11 @@ export function EventSettingsPanel() {
       <Section
         aside
         title={cancelled ? 'Cancelled' : 'Cancel this Friday'}
-        description={cancelled ? 'It is marked as cancelled. You can bring it back.' : 'Rain, fever, projector on strike. It happens.'}
+        description={
+          cancelled
+            ? 'It is marked as cancelled. You can bring it back.'
+            : 'Rain, fever, projector on strike. It happens.'
+        }
       >
         {!canPublish ? (
           <Callout tone="neutral" icon={<Lock />}>
@@ -123,18 +142,27 @@ export function EventSettingsPanel() {
             <p className="text-[0.9375rem] text-ink-2">
               {event.cancelReason ? (
                 <>
-                  Reason on the page: <span className="font-medium text-ink">{event.cancelReason}</span>
+                  Reason on the page:{' '}
+                  <span className="font-medium text-ink">{event.cancelReason}</span>
                 </>
               ) : (
                 'No reason was given.'
               )}
             </p>
-            <p className="text-sm text-ink-3">Restoring removes the cancelled note and registration follows its normal settings again. Nobody gets an email about it.</p>
+            <p className="text-sm text-ink-3">
+              Restoring removes the cancelled note and registration follows its normal settings
+              again. Nobody gets an email about it.
+            </p>
             <Button
               icon={<RotateCcw />}
               loading={actions.restore.isPending}
               onClick={async () => {
-                const ok = await confirm({ title: 'Bring this Friday back?', description: 'The cancelled note goes away and registration follows its normal settings again. Nobody gets an email.', confirmLabel: 'Restore event' });
+                const ok = await confirm({
+                  title: 'Bring this Friday back?',
+                  description:
+                    'The cancelled note goes away and registration follows its normal settings again. Nobody gets an email.',
+                  confirmLabel: 'Restore event',
+                });
                 if (ok) actions.restore.mutate();
               }}
             >
@@ -143,16 +171,36 @@ export function EventSettingsPanel() {
           </div>
         ) : (
           <div className="space-y-4 rounded-[20px] border border-line p-4 sm:p-5">
-            <Field label="Reason" optional hint="Shown on the event page and in the email. Keep it short and kind." count={{ value: reason.length, max: 500 }}>
-              <Textarea value={reason} onChange={(e) => setReason(e.target.value)} minRows={2} maxRows={5} placeholder="The speaker caught a cold. We will pick a new Friday soon." />
+            <Field
+              label="Reason"
+              optional
+              hint="Shown on the event page and in the email. Keep it short and kind."
+              count={{ value: reason.length, max: 500 }}
+            >
+              <Textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                minRows={2}
+                maxRows={5}
+                placeholder="The speaker caught a cold. We will pick a new Friday soon."
+              />
             </Field>
             <Switch
               checked={notifyPeople}
               onCheckedChange={setNotifyPeople}
               label="Email registrants"
-              description={reg ? `Sends a cancellation email to ${people} with an active ticket.` : 'Nobody registered yet, so nobody would get it.'}
+              description={
+                reg
+                  ? `Sends a cancellation email to ${people} with an active ticket.`
+                  : 'Nobody registered yet, so nobody would get it.'
+              }
             />
-            <Button variant="danger-soft" icon={<Ban />} onClick={() => setCancelOpen(true)} disabled={past && !reg}>
+            <Button
+              variant="danger-soft"
+              icon={<Ban />}
+              onClick={() => setCancelOpen(true)}
+              disabled={past && !reg}
+            >
               Cancel this Friday
             </Button>
           </div>
@@ -161,13 +209,26 @@ export function EventSettingsPanel() {
 
       {/* Duplicate */}
       {canDuplicate ? (
-        <Section aside title="Duplicate" description="Running something similar again? Start from a copy.">
+        <Section
+          aside
+          title="Duplicate"
+          description="Running something similar again? Start from a copy."
+        >
           <div className="space-y-3 rounded-[20px] border border-line p-4 sm:p-5">
             <p className="text-[0.9375rem] text-ink-2">
-              Makes a new <strong className="font-semibold">draft</strong> with the same title, description, cover, room, speakers, rundown and publications.
+              Makes a new <strong className="font-semibold">draft</strong> with the same title,
+              description, cover, room, speakers, rundown and publications.
             </p>
-            <p className="text-sm text-ink-3">It goes on the next free Friday, with the next number. Registrations, check-ins, emails, stream keys, recordings and documentation stay with this one. You land on the copy to tweak it.</p>
-            <Button icon={<CopyPlus />} loading={actions.duplicate.isPending} onClick={() => actions.duplicate.mutate()}>
+            <p className="text-sm text-ink-3">
+              It goes on the next free Friday, with the next number. Registrations, check-ins,
+              emails, stream keys, recordings and documentation stay with this one. You land on the
+              copy to tweak it.
+            </p>
+            <Button
+              icon={<CopyPlus />}
+              loading={actions.duplicate.isPending}
+              onClick={() => actions.duplicate.mutate()}
+            >
               Duplicate as a draft
             </Button>
           </div>
@@ -176,15 +237,29 @@ export function EventSettingsPanel() {
 
       {/* Danger zone */}
       {canDelete ? (
-        <Section aside title="Danger zone" description="For events that should never have existed. Cancelling is usually kinder.">
-          <div className={cn('space-y-3 rounded-[20px] border border-red/30 bg-red-50/50 p-4 sm:p-5')}>
+        <Section
+          aside
+          title="Danger zone"
+          description="For events that should never have existed. Cancelling is usually kinder."
+        >
+          <div
+            className={cn('space-y-3 rounded-[20px] border border-red/30 bg-red-50/50 p-4 sm:p-5')}
+          >
             <p className="text-[0.9375rem] font-semibold text-ink">Delete this event for good</p>
             <ul className="list-disc space-y-1 pl-5 text-sm text-ink-2">
               <li>The public page goes away, and its link stops working.</li>
-              <li>{reg ? `${people} lose their registration, and their ticket QR codes stop working.` : 'No registrations to lose.'} Nobody is emailed.</li>
+              <li>
+                {reg
+                  ? `${people} lose their registration, and their ticket QR codes stop working.`
+                  : 'No registrations to lose.'}{' '}
+                Nobody is emailed.
+              </li>
               <li>Check-ins, the rundown, and the speaker and publication links go with it.</li>
               <li>Stream keys, recordings and documentation links are removed too.</li>
-              <li>Speakers and publications themselves stay in their libraries.</li>
+              <li>
+                Speakers and publications stay in their libraries, and the photo and video files
+                stay in the media library.
+              </li>
             </ul>
             <Button variant="danger" icon={<Trash2 />} onClick={() => setDeleteOpen(true)}>
               Delete event
@@ -205,14 +280,16 @@ export function EventSettingsPanel() {
         }
         confirmLabel={notifyPeople && reg ? 'Cancel and email everyone' : 'Cancel event'}
         cancelLabel="Keep it"
-        onConfirm={() => actions.cancel.mutateAsync({ reason: reason.trim() || null, notify: notifyPeople })}
+        onConfirm={() =>
+          actions.cancel.mutateAsync({ reason: reason.trim() || null, notify: notifyPeople })
+        }
       />
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         destructive
         title="Delete this event?"
-        description={`${reg ? `${people} lose their tickets. ` : ''}The page, rundown, links, stream keys and recordings go with it. This cannot be undone.`}
+        description={`${reg ? `${people} lose their tickets. ` : ''}The page, rundown, links, stream keys and recordings go with it. The files stay in the media library. This cannot be undone.`}
         confirmLabel="Delete event"
         typeToConfirm={event.title}
         onConfirm={() => actions.remove.mutateAsync()}

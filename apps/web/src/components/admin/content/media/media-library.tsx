@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { ASSET_PURPOSES, pluralize, type Asset, type AssetKind, type AssetPurpose, type AssetStatus, type Paginated } from '@zemi/shared';
-import { FileText, Music, Play } from 'lucide-react';
+import { FileText, ImageIcon, ImageOff, Music, Play } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -277,6 +277,19 @@ function AssetTile({ asset: a, index, active, onOpen }: { asset: Asset; index: n
 function TileVisual({ asset: a }: { asset: Asset }) {
   if (a.kind === 'image' && a.image) {
     return <AdminImage image={a.image} sizes="(min-width: 1536px) 14vw, (min-width: 1024px) 18vw, (min-width: 640px) 30vw, 48vw" className="absolute inset-0 size-full" imgClassName="transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.05]" />;
+  }
+  if (a.kind === 'image') {
+    // No variants yet: the server is still rendering sizes (or gave up). Keep it a photo-shaped tile, not a paper.
+    const failed = a.status === 'failed';
+    const Glyph = failed ? ImageOff : ImageIcon;
+    return (
+      <span className={cn('absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-center', failed ? 'bg-red-50' : 'zemi-skeleton')}>
+        <span className={cn('flex size-12 items-center justify-center rounded-2xl bg-white/90 shadow-[var(--shadow-1)] transition-transform duration-300 group-hover:scale-105', failed ? 'text-red' : 'text-ink-3')}>
+          <Glyph className="size-5" aria-hidden="true" />
+        </span>
+        <span className="line-clamp-2 text-xs font-medium text-ink-2">{a.originalFilename}</span>
+      </span>
+    );
   }
   if (a.kind === 'video') {
     return (

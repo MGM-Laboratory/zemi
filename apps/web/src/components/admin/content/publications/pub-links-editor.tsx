@@ -73,7 +73,7 @@ export function PubLinksEditor({ value, onChange, errors, readOnly: ro, max = 30
                 <Select<PublicationLinkKind>
                   size="sm"
                   aria-label="Link type"
-                  className="w-[10rem] shrink-0"
+                  className="w-[10rem] shrink-0 max-sm:w-auto max-sm:min-w-0 max-sm:flex-1"
                   value={row.kind}
                   readOnly={readOnly}
                   onValueChange={(k) => {
@@ -91,7 +91,8 @@ export function PubLinksEditor({ value, onChange, errors, readOnly: ro, max = 30
                   value={row.label}
                   readOnly={readOnly}
                   maxLength={120}
-                  wrapperClassName="sm:w-40 max-sm:flex-1"
+                  // Phones: kind and delete on the first row, then the URL, then the label, each full width.
+                  wrapperClassName="sm:w-40 max-sm:order-2 max-sm:basis-full"
                   onChange={(e) => update(row.key, { label: e.target.value })}
                 />
                 <Input
@@ -102,7 +103,7 @@ export function PubLinksEditor({ value, onChange, errors, readOnly: ro, max = 30
                   inputMode="url"
                   value={row.url}
                   readOnly={readOnly}
-                  wrapperClassName="min-w-[12rem] flex-1 max-sm:order-last max-sm:basis-full"
+                  wrapperClassName="min-w-[12rem] flex-1 max-sm:order-1 max-sm:basis-full"
                   onChange={(e) => {
                     const url = e.target.value;
                     const guess = !touched.current.has(row.key) ? guessLinkKind(url) : null;

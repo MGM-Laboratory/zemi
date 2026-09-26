@@ -2,7 +2,19 @@
 
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 import type { EventAdminRow, Paginated, Visibility } from '@zemi/shared';
-import { CalendarPlus, CopyPlus, ExternalLink, EyeOff, LayoutGrid, MapPin, MoreHorizontal, PanelTop, Rows3, Send, Trash2 } from 'lucide-react';
+import {
+  CalendarPlus,
+  CopyPlus,
+  ExternalLink,
+  EyeOff,
+  LayoutGrid,
+  MapPin,
+  MoreHorizontal,
+  PanelTop,
+  Rows3,
+  Send,
+  Trash2,
+} from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,7 +24,13 @@ import { Button, IconButton } from '@/components/admin/ui/button';
 import { useConfirm } from '@/components/admin/ui/confirm-dialog';
 import { DataTable, type ColumnDef } from '@/components/admin/ui/data-table';
 import { DateText } from '@/components/admin/ui/display';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/admin/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/admin/ui/dropdown-menu';
 import { EmptyState, ErrorState, Skeleton } from '@/components/admin/ui/feedback';
 import { FilterBar, Pagination, SearchInput } from '@/components/admin/ui/filters';
 import { AvatarStack } from '@/components/admin/ui/media';
@@ -33,9 +51,18 @@ import { eventDetailKey, notifyPublished, rowStatus } from '../use-event';
 
 const TABS = ['upcoming', 'live', 'past', 'drafts', 'all'] as const;
 type Tab = (typeof TABS)[number];
-const TAB_LABEL: Record<Tab, string> = { upcoming: 'Upcoming', live: 'Live', past: 'Past', drafts: 'Drafts', all: 'All' };
+const TAB_LABEL: Record<Tab, string> = {
+  upcoming: 'Upcoming',
+  live: 'Live',
+  past: 'Past',
+  drafts: 'Drafts',
+  all: 'All',
+};
 
-function tabQuery(tab: Tab): { when: 'upcoming' | 'past' | 'live' | 'all'; visibility?: Visibility } {
+function tabQuery(tab: Tab): {
+  when: 'upcoming' | 'past' | 'live' | 'all';
+  visibility?: Visibility;
+} {
   if (tab === 'drafts') return { when: 'all', visibility: 'draft' };
   return { when: tab };
 }
@@ -50,7 +77,8 @@ function useRowActions() {
   const refetchMe = useRefetchMe();
   const invalidate = [adminKeys.events.lists(), adminKeys.overview()];
   const publish = useAdminMutation({
-    mutationFn: (v: { id: string; visibility: Visibility; from?: Element | null }) => api.post<unknown>(`/admin/events/${v.id}/publish`, { visibility: v.visibility }),
+    mutationFn: (v: { id: string; visibility: Visibility; from?: Element | null }) =>
+      api.post<unknown>(`/admin/events/${v.id}/publish`, { visibility: v.visibility }),
     invalidate: (_d, v) => [...invalidate, eventDetailKey(v.id)],
     onSuccess: (_d, v) => notifyPublished(v.visibility, v.from),
   });
@@ -73,7 +101,13 @@ function useRowActions() {
   return { publish, duplicate, remove };
 }
 
-function RowActions({ row, actions }: { row: EventAdminRow; actions: ReturnType<typeof useRowActions> }) {
+function RowActions({
+  row,
+  actions,
+}: {
+  row: EventAdminRow;
+  actions: ReturnType<typeof useRowActions>;
+}) {
   const ability = useAbility();
   const confirm = useConfirm();
   const router = useRouter();
@@ -88,7 +122,10 @@ function RowActions({ row, actions }: { row: EventAdminRow; actions: ReturnType<
         </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem icon={<PanelTop />} onSelect={() => router.push(adminRoutes.event(row.id))}>
+        <DropdownMenuItem
+          icon={<PanelTop />}
+          onSelect={() => router.push(adminRoutes.event(row.id))}
+        >
           Open
         </DropdownMenuItem>
         {published ? (
@@ -108,7 +145,8 @@ function RowActions({ row, actions }: { row: EventAdminRow; actions: ReturnType<
               onSelect={async () => {
                 const ok = await confirm({
                   title: `Unpublish "${row.title}"?`,
-                  description: 'It disappears from the site and new registrations stop. People who already registered keep their tickets, and nobody gets an email.',
+                  description:
+                    'It disappears from the site and new registrations stop. People who already registered keep their tickets, and nobody gets an email.',
                   confirmLabel: 'Unpublish',
                 });
                 if (ok) actions.publish.mutate({ id: row.id, visibility: 'draft' });
@@ -117,7 +155,10 @@ function RowActions({ row, actions }: { row: EventAdminRow; actions: ReturnType<
               Unpublish
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem icon={<Send />} onSelect={() => actions.publish.mutate({ id: row.id, visibility: 'published' })}>
+            <DropdownMenuItem
+              icon={<Send />}
+              onSelect={() => actions.publish.mutate({ id: row.id, visibility: 'published' })}
+            >
               Publish
             </DropdownMenuItem>
           )
@@ -131,7 +172,7 @@ function RowActions({ row, actions }: { row: EventAdminRow; actions: ReturnType<
               onSelect={async () => {
                 const ok = await confirm({
                   title: 'Delete this event?',
-                  description: `${row.registrations ? `${row.registrations} registrations and their tickets go with it (the QR codes stop working). ` : ''}The page, rundown, links, stream keys and recordings go too. Nobody is emailed. This cannot be undone.`,
+                  description: `${row.registrations ? `${row.registrations} registrations and their tickets go with it (the QR codes stop working). ` : ''}The page, rundown, links, stream keys and recordings go too, but the files stay in the media library. Nobody is emailed. This cannot be undone.`,
                   destructive: true,
                   confirmLabel: 'Delete event',
                   typeToConfirm: row.title,
@@ -178,7 +219,11 @@ export function EventsList() {
   const counts = useQueries({
     queries: TABS.map((t) => {
       const p = { ...tabQuery(t), search: q || undefined, page: 1, pageSize: 1 };
-      return { queryKey: adminKeys.events.list({ ...p, count: true }), queryFn: ({ signal }: { signal: AbortSignal }) => listFetch(p, signal), staleTime: 30_000 };
+      return {
+        queryKey: adminKeys.events.list({ ...p, count: true }),
+        queryFn: ({ signal }: { signal: AbortSignal }) => listFetch(p, signal),
+        staleTime: 30_000,
+      };
     }),
   });
   const actions = useRowActions();
@@ -192,8 +237,13 @@ export function EventsList() {
         header: 'Event',
         meta: { hideable: false },
         cell: ({ row }) => (
-          <div className="group flex min-w-[14rem] items-center gap-3">
-            <CoverThumb image={row.original.cover} accent={row.original.accent} width={36} rounded="sm" />
+          <div className="group flex min-w-[12rem] items-center gap-3">
+            <CoverThumb
+              image={row.original.cover}
+              accent={row.original.accent}
+              width={36}
+              rounded="sm"
+            />
             <div className="min-w-0">
               <EventNumber number={row.original.number} className="text-[0.625rem]" />
               <div className="line-clamp-2 font-medium text-ink">{row.original.title}</div>
@@ -208,7 +258,11 @@ export function EventsList() {
           <div className="whitespace-nowrap">
             <DateText value={row.original.startsAt} format="date" className="text-ink" />
             <div className="mono text-[0.75rem] text-ink-3">
-              <DateText value={row.original.startsAt} end={row.original.endsAt} format="time-range" />
+              <DateText
+                value={row.original.startsAt}
+                end={row.original.endsAt}
+                format="time-range"
+              />
             </div>
           </div>
         ),
@@ -217,22 +271,28 @@ export function EventsList() {
         id: 'status',
         header: 'Status',
         accessorFn: (r) => rowStatus(r, now),
-        meta: { label: 'Status and stream' },
+        // Visibility and stream state stack under the status, so the whole table fits a laptop screen.
+        meta: { label: 'Status, visibility and stream' },
         cell: ({ row }) => (
           <div className="flex flex-col items-start gap-1">
             <StatusChip kind="event" value={rowStatus(row.original, now)} size="sm" />
-            {row.original.streamState !== 'idle' ? <StatusChip kind="stream" value={row.original.streamState} size="sm" /> : null}
+            <StatusChip kind="visibility" value={row.original.visibility} size="sm" />
+            {row.original.streamState !== 'idle' ? (
+              <StatusChip kind="stream" value={row.original.streamState} size="sm" />
+            ) : null}
           </div>
         ),
       },
-      { accessorKey: 'visibility', header: 'Visibility', cell: ({ row }) => <StatusChip kind="visibility" value={row.original.visibility} size="sm" /> },
       {
         accessorKey: 'venue',
         header: 'Room',
-        meta: { className: 'min-w-[8rem]' },
+        meta: { className: 'min-w-[7rem]' },
         cell: ({ row }) =>
           row.original.venue ? (
-            <span className="block max-w-[11rem] truncate whitespace-nowrap text-ink-2" title={row.original.venue}>
+            <span
+              className="block max-w-[8rem] truncate whitespace-nowrap text-ink-2"
+              title={row.original.venue}
+            >
               {row.original.venue}
             </span>
           ) : (
@@ -242,8 +302,15 @@ export function EventsList() {
       {
         accessorKey: 'registrations',
         header: 'Seats',
-        meta: { width: '7.5rem' },
-        cell: ({ row }) => <SeatsBar registrations={row.original.registrations} capacity={row.original.capacity} compact />,
+        meta: { width: '6.5rem' },
+        cell: ({ row }) => (
+          <SeatsBar
+            registrations={row.original.registrations}
+            capacity={row.original.capacity}
+            compact
+            className="w-[5.5rem]"
+          />
+        ),
       },
       {
         id: 'checkin',
@@ -252,10 +319,16 @@ export function EventsList() {
         accessorFn: (r) => checkInRate(r.checkedIn, r.registrations) ?? -1,
         cell: ({ row }) => {
           const rate = checkInRate(row.original.checkedIn, row.original.registrations);
-          return rate == null ? (
+          // Doors have not opened yet: a 0% here would read like nobody came.
+          const notYet = rowStatus(row.original, now) === 'scheduled' && !row.original.checkedIn;
+          return notYet ? (
+            <span className="whitespace-nowrap text-ink-4">Soon</span>
+          ) : rate == null ? (
             <span className="whitespace-nowrap text-ink-4">None</span>
           ) : (
-            <Tooltip content={`${row.original.checkedIn} of ${row.original.registrations} checked in`}>
+            <Tooltip
+              content={`${row.original.checkedIn} of ${row.original.registrations} checked in`}
+            >
               <span className="mono tabular-nums text-ink-2" tabIndex={0}>
                 {formatPercent(rate)}
               </span>
@@ -270,7 +343,10 @@ export function EventsList() {
         cell: ({ row }) =>
           row.original.speakers.length ? (
             <AvatarStack
-              people={(row.original.speakerAvatars ?? row.original.speakers.map((fullName) => ({ fullName, avatar: null }))).map((s) => ({ name: s.fullName, image: s.avatar }))}
+              people={(
+                row.original.speakerAvatars ??
+                row.original.speakers.map((fullName) => ({ fullName, avatar: null }))
+              ).map((s) => ({ name: s.fullName, image: s.avatar }))}
               size={26}
               max={3}
             />
@@ -288,7 +364,8 @@ export function EventsList() {
           hideable: false,
           align: 'right',
           // Pinned to the right edge so the menu is reachable without scrolling sideways.
-          className: 'sticky right-0 bg-white shadow-[inset_1px_0_0_var(--color-line)] group-hover/row:bg-[#fafaf9]',
+          className:
+            'sticky right-0 bg-white shadow-[inset_1px_0_0_var(--color-line)] group-hover/row:bg-[#fafaf9]',
           headerClassName: 'sticky right-0 shadow-[inset_1px_0_0_var(--color-line)]',
         },
         cell: ({ row }) => <RowActions row={row.original} actions={actions} />,
@@ -325,7 +402,10 @@ export function EventsList() {
       }
       cast={
         tab === 'live'
-          ? [{ shape: 'triangle', mood: 'sleep', size: 50 }, { shape: 'circle', mood: 'look', size: 36, lookAt: { x: -0.9, y: 0.2 } }]
+          ? [
+              { shape: 'triangle', mood: 'sleep', size: 50 },
+              { shape: 'circle', mood: 'look', size: 36, lookAt: { x: -0.9, y: 0.2 } },
+            ]
           : undefined
       }
       action={
@@ -392,14 +472,26 @@ export function EventsList() {
           value={view}
           onValueChange={(v) => void setState({ view: v })}
           options={[
-            { value: 'table', label: <span className="sr-only sm:not-sr-only">Table</span>, icon: <Rows3 /> },
-            { value: 'grid', label: <span className="sr-only sm:not-sr-only">Cards</span>, icon: <LayoutGrid /> },
+            {
+              value: 'table',
+              label: <span className="sr-only sm:not-sr-only">Table</span>,
+              icon: <Rows3 />,
+            },
+            {
+              value: 'grid',
+              label: <span className="sr-only sm:not-sr-only">Cards</span>,
+              icon: <LayoutGrid />,
+            },
           ]}
         />
       </div>
 
       {list.isError && !list.data ? (
-        <ErrorState error={list.error} onRetry={() => void list.refetch()} retrying={list.isFetching} />
+        <ErrorState
+          error={list.error}
+          onRetry={() => void list.refetch()}
+          retrying={list.isFetching}
+        />
       ) : view === 'table' ? (
         <DataTable
           aria-label="Events"
@@ -419,13 +511,33 @@ export function EventsList() {
           toolbar={
             <FilterBar
               className="w-full"
-              search={<SearchInput value={q} onValueChange={(v) => void setState({ q: v, page: 1 })} placeholder="Search title, speaker, room" slashToFocus loading={list.isFetching && !list.isPending} aria-label="Search events" />}
+              search={
+                <SearchInput
+                  value={q}
+                  onValueChange={(v) => void setState({ q: v, page: 1 })}
+                  placeholder="Search title, speaker, room"
+                  slashToFocus
+                  loading={list.isFetching && !list.isPending}
+                  aria-label="Search events"
+                />
+              }
             />
           }
         />
       ) : (
         <div className="space-y-4">
-          <FilterBar search={<SearchInput value={q} onValueChange={(v) => void setState({ q: v, page: 1 })} placeholder="Search title, speaker, room" slashToFocus loading={list.isFetching && !list.isPending} aria-label="Search events" />} />
+          <FilterBar
+            search={
+              <SearchInput
+                value={q}
+                onValueChange={(v) => void setState({ q: v, page: 1 })}
+                placeholder="Search title, speaker, room"
+                slashToFocus
+                loading={list.isFetching && !list.isPending}
+                aria-label="Search events"
+              />
+            }
+          />
           {list.isPending ? (
             <div className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] sm:gap-4">
               {Array.from({ length: 8 }, (_, i) => (
@@ -434,14 +546,32 @@ export function EventsList() {
             </div>
           ) : rows && rows.length ? (
             <>
-              <ul className={cn('grid gap-3 transition-opacity sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] sm:gap-4', list.isFetching && 'opacity-70')} aria-label="Events">
+              <ul
+                className={cn(
+                  'grid gap-3 transition-opacity sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] sm:gap-4',
+                  list.isFetching && 'opacity-70',
+                )}
+                aria-label="Events"
+              >
                 {rows.map((r, i) => (
-                  <motion.li key={r.id} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduce ? 0 : Math.min(i * 0.03, 0.3) }}>
+                  <motion.li
+                    key={r.id}
+                    initial={reduce ? false : { opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduce ? 0 : Math.min(i * 0.03, 0.3) }}
+                  >
                     <EventCardTile row={r} now={now} actions={actions} />
                   </motion.li>
                 ))}
               </ul>
-              <Pagination page={page} pageSize={pageSize} total={total} onPageChange={(p) => void setState({ page: p })} onPageSizeChange={(s) => void setState({ size: s, page: 1 })} noun="events" />
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={(p) => void setState({ page: p })}
+                onPageSizeChange={(s) => void setState({ size: s, page: 1 })}
+                noun="events"
+              />
             </>
           ) : (
             empty
@@ -452,9 +582,18 @@ export function EventsList() {
   );
 }
 
-function EventCardTile({ row, now, actions }: { row: EventAdminRow; now: Date; actions: ReturnType<typeof useRowActions> }) {
+function EventCardTile({
+  row,
+  now,
+  actions,
+}: {
+  row: EventAdminRow;
+  now: Date;
+  actions: ReturnType<typeof useRowActions>;
+}) {
   const status = rowStatus(row, now);
-  const rate = checkInRate(row.checkedIn, row.registrations);
+  const rate =
+    status === 'scheduled' && !row.checkedIn ? null : checkInRate(row.checkedIn, row.registrations);
   const chips = (
     <>
       <StatusChip kind="event" value={status} size="sm" />
@@ -466,8 +605,17 @@ function EventCardTile({ row, now, actions }: { row: EventAdminRow; now: Date; a
     <article className="group relative flex h-full flex-row overflow-hidden rounded-[22px] border border-line bg-white transition-[border-color,box-shadow,transform] duration-200 focus-within:border-line-strong hover:-translate-y-1 hover:border-line-strong hover:shadow-[var(--shadow-2)] sm:flex-col">
       {/* Phones: a compact row with a small cover. Wider: a poster card. */}
       <div className="relative w-28 shrink-0 self-start sm:w-full">
-        <CoverThumb image={row.cover} accent={row.accent} title={row.title} fluid rounded="none" sizes="(min-width: 1280px) 20vw, (min-width: 640px) 40vw, 112px" />
-        <div className="absolute top-2.5 left-2.5 hidden flex-wrap gap-1.5 pr-12 sm:flex">{chips}</div>
+        <CoverThumb
+          image={row.cover}
+          accent={row.accent}
+          title={row.title}
+          fluid
+          rounded="none"
+          sizes="(min-width: 1280px) 20vw, (min-width: 640px) 40vw, 112px"
+        />
+        <div className="absolute top-2.5 left-2.5 hidden flex-wrap gap-1.5 pr-12 sm:flex">
+          {chips}
+        </div>
       </div>
       <div className="absolute top-2 right-2 z-10 rounded-full bg-white/95 shadow-[var(--shadow-1)]">
         <RowActions row={row} actions={actions} />
@@ -476,14 +624,22 @@ function EventCardTile({ row, now, actions }: { row: EventAdminRow; now: Date; a
         <div className="flex flex-wrap gap-1.5 pr-10 sm:hidden">{chips}</div>
         <EventNumber number={row.number} className="text-[0.625rem]" />
         <h3 className="line-clamp-2 font-display text-[1.0625rem] leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.3]">
-          <Link href={adminRoutes.event(row.id)} className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
+          <Link
+            href={adminRoutes.event(row.id)}
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+          >
             {row.title}
           </Link>
         </h3>
         <p className="text-[0.8125rem] text-ink-3">
           <DateText value={row.startsAt} format="date" className="text-ink-2" />
           <br />
-          <DateText value={row.startsAt} end={row.endsAt} format="time-range" className="mono text-[0.75rem]" />
+          <DateText
+            value={row.startsAt}
+            end={row.endsAt}
+            format="time-range"
+            className="mono text-[0.75rem]"
+          />
         </p>
         {row.venue ? (
           <p className="flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
@@ -492,12 +648,24 @@ function EventCardTile({ row, now, actions }: { row: EventAdminRow; now: Date; a
           </p>
         ) : null}
         <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-          <SeatsBar registrations={row.registrations} capacity={row.capacity} className="max-w-[9rem]" />
+          <SeatsBar
+            registrations={row.registrations}
+            capacity={row.capacity}
+            className="max-w-[9rem]"
+          />
           <div className="text-right">
             {row.speakers.length ? (
-              <AvatarStack people={(row.speakerAvatars ?? row.speakers.map((fullName) => ({ fullName, avatar: null }))).map((s) => ({ name: s.fullName, image: s.avatar }))} size={24} max={3} />
+              <AvatarStack
+                people={(
+                  row.speakerAvatars ?? row.speakers.map((fullName) => ({ fullName, avatar: null }))
+                ).map((s) => ({ name: s.fullName, image: s.avatar }))}
+                size={24}
+                max={3}
+              />
             ) : null}
-            {rate != null ? <p className="mono mt-1 text-[0.6875rem] text-ink-4">{formatPercent(rate)} in</p> : null}
+            {rate != null ? (
+              <p className="mono mt-1 text-[0.6875rem] text-ink-4">{formatPercent(rate)} in</p>
+            ) : null}
           </div>
         </div>
       </div>

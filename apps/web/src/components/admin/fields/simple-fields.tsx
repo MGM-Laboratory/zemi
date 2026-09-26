@@ -253,6 +253,8 @@ export function SlugField({ value, onChange, source, basePath, savedSlug, auto: 
         leading={<Link2 />}
         onBlur={onBlur}
         aria-invalid={!valid || undefined}
+        // Room for the "Match the title" button, so it never sits on top of the typed slug.
+        className={!readOnly && !auto && derived && derived !== value ? 'pr-36' : auto && !readOnly ? 'pr-16' : undefined}
         onChange={(e) => {
           setAuto(false);
           // Help people type: spaces and underscores become dashes, uppercase lowercases.

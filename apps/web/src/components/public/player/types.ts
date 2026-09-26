@@ -1,5 +1,5 @@
 import type { Ref } from 'react';
-import type { Accent, ReactionKind, RecordingChapter, VideoRef } from '@zemi/shared';
+import type { Accent, ReactionKind, RecordingChapter, StreamState, VideoRef } from '@zemi/shared';
 
 export interface PlayerSources {
   hls?: string | null;
@@ -20,6 +20,11 @@ export interface PlayerLiveInfo {
   ingestOnline: boolean;
   viewers: number;
   startedAt: string | null;
+  /**
+   * Optional stream state (EventStreamPublic.state). `ended` shows the wrap slate, `idle` and
+   * `preview` the "almost on air" slate. The SSE keeps it fresh when `eventId` is passed.
+   */
+  state?: StreamState;
 }
 
 /** Imperative handle (React 19 `ref` prop). */
@@ -69,6 +74,8 @@ export interface ZemiPlayerProps {
   onPlay?: () => void;
   onPause?: () => void;
   onEnded?: () => void;
+  /** Live: the stream just ended (the admin pressed End stream). Good moment to swap in the recording. */
+  onStreamEnd?: () => void;
   ref?: Ref<ZemiPlayerHandle>;
 }
 

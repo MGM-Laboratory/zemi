@@ -1,0 +1,485 @@
+/* Public events area: cover frames, ribbon, archive grid, event page details. */
+
+/* ------------------------------------------------------------------ cover frame */
+
+.frame {
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 24px;
+  padding: clamp(7px, 0.9vw, 12px);
+  background: var(--accent, #3a6dc5);
+  box-shadow:
+    0 30px 60px -30px rgb(14 17 22 / 0.35),
+    0 8px 18px -10px rgb(14 17 22 / 0.2);
+  transition: box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.frame:hover {
+  box-shadow:
+    0 50px 80px -34px rgb(14 17 22 / 0.42),
+    0 12px 24px -12px rgb(14 17 22 / 0.24);
+}
+
+.frameInner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  transform: translateZ(0);
+}
+
+.coverImg {
+  width: 100%;
+  border-radius: inherit;
+}
+
+.coverFallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.9), transparent 60%),
+    var(--accent-tint, #ecf1fa);
+}
+
+.frameGlare {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: soft-light;
+}
+
+.frameLayers {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  transform: translateZ(46px);
+  transform-style: preserve-3d;
+}
+
+.frameLayers > * {
+  pointer-events: auto;
+}
+
+/* Number stamp that sits on the frame corner. */
+.stamp {
+  position: absolute;
+  right: clamp(-10px, -0.8vw, -6px);
+  top: clamp(14px, 2vw, 22px);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.5em 0.8em;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-ink, #0e1116);
+  box-shadow: 0 10px 24px -12px rgb(14 17 22 / 0.4);
+  transform: rotate(4deg);
+}
+
+.sticker {
+  position: absolute;
+  left: clamp(-16px, -1.4vw, -8px);
+  bottom: clamp(20px, 3vw, 36px);
+  transition: transform 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.frame:hover .sticker {
+  transform: rotate(200deg) scale(1.12);
+}
+
+/* ------------------------------------------------------------------ hero */
+
+.heroBlob {
+  position: absolute;
+  inset: -10% -20% auto auto;
+  width: min(70vw, 900px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--accent-tint, #ecf1fa), transparent 68%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.countBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: clamp(10px, 1.2vw, 16px) clamp(8px, 1vw, 14px);
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--color-line, #ececea);
+  transition:
+    transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 200ms ease;
+}
+
+.countBox:hover {
+  transform: translateY(-3px) rotate(-1.5deg);
+  border-color: var(--accent, #3a6dc5);
+}
+
+/* ------------------------------------------------------------------ rundown */
+
+.rundownRail {
+  position: absolute;
+  left: calc(var(--rail-x, 88px) - 1px);
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-line, #ececea);
+  overflow: hidden;
+}
+
+.rundownFill {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  background: var(--accent, #3a6dc5);
+}
+
+.rundownDot {
+  position: absolute;
+  left: calc(var(--rail-x, 88px) - 9px);
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rundownItem:hover .rundownDot {
+  transform: rotate(180deg) scale(1.25);
+}
+
+.nowPulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 2px solid var(--color-red, #f94141);
+  animation: nowPulse 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes nowPulse {
+  from {
+    transform: scale(0.7);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ stage */
+
+.stage {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--color-surface-inverse, #0e1116);
+  color: var(--color-ink-inverse, #f5f6f8);
+}
+
+.stageSpot {
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 90%;
+  background:
+    radial-gradient(
+      40% 60% at 50% 0%,
+      color-mix(in srgb, var(--accent, #3a6dc5) 38%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(30% 40% at 15% 30%, rgb(249 65 65 / 0.12), transparent 70%),
+    radial-gradient(30% 40% at 85% 30%, rgb(247 191 51 / 0.1), transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.stageFloor {
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to top, #000, transparent);
+  transform: perspective(600px) rotateX(58deg);
+  transform-origin: bottom;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Stop-motion idle: characters hop on a stepped timeline (15 fps feel). */
+.hop {
+  animation: hop 1.6s steps(24, jump-none) infinite;
+  animation-delay: var(--delay, 0s);
+  transform-origin: 50% 100%;
+}
+
+@keyframes hop {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  62% {
+    transform: translateY(0) scale(1.08, 0.9);
+  }
+  75% {
+    transform: translateY(-22%) scale(0.95, 1.06);
+  }
+  88% {
+    transform: translateY(0) scale(1.06, 0.94);
+  }
+}
+
+.sway {
+  animation: sway 3.2s steps(48, jump-none) infinite;
+  animation-delay: var(--delay, 0s);
+  transform-origin: 50% 100%;
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+/* ------------------------------------------------------------------ gallery */
+
+.masonry {
+  columns: 1;
+  column-gap: var(--gutter, 24px);
+}
+
+@media (min-width: 560px) {
+  .masonry {
+    columns: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .masonry {
+    columns: 3;
+  }
+}
+
+@media (min-width: 1920px) {
+  .masonry {
+    columns: 4;
+  }
+}
+
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: var(--gutter, 24px);
+}
+
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--color-surface-muted, #f7f7f5);
+  cursor: zoom-in;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tile:hover {
+  transform: translateY(-3px) rotate(var(--tilt, 0deg));
+}
+
+.tile img,
+.tile video {
+  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tile:hover img,
+.tile:hover video {
+  transform: scale(1.04);
+}
+
+.tileCaption {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 36px 16px 14px;
+  background: linear-gradient(to top, rgb(14 17 22 / 0.72), transparent);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 280ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tile:hover .tileCaption,
+.tile:focus-visible .tileCaption {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .tileCaption {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------ ribbon */
+
+.ribbon {
+  position: relative;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: ew-resize;
+  outline: none;
+}
+
+.ribbon:focus-visible {
+  outline: 2px solid var(--color-focus, #3a6dc5);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.tick {
+  position: absolute;
+  bottom: 28px;
+  width: var(--tw, 3px);
+  translate: -50% 0;
+  border-radius: 99px;
+  transform-origin: bottom;
+  transition:
+    height 360ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 200ms ease,
+    opacity 200ms ease;
+}
+
+.tickIn {
+  animation: ribbonIn 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ribbonIn {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 22px;
+  width: 2px;
+  translate: -50% 0;
+  background: var(--color-ink, #0e1116);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.preview {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  width: clamp(200px, 22vw, 280px);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ------------------------------------------------------------------ archive grid */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 4vw, 56px) var(--gutter, 24px);
+}
+
+@media (min-width: 820px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 2200px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* Staggered columns: every other column sits lower (a little crooked, like pinned posters). */
+@media (min-width: 820px) {
+  .grid > :nth-child(3n + 2) {
+    translate: 0 clamp(24px, 4vw, 64px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid > :nth-child(3n + 2) {
+    translate: none;
+  }
+  .grid > :nth-child(4n + 2),
+  .grid > :nth-child(4n + 4) {
+    translate: 0 clamp(32px, 4vw, 72px);
+  }
+}
+
+@media (min-width: 2200px) {
+  .grid > :nth-child(4n + 2),
+  .grid > :nth-child(4n + 4) {
+    translate: none;
+  }
+  .grid > :nth-child(5n + 2),
+  .grid > :nth-child(5n + 4) {
+    translate: 0 72px;
+  }
+}
+
+.cardTitle {
+  transition: color 200ms ease;
+}
+
+.card:hover .cardTitle {
+  color: var(--accent-text, #2f5aa6);
+}
+
+.card:focus-within .cardTitle {
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .tile,
+  .tile img,
+  .tile video,
+  .sticker,
+  .countBox,
+  .rundownDot {
+    transition: none;
+  }
+  .hop,
+  .sway,
+  .nowPulse {
+    animation: none;
+  }
+}

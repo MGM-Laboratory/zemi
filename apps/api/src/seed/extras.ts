@@ -18,6 +18,14 @@ import { assertNoDashes, days, minutes, wib } from './util.js';
 
 /* ------------------------------------------------------------------ site settings */
 
+/** The bar above the header, written for the kind of room next Friday is in. */
+function announcementText(next: SeededEvent, venue: (typeof VENUES)[number] | null): string {
+  const when = `Zemi #${next.plan.number} is Friday, ${formatJakarta(next.plan.startsAt, 'date-short')}`;
+  if (!venue || venue.kind === 'online') return `${when}, online only. Coffee is on you this week.`;
+  if (venue.kind === 'theater') return `${when} in ${venue.name}. Bigger room, same coffee.`;
+  return `${when} in ${venue.name}. Save a seat, it fills up.`;
+}
+
 export async function seedSiteSettings(ctx: SeedCtx, seeded: SeededEvent[], venueIds: Map<string, { id: string }>): Promise<void> {
   const next = seeded.find((e) => e.plan.upcomingIndex === 0 && e.plan.visibility === 'published');
   const featured = seeded.find((e) => e.plan.upcomingIndex !== null && e.plan.theme.big && e.plan.visibility === 'published') ?? next;
@@ -32,7 +40,7 @@ export async function seedSiteSettings(ctx: SeedCtx, seeded: SeededEvent[], venu
       announcement: next
         ? {
             active: true,
-            text: `Zemi #${next.plan.number} is ${formatJakarta(next.plan.startsAt, 'date-short')} in ${nextVenue?.name ?? 'the usual building'}. Bigger room, same coffee.`,
+            text: announcementText(next, nextVenue ?? null),
             href: `/events/${next.slug}`,
           }
         : SITE_DEFAULTS.general.announcement,
@@ -144,7 +152,7 @@ function policyFor(role: AdminRole, seeded: SeededEvent[]): { policy: Policy; ex
   switch (role) {
     case 'door-crew':
       return {
-        policy: { capabilities: [], grants: next ? [eventGrant(next.id, EVENT_ACTION_BUNDLES['door-crew']!)] : [] },
+        policy: { capabilities: [], grants: next ? [eventGrant(next.id, EVENT_ACTION_BUNDLES['door-crew'])] : [] },
         expiresAt: next ? wib(next.plan.date, '18:00') : null,
         summary: next ? `scan + manual check-in for Zemi #${next.plan.number}, expires ${formatJakarta(wib(next.plan.date, '18:00'), 'datetime')} WIB` : 'no upcoming event',
       };
@@ -152,7 +160,7 @@ function policyFor(role: AdminRole, seeded: SeededEvent[]): { policy: Policy; ex
       const three = upcoming.filter((e) => e.plan.visibility !== 'draft').slice(0, 3);
       const last = three[three.length - 1];
       return {
-        policy: { capabilities: [], grants: three.map((e) => eventGrant(e.id, EVENT_ACTION_BUNDLES['stream-operator']!)) },
+        policy: { capabilities: [], grants: three.map((e) => eventGrant(e.id, EVENT_ACTION_BUNDLES['stream-operator'])) },
         expiresAt: last ? wib(last.plan.date, '18:00') : null,
         summary: `stream control for Zemi ${three.map((e) => `#${e.plan.number}`).join(', ')}`,
       };
@@ -164,7 +172,7 @@ function policyFor(role: AdminRole, seeded: SeededEvent[]): { policy: Policy; ex
           grants: [
             { type: 'event', id: '*', actions: ['view'] },
             { type: 'speaker', id: '*', actions: ['view', 'edit'] },
-            ...upcoming.map((e) => eventGrant(e.id, [...EVENT_ACTION_BUNDLES['event-editor']!, 'publish', 'registrations.view'])),
+            ...upcoming.map((e) => eventGrant(e.id, [...EVENT_ACTION_BUNDLES['event-editor'], 'publish', 'registrations.view'])),
           ],
         },
         expiresAt: null,
@@ -177,7 +185,7 @@ function policyFor(role: AdminRole, seeded: SeededEvent[]): { policy: Policy; ex
     case 'old-door-crew': {
       const june = seeded.filter((e) => e.plan.past && e.plan.date >= '2026-06-01' && e.plan.date <= '2026-06-30');
       return {
-        policy: { capabilities: [], grants: june.map((e) => eventGrant(e.id, EVENT_ACTION_BUNDLES['door-crew']!)) },
+        policy: { capabilities: [], grants: june.map((e) => eventGrant(e.id, EVENT_ACTION_BUNDLES['door-crew'])) },
         expiresAt: wib('2026-06-30', '23:59'),
         summary: 'expired on 30 Jun 2026 (shows the "access ended" state)',
       };
@@ -232,7 +240,7 @@ export async function seedAdmins(ctx: SeedCtx, passphrases: PassphraseService, s
         .insert(admins)
         .values({ ...values, passphraseLookup: secret.passphraseLookup, passphraseHash: secret.passphraseHash, createdAt: new Date(ctx.now.getTime() - days(40)) })
         .returning({ id: admins.id });
-      id = row!.id;
+      id = row.id;
     }
     out.push({ role: spec.role, id, name: spec.name, passphrase: secret ? passphrase : null, expiresAt, summary });
   }

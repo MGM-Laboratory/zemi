@@ -68,10 +68,11 @@ function signupTime(rng: Rng, start: Date, earliest: Date, latest: Date): Date {
   return t;
 }
 
-/** Arrivals cluster around 13:12 WIB, from 13:00 to 13:50. */
+/** Arrivals cluster around 13:12 WIB, with a tail of latecomers up to 13:50. */
 function arrival(rng: Rng, date: string): Date {
-  const mins = Math.round(Math.min(50, Math.max(0, rng.normal(13, 9))));
-  return wib(date, `13:${String(mins).padStart(2, '0')}`, rng.int(0, 59));
+  const raw = rng.chance(0.12) ? rng.float(22, 50) : rng.normal(12, 7);
+  const mins = Math.round(Math.min(50, Math.max(0, raw)));
+  return wib(date, `13:${String(mins).padStart(2, '0')}`, mins === 50 ? 0 : rng.int(0, 59));
 }
 
 export interface PeopleResult {
@@ -130,8 +131,14 @@ export async function seedRegistrations(ctx: SeedCtx, seeded: SeededEvent[]): Pr
       const k = e.upcomingIndex ?? 0;
       target = e.theme.big ? rng.int(52, 60) : Math.max(5, Math.round(rng.int(44, 60) * Math.pow(0.62, k)));
     }
-    // In-person seats are limited by the room; online-only sessions take everyone.
-    if (ev.capacity) target = Math.min(target, Math.floor(ev.capacity / 0.85));
+    // Capacity caps the whole list (in-person and online, see registrationInfo), so stay under it. Past
+    // Fridays in small rooms may fill up; upcoming ones keep a few seats so the public sign-up still works.
+    // A packed room usually ends a few seats short of full, so only some past Fridays sell out exactly.
+    if (ev.capacity && upcoming) target = Math.min(target, Math.max(0, ev.capacity - 4));
+    else if (ev.capacity && target >= ev.capacity) {
+      const short = rng.chance(0.3) ? 0 : rng.int(1, Math.max(2, Math.round(ev.capacity * 0.2)));
+      target = Math.min(ev.capacity, Math.max(25, ev.capacity - short));
+    }
 
     const online = e.mode === 'online';
     const offline = e.mode === 'offline';
@@ -148,23 +155,30 @@ export async function seedRegistrations(ctx: SeedCtx, seeded: SeededEvent[]): Pr
 
     const earliest = ev.publishedAt ?? new Date(e.startsAt.getTime() - days(10));
     const latest = new Date(Math.min(ctx.now.getTime() - minutes(3), e.startsAt.getTime() - minutes(20)));
-    // Share of all registrations that end up checked in (only in-person people can be scanned).
-    const rate = rng.float(0.55, 0.9);
-    const inPersonChance = Math.min(0.98, rate / 0.85);
     const walkIns = e.past && !e.cancelled && !online ? Math.round(chosen.length * rng.float(0.02, 0.07)) : 0;
-
-    chosen.forEach((person, i) => {
+    // Decide modes and cancellations first, then pick who showed up: 55% to 90% of the active
+    // registrations get checked in (walk-ins always, online people never: nobody scans a livestream).
+    const plans = chosen.map((person, i) => {
       const isWalkIn = i >= chosen.length - walkIns;
       const mode: 'in-person' | 'online' = online ? 'online' : offline || isWalkIn ? 'in-person' : rng.chance(person.onlineBias) ? 'online' : 'in-person';
-      const source = isWalkIn ? 'walk-in' : e.number <= 4 ? 'import' : rng.chance(0.02) ? 'admin' : 'web';
       const cancelled = !isWalkIn && rng.chance(0.045);
-      const arrivedAt = arrival(rng, e.date);
+      return { person, isWalkIn, mode, cancelled, arrivedAt: arrival(rng, e.date), attends: isWalkIn };
+    });
+    if (!online && !e.cancelled) {
+      const active = plans.filter((x) => !x.cancelled).length;
+      const eligible = rng.shuffle(plans.filter((x) => !x.isWalkIn && !x.cancelled && x.mode === 'in-person'));
+      const want = Math.max(0, Math.round(active * rng.float(0.55, 0.9)) - walkIns);
+      eligible.slice(0, want).forEach((x) => (x.attends = true));
+    }
+
+    plans.forEach(({ person, isWalkIn, mode, cancelled, arrivedAt, attends }) => {
+      const source = isWalkIn ? 'walk-in' : e.number <= 4 ? 'import' : rng.chance(0.02) ? 'admin' : 'web';
       const createdAt = isWalkIn
         ? arrivedAt
         : upcoming
           ? new Date(earliest.getTime() + rng.next() * Math.max(0, latest.getTime() - earliest.getTime()))
           : signupTime(rng, e.startsAt, earliest, latest);
-      const attended = !e.cancelled && !cancelled && mode === 'in-person' && (isWalkIn || rng.chance(inPersonChance)) && (e.past || arrivedAt < ctx.now);
+      const attended = attends && !e.cancelled && !cancelled && mode === 'in-person' && (e.past || arrivedAt < ctx.now);
       const code = uniqueCode(usedCodes);
       const row: RegRow = {
         id: randomUUID(),

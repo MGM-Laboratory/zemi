@@ -41,6 +41,8 @@ export class TicketAssets {
       location: this.ctx.location(event),
       eventUrl: this.ctx.eventUrl(e.slug),
       cancelled: !!e.cancelledAt,
+      createdAt: e.createdAt,
+      updatedAt: e.updatedAt,
       lines,
     });
   }

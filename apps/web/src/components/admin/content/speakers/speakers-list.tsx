@@ -35,6 +35,7 @@ import {
 } from '@/components/admin/ui';
 import { Can, useAbility } from '@/lib/admin/ability';
 import { cn } from '@/lib/admin/cn';
+import { useMediaQuery } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
 import { publicPaths } from '@/lib/admin/paths';
 import { useStoredState, ViewToggle, type ListView } from '../shared/content-ui';
@@ -43,6 +44,8 @@ import { DeleteSpeakerDialog, type DeletableSpeaker } from './delete-speaker-dia
 import { SORT_OPTIONS, useSpeakerList, type SpeakerSort } from './speaker-data';
 
 const PAGE_SIZE = 24;
+/** Table columns that phones skip (they sit inside the name cell instead, or wait for a bigger screen). */
+const PHONE_HIDDEN = new Set(['org', 'visibility']);
 const VIS_LABEL: Record<Visibility, string> = { draft: 'Draft', published: 'Published', unlisted: 'Unlisted' };
 const SHAPE_BG = { circle: 'bg-blue-50', triangle: 'bg-red-50', square: 'bg-yellow-50', arch: 'bg-green-50' } as const;
 const SHAPE_FG = { circle: 'text-blue', triangle: 'text-red', square: 'text-yellow', arch: 'text-green' } as const;
@@ -68,23 +71,29 @@ export function SpeakersList() {
   const filtered = Boolean(params.q || params.vis);
 
   const actionsFor = (row: SpeakerRow) => effectiveActions(row.permissions, (a) => ability.can('speaker', row.id, a));
+  // Tablets and small laptops drop "Updated" so the table fits without scrolling sideways.
+  const xl = useMediaQuery('(min-width: 1280px)');
+  // Phones keep the table to name, talks and the menu. Visibility moves under the name.
+  const wide = useMediaQuery('(min-width: 768px)');
 
-  const columns = useMemo<ColumnDef<SpeakerRow>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<SpeakerRow>[]>(() => {
+    const cols: ColumnDef<SpeakerRow>[] = [
       {
         id: 'fullName',
         header: 'Speaker',
         enableSorting: false,
-        meta: { hideable: false },
+        // On phones the name column takes whatever is left and truncates (max-width 0 is the table-cell trick).
+        meta: { hideable: false, className: wide ? undefined : 'w-full max-w-0' },
         cell: ({ row: { original: s } }) => (
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={s.fullName} image={s.avatar} size={40} />
             <div className="min-w-0">
-              <Link href={adminRoutes.speaker(s.id)} className="block truncate font-semibold text-ink hover:text-blue focus-visible:outline-2 focus-visible:outline-focus">
+              <Link href={adminRoutes.speaker(s.id)} className="line-clamp-2 font-semibold break-words text-ink hover:text-blue focus-visible:outline-2 focus-visible:outline-focus">
                 {s.fullName}
                 {s.nickname ? <span className="ml-1.5 font-normal text-ink-3">({s.nickname})</span> : null}
               </Link>
-              {s.headline ? <p className="max-w-[28rem] truncate text-sm text-ink-3">{s.headline}</p> : null}
+              {s.headline ? <p className={cn(wide ? 'line-clamp-1' : 'truncate', 'max-w-[28rem] text-sm text-ink-3')}>{s.headline}</p> : null}
+              {!wide && s.visibility && s.visibility !== 'published' ? <StatusChip kind="visibility" value={s.visibility} size="sm" className="mt-1" /> : null}
             </div>
           </div>
         ),
@@ -97,8 +106,8 @@ export function SpeakersList() {
         cell: ({ row: { original: s } }) =>
           s.defaultOrganization || s.defaultPosition ? (
             <div className="min-w-0 text-sm">
-              <p className="truncate text-ink-2">{s.defaultOrganization}</p>
-              {s.defaultPosition ? <p className="truncate text-ink-4">{s.defaultPosition}</p> : null}
+              <p className="line-clamp-1 text-ink-2">{s.defaultOrganization}</p>
+              {s.defaultPosition ? <p className="line-clamp-1 text-ink-4">{s.defaultPosition}</p> : null}
             </div>
           ) : (
             <span className="text-ink-4">Not set</span>
@@ -108,7 +117,7 @@ export function SpeakersList() {
         id: 'talks',
         header: 'Talks',
         enableSorting: false,
-        meta: { align: 'right', width: '6rem' },
+        meta: { align: 'right', width: wide ? '6rem' : '4.25rem' },
         cell: ({ row: { original: s } }) => <span className="mono text-ink-2 tabular-nums">{s.talkCount ?? 0}</span>,
       },
       {
@@ -118,24 +127,28 @@ export function SpeakersList() {
         meta: { width: '9rem' },
         cell: ({ row: { original: s } }) => (s.visibility ? <StatusChip kind="visibility" value={s.visibility} size="sm" /> : null),
       },
-      {
-        id: 'updatedAt',
-        header: 'Updated',
-        enableSorting: false,
-        meta: { width: '9rem' },
-        cell: ({ row: { original: s } }) => <DateText value={s.updatedAt} format="relative" className="text-sm text-ink-3" fallback="" />,
-      },
+      ...(xl
+        ? [
+            {
+              id: 'updatedAt',
+              header: 'Updated',
+              enableSorting: false,
+              meta: { width: '9rem' },
+              cell: ({ row: { original: s } }) => <DateText value={s.updatedAt} format="relative" className="text-sm text-ink-3" fallback="" />,
+            } satisfies ColumnDef<SpeakerRow>,
+          ]
+        : []),
       {
         id: 'actions',
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
-        meta: { width: '3.5rem', stopRowClick: true, hideable: false, align: 'right' },
+        meta: { width: wide ? '3.5rem' : '3rem', stopRowClick: true, hideable: false, align: 'right' },
         cell: ({ row: { original: s } }) => <RowMenu row={s} actions={actionsFor(s)} onDelete={() => setToDelete(s)} />,
       },
-    ],
+    ];
+    return wide ? cols : cols.filter((c) => !PHONE_HIDDEN.has(c.id ?? ''));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ability],
-  );
+  }, [ability, xl, wide]);
 
   const chips = [
     ...(params.q ? [{ key: 'q', label: `Search: ${params.q}`, onRemove: () => void setParams({ q: null, page: null }) }] : []),
@@ -179,7 +192,7 @@ export function SpeakersList() {
 
   const filterBar = (
     <FilterBar
-      className={view === 'grid' ? 'mb-5' : 'w-full'}
+      className={view === 'grid' || !wide ? 'mb-5' : 'w-full'}
       search={
         <SearchInput
           value={params.q}
@@ -232,13 +245,15 @@ export function SpeakersList() {
         }
       />
 
-      {view === 'grid' || (list.isError && !rows) ? filterBar : null}
+      {view === 'grid' || !wide || (list.isError && !rows) ? filterBar : null}
 
       {list.isError && !rows ? (
         <ErrorState error={list.error} onRetry={() => void list.refetch()} retrying={list.isFetching} />
       ) : view === 'table' ? (
         <DataTable
-          toolbar={filterBar}
+          toolbar={wide ? filterBar : undefined}
+          // Phones already get a fixed, short column set, so the column and density buttons would only add a row.
+          showViewOptions={wide}
           aria-label="Speakers"
           columns={columns}
           data={rows}

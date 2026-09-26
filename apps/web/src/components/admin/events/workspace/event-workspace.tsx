@@ -16,14 +16,24 @@ import { cn } from '@/lib/admin/cn';
 import { adminRoutes } from '@/lib/admin/nav';
 import { MODE_LABEL, WORKSPACE_TABS, type WorkspaceTabKey } from '../lib';
 import { CoverThumb, EventNumber, PublishControl, ViewOnSiteButton } from '../parts';
-import { EventWorkspaceProvider, useEventActions, useEventAdmin, useLiveStatus, usePermSet, useWorkspaceEvent, type EventWorkspaceValue } from '../use-event';
+import {
+  EventWorkspaceProvider,
+  useEventActions,
+  useEventAdmin,
+  useLiveStatus,
+  usePermSet,
+  useWorkspaceEvent,
+  type EventWorkspaceValue,
+} from '../use-event';
 import { StateBanner } from './state-banner';
 
 /** Which workspace tab a pathname points at ('overview' for the root). */
 function currentTab(pathname: string, id: string): { key: WorkspaceTabKey | null; raw: string } {
   const base = adminRoutes.event(id);
   if (pathname === base || pathname === `${base}/`) return { key: 'overview', raw: '' };
-  const rest = pathname.startsWith(`${base}/`) ? pathname.slice(base.length + 1).split('/')[0]! : '';
+  const rest = pathname.startsWith(`${base}/`)
+    ? pathname.slice(base.length + 1).split('/')[0]!
+    : '';
   const tab = WORKSPACE_TABS.find((t) => t.path === rest);
   return { key: tab?.key ?? null, raw: rest };
 }
@@ -46,7 +56,12 @@ export function EventWorkspace({ id, children }: { id: string; children: ReactNo
     event
       ? [
           { label: 'Events', href: adminRoutes.events },
-          ...(tab.key && tab.key !== 'overview' ? [{ label: event.title, href: adminRoutes.event(id) }, { label: tabMeta?.label ?? tab.raw }] : [{ label: event.title }]),
+          ...(tab.key && tab.key !== 'overview'
+            ? [
+                { label: event.title, href: adminRoutes.event(id) },
+                { label: tabMeta?.label ?? tab.raw },
+              ]
+            : [{ label: event.title }]),
         ]
       : [{ label: 'Events', href: adminRoutes.events }, { label: 'Loading...' }],
   );
@@ -78,7 +93,9 @@ export function EventWorkspace({ id, children }: { id: string; children: ReactNo
         <ErrorState
           error={query.error}
           title={missing ? "We couldn't find that Friday." : undefined}
-          description={missing ? 'It may have been deleted, or the link is off by a character.' : undefined}
+          description={
+            missing ? 'It may have been deleted, or the link is off by a character.' : undefined
+          }
           onRetry={() => void query.refetch()}
           retrying={query.isFetching}
           action={
@@ -118,8 +135,14 @@ export function EventWorkspace({ id, children }: { id: string; children: ReactNo
 
 function BackLink() {
   return (
-    <Link href={adminRoutes.events} className="group inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-ink-3 transition-colors hover:text-ink">
-      <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden="true" />
+    <Link
+      href={adminRoutes.events}
+      className="group inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-ink-3 transition-colors hover:text-ink"
+    >
+      <ArrowLeft
+        className="size-4 transition-transform duration-200 group-hover:-translate-x-0.5"
+        aria-hidden="true"
+      />
       All events
     </Link>
   );
@@ -138,8 +161,13 @@ function WorkspaceHeader() {
   useEffect(() => {
     const el = sentinel.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
-    const topbar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--admin-topbar-h')) || 60;
-    const io = new IntersectionObserver(([entry]) => setStuck(!entry!.isIntersecting), { rootMargin: `-${topbar + 1}px 0px 0px 0px`, threshold: 0 });
+    const topbar =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--admin-topbar-h')) ||
+      60;
+    const io = new IntersectionObserver(([entry]) => setStuck(!entry!.isIntersecting), {
+      rootMargin: `-${topbar + 1}px 0px 0px 0px`,
+      threshold: 0,
+    });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -181,8 +209,24 @@ function WorkspaceHeader() {
       </div>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="group flex min-w-0 items-start gap-4">
-          <CoverThumb image={event.cover} accent={event.accent} title={event.title} width={68} rounded="lg" className="hidden sm:inline-block" sizes="136px" />
-          <CoverThumb image={event.cover} accent={event.accent} title={event.title} width={52} rounded="md" className="sm:hidden" sizes="104px" />
+          <CoverThumb
+            image={event.cover}
+            accent={event.accent}
+            title={event.title}
+            width={68}
+            rounded="lg"
+            className="hidden sm:inline-block"
+            sizes="136px"
+          />
+          <CoverThumb
+            image={event.cover}
+            accent={event.accent}
+            title={event.title}
+            width={52}
+            rounded="md"
+            className="sm:hidden"
+            sizes="104px"
+          />
           <div className="min-w-0">
             <div className="mb-1.5 flex flex-wrap items-center gap-2">
               <EventNumber number={event.number} />
@@ -193,16 +237,27 @@ function WorkspaceHeader() {
               {event.title}
             </h1>
             <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.9375rem] text-ink-2">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="size-4 text-ink-4" aria-hidden="true" />
-                <DateText value={event.startsAt} format="date" />
-                <span className="text-ink-4">·</span>
-                <DateText value={event.startsAt} end={event.endsAt} format="time-range" className="mono text-[0.875rem]" />
+              <span className="inline-flex flex-wrap items-center gap-x-1.5">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <CalendarDays className="size-4 text-ink-4" aria-hidden="true" />
+                  <DateText value={event.startsAt} format="date" />
+                </span>
+                <span className="text-ink-4" aria-hidden="true">
+                  ·
+                </span>
+                <DateText
+                  value={event.startsAt}
+                  end={event.endsAt}
+                  format="time-range"
+                  className="mono text-[0.875rem] whitespace-nowrap"
+                />
               </span>
               {event.mode !== 'online' ? (
                 <span className="inline-flex min-w-0 items-center gap-1.5">
                   <MapPin className="size-4 shrink-0 text-ink-4" aria-hidden="true" />
-                  <span className="truncate">{event.venueFull?.name ?? <span className="text-ink-4">No room yet</span>}</span>
+                  <span className="truncate">
+                    {event.venueFull?.name ?? <span className="text-ink-4">No room yet</span>}
+                  </span>
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-1.5">
@@ -237,7 +292,9 @@ function WorkspaceHeader() {
             >
               <div className="flex items-center gap-3 pt-2.5">
                 <CoverThumb image={event.cover} accent={event.accent} width={24} rounded="sm" />
-                <span className="min-w-0 truncate font-display text-base font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.2]">{event.title}</span>
+                <span className="min-w-0 truncate font-display text-base font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.2]">
+                  {event.title}
+                </span>
                 <StatusChip kind="event" value={status} size="sm" />
                 <span className="ml-auto flex items-center gap-2">{publishControl('sm')}</span>
               </div>

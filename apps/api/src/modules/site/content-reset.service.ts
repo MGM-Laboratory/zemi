@@ -100,14 +100,16 @@ export class ContentResetService {
 
     // Files go after the commit: a failed delete leaves orphans in the bucket, never rows without files.
     let bucketObjects = 0;
-    for (const prefix of ['assets/', 'segments/']) {
+    // recordings/raw/ holds MediaMTX's raw segments (stream module); with every event gone, none are needed.
+    const prefixes = ['assets/', 'segments/', 'recordings/raw/'];
+    for (const prefix of prefixes) {
       try {
         bucketObjects += await this.storage.deletePrefix(prefix);
       } catch (err) {
         this.logger.error(`Could not empty ${prefix} in the bucket: ${(err as Error).message}`);
       }
     }
-    const stray = segmentKeys.filter((k) => !k.startsWith('assets/') && !k.startsWith('segments/'));
+    const stray = segmentKeys.filter((k) => !prefixes.some((p) => k.startsWith(p)));
     if (stray.length) bucketObjects += await this.storage.deleteKeys(stray).catch(() => 0);
 
     const total = Object.values(deleted).reduce((a, b) => a + b, 0);

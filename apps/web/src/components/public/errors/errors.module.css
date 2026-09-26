@@ -1,0 +1,40 @@
+/* ---------------------------------------------------------------- route loading */
+
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: min(78svh, 900px);
+  padding: calc(var(--nav-h, 72px) + 48px) var(--page-margin, 16px) 64px;
+}
+
+.loadingInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  opacity: 0;
+  /* Fast navigations never flash the loader. */
+  animation: loading-in 320ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)) 260ms forwards;
+}
+
+@keyframes loading-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingInner {
+    animation: loading-fade 150ms linear 260ms forwards;
+  }
+  @keyframes loading-fade {
+    to {
+      opacity: 1;
+    }
+  }
+}

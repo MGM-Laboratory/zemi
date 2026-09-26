@@ -2,9 +2,9 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { assetMetaInput, PURPOSE_ASPECT, type Asset, type AssetPurpose } from '@zemi/shared';
-import { Check, Copy, Crop as CropIcon, Download, ExternalLink, Trash2 } from 'lucide-react';
+import { Check, Copy, Crop as CropIcon, Download, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { z } from 'zod';
 import {
   AdminImage,
@@ -225,15 +225,7 @@ function Preview({ asset }: { asset: Asset }) {
           </div>
         ) : null
       ) : asset.file ? (
-        <div className="space-y-0">
-          <iframe src={`${asset.file.url}#view=FitH`} title={`Preview of ${asset.originalFilename}`} className="h-[min(60vh,32rem)] w-full bg-white" />
-          <div className="flex items-center justify-between gap-3 border-t border-line bg-white px-4 py-2.5 text-sm">
-            <span className="truncate text-ink-3">{asset.originalFilename}</span>
-            <a href={asset.file.url} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 font-medium text-blue hover:underline">
-              Open <ExternalLink className="size-3.5" aria-hidden="true" />
-            </a>
-          </div>
-        </div>
+        <DocumentPreview name={asset.originalFilename} file={asset.file} />
       ) : (
         <div className="flex aspect-[4/3] items-center justify-center text-sm text-ink-3">{processing ? 'Processing...' : 'No preview.'}</div>
       )}
@@ -243,6 +235,47 @@ function Preview({ asset }: { asset: Asset }) {
           <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-medium text-ink-2">Redrawing every size</span>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+const noSubscribe = () => () => {};
+/** Browsers without a built-in PDF viewer (Android Chrome, headless shells) download a framed PDF instead of showing it. */
+function usePdfViewer(): boolean {
+  return useSyncExternalStore(
+    noSubscribe,
+    () => (navigator as Navigator & { pdfViewerEnabled?: boolean }).pdfViewerEnabled !== false,
+    () => true,
+  );
+}
+
+function DocumentPreview({ name, file }: { name: string; file: NonNullable<Asset['file']> }) {
+  const viewer = usePdfViewer();
+  const isPdf = file.mime === 'application/pdf';
+  return (
+    <div className="space-y-0">
+      {isPdf && viewer ? (
+        <iframe src={`${file.url}#view=FitH`} title={`Preview of ${name}`} className="h-[min(60vh,32rem)] w-full bg-white" />
+      ) : (
+        <div className="graph-paper flex flex-col items-center gap-3 bg-white px-6 py-12 text-center">
+          <span className="relative flex size-16 items-center justify-center rounded-2xl border border-line bg-white shadow-sm" aria-hidden="true">
+            <FileText className="size-7 text-ink-3" />
+            {isPdf ? <span className="absolute -bottom-1.5 rounded bg-red px-1.5 text-[0.625rem] font-bold text-white">PDF</span> : null}
+          </span>
+          <p className="max-w-xs text-sm text-ink-3">{isPdf ? "This browser won't show PDFs inside the page. Open it in a new tab instead." : 'No preview for this kind of file. Open it to take a look.'}</p>
+          <Button size="sm" variant="secondary" iconRight={<ExternalLink />} asChild>
+            <a href={file.url} target="_blank" rel="noopener noreferrer">
+              Open the file
+            </a>
+          </Button>
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-3 border-t border-line bg-white px-4 py-2.5 text-sm">
+        <span className="truncate text-ink-3">{name}</span>
+        <a href={file.url} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 font-medium text-blue hover:underline">
+          Open <ExternalLink className="size-3.5" aria-hidden="true" />
+        </a>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { createAbility, type Policy } from '@zemi/shared';
 import { Check, Info, Minus, TriangleAlert } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { Character } from '@/components/admin/characters/character';
 import { ShapeGlyph } from '@/components/admin/ui';
 import { cn } from '@/lib/admin/cn';
@@ -26,6 +26,7 @@ export interface PolicySummaryCardProps {
  */
 export function PolicySummaryCard({ policy, expiresAt, label, name, className }: PolicySummaryCardProps) {
   const reduce = useReducedMotion();
+  const titleId = useId();
   const lines = useMemo(() => summarizePolicy(policy, label), [policy, label]);
   const hints = useMemo(() => policyHints(policy, { expiresAt }), [policy, expiresAt]);
   const nav = useMemo(() => {
@@ -37,11 +38,11 @@ export function PolicySummaryCard({ policy, expiresAt, label, name, className }:
   const who = name?.trim().split(/\s+/)[0] || 'They';
 
   return (
-    <section aria-labelledby="summary-title" className={cn('overflow-hidden rounded-[20px] border border-line bg-white sm:rounded-[var(--radius-card)]', className)}>
+    <section aria-labelledby={titleId} className={cn('overflow-hidden rounded-[20px] border border-line bg-white sm:rounded-[var(--radius-card)]', className)}>
       <div className="flex items-center gap-3 border-b border-line bg-surface-muted/60 px-5 py-4">
         <Character shape={nothing ? 'square' : 'circle'} mood={nothing ? 'sleep' : 'look'} size={34} />
         <div className="min-w-0">
-          <h3 id="summary-title" className="font-display text-base leading-tight font-extrabold [font-variation-settings:'CASL'_0.4]">
+          <h3 id={titleId} className="font-display text-base leading-tight font-extrabold [font-variation-settings:'CASL'_0.4]">
             What {who === 'They' ? 'they' : who} can do
           </h3>
           <p className="text-[0.8125rem] text-ink-3">Updates as you tick things.</p>

@@ -163,7 +163,7 @@ principal can view.
 - Every event mutation revalidates `events` and `event:<id>`. Detail pages are cached under `events` on the web, because the id isn't known before the fetch.
 - When the event has speakers or publications, it also revalidates `speakers`, `speaker:<id>`, `publications` and `publication:<id>`, because those pages embed the event.
 - `PUT speakers` and `PUT publications` also revalidate the removed ids.
-- A drafted create or duplicate doesn't revalidate, since nothing public changed.
+- Create and duplicate also revalidate `events` and `event:<id>`, even for drafts (cheap, and it covers a create that is published straight away).
 
 **Overview.**
 - `live`: the visible, not cancelled event that is stream-live, else the one ongoing by time.
@@ -234,17 +234,31 @@ principal can view.
 - `pnpm --filter @zemi/api typecheck` shows no errors in these modules.
 - `vitest run src/modules/events`: 18 pass. ESLint is clean on my three folders.
 
+## Review pass (2026-09-26)
+
+A reviewer re-ran the flows above against the shared API (defaults, parallel creates, speakers, rundown, publish,
+public list, detail, redirects, ICS, full and hidden counts, cancel and restore with the queued job, fake live stream and
+recordings with chapters, media, a scoped editor and a wildcard viewer, overview) and loaded the admin event page,
+the admin overview, the venues page and the public event page in Playwright (no console errors, no failed API calls).
+Fixes made:
+
+- `year` outside 1 to 9999 (for example `year=99999999999`) was a 500 on both lists (int4 overflow). `yearCondition` now matches nothing for it.
+- A NUL byte in the public slug, `search`, `tag`, `speaker` or the venues `search` was a 500 (Postgres 22021). The public slug route now 404s anything that isn't a valid slug once lowercased, before any lookup, and the list filters and venue search drop NUL bytes.
+- The slug `next` is reserved: `GET /public/events/next` would always win over an event called that. A typed `next` is a 400 on `slug`, and generated slugs skip it (a title "Next" gets `next-2`).
+- Verified: six parallel `POST /admin/events` got six different numbers, slugs and Fridays (the advisory lock holds).
+- Verified: the venues `eventCount` fix (qualified correlated subquery) returns real counts.
+
 ## Known gaps
 
 - `GET /admin/events/:id/media` requires `view`, not `media.manage`. The brief grouped it under media.manage, but `EventAdmin.media` already exposes the same list to viewers, so a 403 there would be inconsistent. Writes need `media.manage`.
 - Event deletion doesn't cancel other teams' queued jobs (reminders and so on). Their handlers must tolerate a missing event (the cancel worker already does).
 - Changing `startsAt` doesn't emit a job. The registrations lifecycle should compare `events.reminders_scheduled_for` with `starts_at`, or ask for a hook.
 - Recording chapters use the rundown times only. No chapter comes from a speaker's talk title.
-- A stream teammate's test event `zz-stream-test-e2e` has `number: 9901`, so "max + 1" currently gives 9902 and up until it's removed.
 
 ## Requests (outside my ownership)
 
-- **Stream owner:** the test event `zz-stream-test-e2e` has `number: 9901`. Remove it, or set its number to null. While it exists, auto-numbering for new events starts at 9902.
+- **api-core:** map Postgres `22021` (NUL byte in text) and `22003` (number out of range) to a 400 in `AllExceptionsFilter`, or strip NUL in `searchPattern`/`ZodPipe`. Other modules' searches and admin text fields still 500 on a `\u0000`.
+
 - **Registrations owner:**
   - Keep `registration-rules.ts` (`registrationWindow`) and `events/event-logic.ts` (`registrationInfo`) in sync. If you change one, change both, or import `registrationInfo` from `../events/event-logic.js` (it's a pure function, no Nest). Both close at `endsAt`, count only `registered` seats against the whole capacity, and treat drafts as closed.
   - There is no hook when `startsAt` changes. Reschedule reminders by comparing `events.reminders_scheduled_for` with `starts_at`, or ask me for a job such as `event.rescheduled`.

@@ -1,6 +1,6 @@
 'use client';
 
-import { slugify, type SpeakerAdmin, type SpeakerRef } from '@zemi/shared';
+import type { SpeakerAdmin, SpeakerRef } from '@zemi/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { Camera, ExternalLink, Mail, Trash2, UserPlus } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -14,7 +14,9 @@ import { adminRoutes } from '@/lib/admin/nav';
 import { adminKeys } from '@/lib/admin/query-keys';
 import { emptyManualAuthor, speakerAuthor, type AuthorRow } from './publication-data';
 
-type RowErrors = { speaker?: { message?: string }; fullName?: { message?: string }; url?: { message?: string }; organization?: { message?: string } };
+type Msg = { message?: string };
+/** Client errors use the form keys; server errors come back with API keys (speakerId, avatarAssetId). */
+type RowErrors = { speaker?: Msg; speakerId?: Msg; fullName?: Msg; url?: Msg; organization?: Msg; avatarAssetId?: Msg };
 
 export interface AuthorsEditorProps {
   value: AuthorRow[];
@@ -48,7 +50,8 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
     const fullName = name.trim();
     if (!fullName) return;
     try {
-      const s = await api.post<SpeakerAdmin>('/admin/speakers', { fullName, slug: slugify(fullName), visibility: 'published', bio: [], links: [] });
+      // No slug: the API makes a unique one from the name (a taken "rani" becomes "rani-2" instead of a 409).
+      const s = await api.post<SpeakerAdmin>('/admin/speakers', { fullName, visibility: 'published', bio: [], links: [] });
       void qc.invalidateQueries({ queryKey: adminKeys.speakers.all });
       notify.success(`${s.fullName} is in the speaker directory now.`, { celebrate: 'circle' });
       return s;
@@ -69,6 +72,8 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
           itemLabel={(r) => (r.kind === 'speaker' ? r.speaker?.fullName : r.fullName) || 'author'}
           renderItem={(row, { index, handle, isDragging }) => {
             const err = errors?.[index];
+            const speakerError = err?.speaker?.message ?? err?.speakerId?.message;
+            const photoError = err?.avatarAssetId?.message;
             const name = row.kind === 'speaker' ? (row.speaker?.fullName ?? '') : row.fullName;
             const image = row.kind === 'speaker' ? (row.speaker?.avatar ?? null) : row.avatar;
             return (
@@ -79,7 +84,7 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
                 className={cn(
                   'rounded-2xl border bg-white p-2.5 transition-[border-color,box-shadow] sm:p-3',
                   isDragging ? 'border-blue shadow-[var(--shadow-2)]' : 'border-line',
-                  (err?.speaker || err?.fullName || err?.url) && 'border-red/40',
+                  (speakerError || photoError || err?.fullName || err?.url) && 'border-red/40',
                 )}
               >
                 <div className="flex items-start gap-2 sm:gap-3">
@@ -133,7 +138,7 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
                           maxLength={200}
                           onChange={(e) => update(row.key, { organization: e.target.value })}
                         />
-                        {err?.speaker?.message ? <p className="text-[0.8125rem] font-medium text-red-600">{err.speaker.message}</p> : null}
+                        {speakerError ? <p className="text-[0.8125rem] font-medium text-red-600">{speakerError}</p> : null}
                       </>
                     ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -155,6 +160,7 @@ export function AuthorsEditor({ value, onChange, errors, readOnly: ro, listError
                             onChange={(e) => update(row.key, { fullName: e.target.value })}
                           />
                           {err?.fullName?.message ? <p className="mt-1 text-[0.8125rem] font-medium text-red-600">{err.fullName.message}</p> : null}
+                          {photoError ? <p className="mt-1 text-[0.8125rem] font-medium text-red-600">{photoError}</p> : null}
                         </div>
                         <Input size="sm" aria-label="Organization" placeholder="Organization" value={row.organization} readOnly={readOnly} maxLength={200} onChange={(e) => update(row.key, { organization: e.target.value })} />
                         <div>

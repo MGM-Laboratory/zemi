@@ -33,7 +33,7 @@ export class Rng {
 
   pick<T>(items: readonly T[]): T {
     if (!items.length) throw new Error('pick() on an empty list');
-    return items[Math.floor(this.next() * items.length)]!;
+    return items[Math.floor(this.next() * items.length)];
   }
 
   /** Weighted pick: weights line up with items. */
@@ -42,16 +42,16 @@ export class Rng {
     let r = this.next() * total;
     for (let i = 0; i < items.length; i++) {
       r -= weights[i] ?? 0;
-      if (r < 0) return items[i]!;
+      if (r < 0) return items[i];
     }
-    return items[items.length - 1]!;
+    return items[items.length - 1];
   }
 
   shuffle<T>(items: readonly T[]): T[] {
     const out = [...items];
     for (let i = out.length - 1; i > 0; i--) {
       const j = Math.floor(this.next() * (i + 1));
-      [out[i], out[j]] = [out[j]!, out[i]!];
+      [out[i], out[j]] = [out[j], out[i]];
     }
     return out;
   }

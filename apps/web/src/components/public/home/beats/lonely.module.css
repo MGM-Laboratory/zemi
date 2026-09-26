@@ -1,0 +1,335 @@
+/* 13:20, research gets lonely. The one inverse beat. */
+
+.lonely {
+  --sx: 70%;
+  --sy: 62%;
+  --sr: 220px;
+  --lights: 0;
+  position: relative;
+  isolation: isolate;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 60% at 70% 100%, #161b24 0%, transparent 70%),
+    var(--color-surface-inverse, #0e1116);
+  color: var(--color-ink-inverse, #f5f6f8);
+}
+
+@media (max-height: 599.98px) {
+  .lonely {
+    height: auto;
+    min-height: 100svh;
+  }
+}
+
+/* ------------------------------------------------------------------ room */
+
+.room {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 46%;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 64px),
+    linear-gradient(to bottom, transparent, rgb(255 255 255 / 0.05));
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
+  mask-image: linear-gradient(to bottom, transparent, #000 60%);
+  transform: perspective(600px) rotateX(38deg);
+  transform-origin: 50% 100%;
+}
+
+.stool {
+  position: absolute;
+  color: #3b4352;
+  width: clamp(44px, 5vw, 84px);
+  height: auto;
+}
+
+.s1 {
+  left: 44%;
+  bottom: 10%;
+}
+.s2 {
+  left: 84%;
+  bottom: 26%;
+  width: clamp(38px, 4.2vw, 70px);
+}
+.s3 {
+  left: 55%;
+  bottom: 36%;
+  width: clamp(30px, 3.4vw, 56px);
+  opacity: 0.8;
+}
+.s4 {
+  left: 90%;
+  bottom: 4%;
+}
+.s5 {
+  left: 72%;
+  bottom: 44%;
+  width: clamp(26px, 3vw, 48px);
+  opacity: 0.7;
+}
+
+.q {
+  position: absolute;
+  left: 62%;
+  bottom: 14%;
+  display: grid;
+  justify-items: center;
+}
+
+.q > svg:first-child {
+  position: relative;
+  z-index: 0;
+}
+
+.laptop {
+  position: relative;
+  z-index: 1;
+  width: clamp(92px, 10vw, 172px);
+  margin-top: calc(clamp(96px, 11vw, 188px) * -0.34);
+  filter: drop-shadow(0 -10px 28px rgb(58 109 197 / 0.45));
+}
+
+.loss {
+  stroke-dasharray: 160;
+  animation: loss 3.6s ease-in-out infinite;
+}
+
+@keyframes loss {
+  0% {
+    stroke-dashoffset: 160;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -160;
+  }
+}
+
+.friend {
+  position: absolute;
+  transition:
+    left 900ms cubic-bezier(0.34, 1.4, 0.5, 1),
+    bottom 900ms cubic-bezier(0.34, 1.4, 0.5, 1),
+    opacity 500ms;
+}
+
+.friendA {
+  left: 93%;
+  bottom: 58%;
+}
+.friendB {
+  left: 47%;
+  bottom: 44%;
+}
+.friendC {
+  left: 79%;
+  bottom: 1%;
+}
+
+.isLit .friendA {
+  left: 77%;
+  bottom: 22%;
+}
+.isLit .friendB {
+  left: 49%;
+  bottom: 17%;
+}
+.isLit .friendC {
+  left: 85%;
+  bottom: 10%;
+}
+
+/* ------------------------------------------------------------------ light */
+
+.dark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    circle var(--sr) at var(--sx) var(--sy),
+    rgb(14 17 22 / 0) 0%,
+    rgb(14 17 22 / 0.12) 38%,
+    rgb(14 17 22 / 0.72) 72%,
+    rgb(14 17 22 / 0.94) 100%
+  );
+  opacity: calc(1 - var(--lights));
+}
+
+/* The warm cone from a lamp nobody can see. */
+.beam {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  left: var(--sx);
+  top: 0;
+  width: calc(var(--sr) * 2);
+  height: var(--sy);
+  translate: -50% 0;
+  background: linear-gradient(to bottom, rgb(255 246 222 / 0), rgb(255 246 222 / 0.1));
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 35%, #000 78%, transparent 100%),
+    linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 35%, #000 78%, transparent 100%),
+    linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+  mask-composite: intersect;
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  opacity: calc(1 - var(--lights));
+}
+
+.beam::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--sr) * -0.35);
+  width: calc(var(--sr) * 1.7);
+  height: calc(var(--sr) * 0.7);
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 244 214 / 0.16), transparent);
+}
+
+/* ------------------------------------------------------------------ text */
+
+.text {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  padding-top: calc(var(--nav-h, 72px) + 24px);
+  padding-bottom: 48px;
+  pointer-events: none;
+}
+
+.text > * {
+  max-width: min(34rem, 100%);
+}
+
+.words {
+  margin-top: 28px;
+  font-size: clamp(1.125rem, 1.6vw, 1.5rem);
+  line-height: 1.5;
+  color: #fff;
+  text-wrap: pretty;
+}
+
+.words span {
+  display: inline;
+  transition: color 200ms;
+}
+
+.kickerWrap {
+  margin-top: 28px;
+  overflow: hidden;
+  padding-block: 0.08em 0.16em;
+}
+
+.kicker {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: 950;
+  font-size: clamp(2.25rem, 5.4vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variation-settings:
+    'CASL' 1,
+    'MONO' 0;
+  color: var(--color-yellow, #f7bf33);
+}
+
+/* ------------------------------------------------------------------ small screens */
+
+@media (max-width: 1023.98px) {
+  .text {
+    justify-content: flex-start;
+    padding-top: calc(var(--nav-h, 72px) + 84px);
+  }
+  .q {
+    left: 50%;
+    bottom: 8%;
+    translate: -50% 0;
+  }
+  .s1 {
+    left: 8%;
+    bottom: 6%;
+  }
+  .s2 {
+    left: 80%;
+    bottom: 20%;
+  }
+  .s3 {
+    left: 22%;
+    bottom: 26%;
+  }
+  .s4 {
+    left: 88%;
+    bottom: 2%;
+  }
+  .s5 {
+    left: 62%;
+    bottom: 30%;
+  }
+  .friendA {
+    left: 90%;
+    bottom: 36%;
+  }
+  .friendB {
+    left: 4%;
+    bottom: 30%;
+  }
+  .friendC {
+    left: 70%;
+    bottom: -2%;
+  }
+  .isLit .friendA {
+    left: 68%;
+    bottom: 16%;
+  }
+  .isLit .friendB {
+    left: 14%;
+    bottom: 12%;
+  }
+  .isLit .friendC {
+    left: 74%;
+    bottom: 3%;
+  }
+  .words {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 1023.98px) and (max-height: 760px) {
+  .words {
+    font-size: 1.0625rem;
+  }
+  .kicker {
+    font-size: 2.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friend {
+    transition-duration: 1ms;
+  }
+  .loss {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

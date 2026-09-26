@@ -93,6 +93,9 @@ const issue = (path: (string | number)[], message: string) => ({
   code: 'custom' as const,
 });
 
+/** Slugs a public route already uses (`GET /public/events/next`), so no event page could ever load there. */
+const RESERVED_SLUGS: ReadonlySet<string> = new Set(['next']);
+
 const VISIBILITY_WORD: Record<Visibility, string> = {
   draft: 'draft',
   published: 'published',
@@ -175,6 +178,7 @@ export class EventsAdminService {
 
       let slug: string;
       if (input.slug) {
+        this.assertNotReserved(input.slug);
         await this.slugs.ensureUniqueSlug('event', input.slug, null, tx);
         slug = input.slug;
       } else {
@@ -296,6 +300,7 @@ export class EventsAdminService {
 
     const fields = Object.keys(set).filter((k) => k !== 'descriptionText');
     if (!fields.length) return this.get(id, ability);
+    if (set.slug) this.assertNotReserved(set.slug);
 
     await this.db.transaction(async (tx) => {
       if (set.slug) {
@@ -794,6 +799,12 @@ export class EventsAdminService {
     }
   }
 
+  private assertNotReserved(slug: string): void {
+    if (!RESERVED_SLUGS.has(slug)) return;
+    const message = `The address "${slug}" is reserved by the site. Try another one.`;
+    throw validationError(`slug: ${message}`, [issue(['slug'], message)]);
+  }
+
   private async assertVenue(venueId: string, db: DbOrTx = this.db): Promise<void> {
     const [v] = await db
       .select({ id: venues.id })
@@ -868,7 +879,7 @@ export class EventsAdminService {
         .from(slugRedirects)
         .where(and(eq(slugRedirects.resourceType, 'event'), family(slugRedirects.oldSlug))),
     ]);
-    const used = new Set([...current, ...old].map((r) => r.slug));
+    const used = new Set([...RESERVED_SLUGS, ...[...current, ...old].map((r) => r.slug)]);
     if (!used.has(root)) return root;
     for (let n = 2; n < 10_000; n++) if (!used.has(`${root}-${n}`)) return `${root}-${n}`;
     return `${root}-${Date.now().toString(36)}`;

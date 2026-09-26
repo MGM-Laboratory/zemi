@@ -221,6 +221,35 @@ export function alignedStarts(sorted: SegmentSpan[]): number[] {
   return starts;
 }
 
+/**
+ * Holes longer than `tolSec` inside `[start, end]` that no segment covers: OBS dropped for a while,
+ * or a segment the media server hasn't managed to upload yet. Uses the same start times as planCuts.
+ */
+export function coverageGaps(segments: SegmentSpan[], start: Date, end: Date, tolSec = 3): Array<{ from: Date; to: Date }> {
+  const s = start.getTime();
+  const e = end.getTime();
+  const tol = tolSec * 1000;
+  const sorted = [...segments].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+  const starts = alignedStarts(sorted);
+  const gaps: Array<{ from: Date; to: Date }> = [];
+  let cursor = s;
+  for (const [i, seg] of sorted.entries()) {
+    const a = starts[i]!;
+    const b = a + seg.durationSec * 1000;
+    if (b <= cursor) continue;
+    if (a >= e) break;
+    if (a - cursor > tol) gaps.push({ from: new Date(cursor), to: new Date(a) });
+    cursor = Math.max(cursor, b);
+  }
+  if (e - cursor > tol) gaps.push({ from: new Date(cursor), to: new Date(e) });
+  return gaps;
+}
+
+/** Seconds of video a set of cuts keeps. */
+export function keptSeconds(plans: Array<CutPlan<SegmentSpan>>): number {
+  return plans.reduce((sum, p) => sum + ((p.to ?? p.segment.durationSec) - p.from), 0);
+}
+
 /** True once some segment reaches `end` (with a little slack for keyframe rounding). */
 export function segmentsCover(segments: SegmentSpan[], end: Date, slackSec = 1): boolean {
   const e = end.getTime() - slackSec * 1000;

@@ -3,7 +3,7 @@
 import type { ShapeName, Visibility } from '@zemi/shared';
 import { LayoutGrid, Rows3 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { Card, EmptyState, RadioGroup, SegmentedControl, ShapeGlyph, Skeleton, SkeletonText, Tooltip } from '@/components/admin/ui';
 import { cn } from '@/lib/admin/cn';
 
@@ -49,6 +49,52 @@ export function VisibilityField({ value, onChange, noun, readOnly, lockedReason 
         }))}
       />
       {readOnly && lockedReason ? <p className="text-[0.8125rem] text-ink-3">{lockedReason}</p> : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ Field group */
+
+/**
+ * Label, hint and error for a composite editor (authors, link rows). Unlike the kit's `<Field>`, it
+ * hands nothing down through context, so the rows inside keep their own ids and only the row
+ * with a problem turns red.
+ */
+export function FieldGroup({
+  label,
+  hideLabel,
+  optional,
+  hint,
+  error,
+  children,
+  className,
+}: {
+  label: ReactNode;
+  hideLabel?: boolean;
+  optional?: boolean;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const id = useId();
+  return (
+    <div role="group" aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} className={cn('flex min-w-0 flex-col gap-1.5', className)}>
+      <p id={`${id}-label`} className={cn('text-sm font-semibold text-ink', hideLabel && 'sr-only')}>
+        {label}
+        {optional ? <span className="ml-1.5 text-xs font-normal text-ink-4">Optional</span> : null}
+      </p>
+      {children}
+      {error ? (
+        <p className="text-[0.8125rem] font-medium text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {hint ? (
+        <p id={`${id}-hint`} className="text-[0.8125rem] leading-snug text-ink-3">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -182,9 +228,10 @@ export function SectionNav({ sections, className }: { sections: EditorSection[];
                   {s.label}
                   {s.invalid ? (
                     <Tooltip content="Something here needs a look">
-                      <span className="size-1.5 rounded-full bg-red" aria-label="Has errors" />
+                      <span className="size-1.5 rounded-full bg-red" aria-hidden="true" />
                     </Tooltip>
                   ) : null}
+                  {s.invalid ? <span className="sr-only">(needs a look)</span> : null}
                 </span>
               </a>
             </li>

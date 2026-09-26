@@ -34,7 +34,7 @@ import {
   VENUE_LINES,
 } from './data/copy.js';
 import { CANCEL_REASON } from './data/events.js';
-import { MANUAL_AUTHORS, PUBLICATIONS, type AbstractParts, type PubSeed } from './data/publications.js';
+import { MANUAL_AUTHORS, PUBLICATIONS, type PubSeed } from './data/publications.js';
 import { VENUES, mapsUrl } from './data/site.js';
 import { SPEAKERS, type SpeakerSeed } from './data/speakers.js';
 import { bullet, doc, h, numbered, p, quote } from './lib/blocks.js';
@@ -43,7 +43,8 @@ import { rundownFor, type PlannedEvent } from './plan.js';
 import { assertNoDashes, days, insertChunked, minutes, wib, withArticle, words } from './util.js';
 
 export interface MediaIds {
-  speakerAvatars: string[];
+  /** By speaker index; null when that upload failed. */
+  speakerAvatars: Array<string | null>;
   authorAvatars: Map<string, string>;
   teamAvatars: Map<string, string>;
   covers: Map<string, string>;
@@ -91,7 +92,7 @@ export async function seedVenues(ctx: SeedCtx): Promise<Map<string, { id: string
     };
     let id = byName.get(v.name);
     if (id) await ctx.db.update(venues).set(values).where(eq(venues.id, id));
-    else id = (await ctx.db.insert(venues).values(values).returning({ id: venues.id }))[0]!.id;
+    else id = (await ctx.db.insert(venues).values(values).returning({ id: venues.id }))[0].id;
     out.set(v.key, { id, name: v.name, capacity: v.capacity, roomNote: v.roomNote });
   }
   return out;
@@ -122,7 +123,7 @@ const ORG_DOMAIN: Record<string, string> = {
 function speakerEmail(ctx: SeedCtx, s: SpeakerSeed): string {
   const [first, ...rest] = s.fullName.toLowerCase().normalize('NFKD').replace(/[^a-z\s]/g, '').split(/\s+/);
   const last = rest[rest.length - 1] ?? '';
-  return email(ctx, last ? `${first}.${last}` : first!, ORG_DOMAIN[s.org] ?? 'labmgm.org');
+  return email(ctx, last ? `${first}.${last}` : first, ORG_DOMAIN[s.org] ?? 'labmgm.org');
 }
 
 function speakerLinks(ctx: SeedCtx, s: SpeakerSeed, rng: Rng): LinkItem[] {
@@ -164,7 +165,7 @@ function speakerBio(s: SpeakerSeed, rng: Rng, talks: PlannedEvent[]): Blocks {
   const next = talks.find((e) => !e.past && e.visibility === 'published');
   const history: string[] = [];
   if (done.length) {
-    const first = done[0]!;
+    const first = done[0];
     const again = done.length - 1;
     history.push(
       `${s.nickname} first presented at Zemi #${first.number} in ${formatJakarta(first.startsAt, 'month-year')}` +
@@ -190,7 +191,9 @@ export async function seedSpeakers(ctx: SeedCtx, plan: PlannedEvent[]): Promise<
     const bio = speakerBio(s, rng, talks);
     assertNoDashes(`speaker ${s.key}`, [s.headline, bio]);
     const firstTalk = talks[0]?.startsAt ?? ctx.now;
-    const createdAt = new Date(Math.max(new Date('2024-08-15T03:00:00Z').getTime(), firstTalk.getTime() - days(rng.int(14, 30))));
+    const createdAt = new Date(
+      Math.min(ctx.now.getTime() - days(rng.int(2, 12)), Math.max(new Date('2024-08-15T03:00:00Z').getTime(), firstTalk.getTime() - days(rng.int(14, 30)))),
+    );
     return {
       slug: slugify(s.fullName),
       fullName: s.fullName,
@@ -209,7 +212,7 @@ export async function seedSpeakers(ctx: SeedCtx, plan: PlannedEvent[]): Promise<
     };
   });
   const inserted = await ctx.db.insert(speakers).values(rows).returning({ id: speakers.id, slug: speakers.slug });
-  inserted.forEach((r, i) => out.set(SPEAKERS[i]!.key, { id: r.id, slug: r.slug, seed: SPEAKERS[i]! }));
+  inserted.forEach((r, i) => out.set(SPEAKERS[i].key, { id: r.id, slug: r.slug, seed: SPEAKERS[i] }));
   return out;
 }
 
@@ -217,7 +220,7 @@ export async function seedSpeakers(ctx: SeedCtx, plan: PlannedEvent[]): Promise<
 
 function buildAbstract(pub: PubSeed, rng: Rng): string {
   if (typeof pub.abstract === 'string') return pub.abstract;
-  const parts = pub.abstract as AbstractParts;
+  const parts = pub.abstract;
   const out = [rng.pick(ABSTRACT_CONTEXT[pub.area]), rng.pick(ABSTRACT_GAP), parts.we];
   if (parts.detail) out.push(parts.detail);
   out.push(parts.result);
@@ -232,7 +235,7 @@ function buildAbstract(pub: PubSeed, rng: Rng): string {
 }
 
 function pubBody(pub: PubSeed, rng: Rng): Blocks {
-  const parts = typeof pub.abstract === 'string' ? null : (pub.abstract as AbstractParts);
+  const parts = typeof pub.abstract === 'string' ? null : (pub.abstract);
   if (!pub.body || !parts) return [];
   switch (pub.body) {
     case 'project':
@@ -379,7 +382,7 @@ export async function seedPublications(ctx: SeedCtx, speakerIds: Map<string, { i
         const a = manual.get(ref.slice(2));
         if (!a) throw new Error(`Unknown manual author ${ref} on ${pub.key}`);
         return {
-          publicationId: row!.id,
+          publicationId: row.id,
           sortOrder: i,
           speakerId: null,
           fullName: a.fullName,
@@ -393,7 +396,7 @@ export async function seedPublications(ctx: SeedCtx, speakerIds: Map<string, { i
       if (!s) throw new Error(`Unknown speaker ${ref} on ${pub.key}`);
       speakerKeys.push(ref);
       return {
-        publicationId: row!.id,
+        publicationId: row.id,
         sortOrder: i,
         speakerId: s.id,
         fullName: null,
@@ -404,7 +407,7 @@ export async function seedPublications(ctx: SeedCtx, speakerIds: Map<string, { i
       };
     });
     await ctx.db.insert(publicationAuthors).values(authorRows);
-    out.push({ id: row!.id, key: pub.key, title: pub.title, year: pub.year, type: pub.type, speakerKeys, visibility: pub.visibility ?? 'published' });
+    out.push({ id: row.id, key: pub.key, title: pub.title, year: pub.year, type: pub.type, speakerKeys, visibility: pub.visibility ?? 'published' });
   }
   return out;
 }
@@ -520,7 +523,7 @@ export async function seedEvents(
   // Insert one by one in date order so ids line up with the plan (and slugs stay unique by number).
   for (const r of rows) {
     const [ins] = await ctx.db.insert(events).values(r.row).returning({ id: events.id, slug: events.slug });
-    out.push({ plan: r.e, id: ins!.id, slug: ins!.slug, capacity: r.venue.capacity, venueId: r.venue.id, publishedAt: r.publishedAt, speakerKeys: r.e.talks.map((t) => t.speakerKey) });
+    out.push({ plan: r.e, id: ins.id, slug: ins.slug, capacity: r.venue.capacity, venueId: r.venue.id, publishedAt: r.publishedAt, speakerKeys: r.e.talks.map((t) => t.speakerKey) });
   }
 
   // Speakers and rundowns.
@@ -587,19 +590,20 @@ export async function seedDocumentation(ctx: SeedCtx, seededEvents: SeededEvent[
   const rows: Array<typeof eventMedia.$inferInsert> = [];
   recent.forEach((ev, idx) => {
     const photos = rng.sample(ctx.media.docs, rng.int(3, 8));
+    // Uploaded a day or two after the session, or a few hours ago for last night's.
     const base = ev.plan.endsAt.getTime() + days(rng.int(1, 2));
     photos.forEach((ph, i) => {
-      const captions = CAPTIONS[ph.scene] ?? CAPTIONS.default!;
-      rows.push({ eventId: ev.id, assetId: ph.id, caption: rng.pick(captions), featured: i === 0, sortOrder: i, createdAt: new Date(base + minutes(i * 3)) });
+      const captions = CAPTIONS[ph.scene] ?? CAPTIONS.default;
+      rows.push({ eventId: ev.id, assetId: ph.id, caption: rng.pick(captions), featured: i === 0, sortOrder: i, createdAt: new Date(Math.min(base + minutes(i * 3), ctx.now.getTime() - minutes(60 - i))) });
     });
     if (ctx.media.clips.length && idx % 4 === 1) {
       rows.push({
         eventId: ev.id,
-        assetId: ctx.media.clips[Math.floor(idx / 4) % ctx.media.clips.length]!,
+        assetId: ctx.media.clips[Math.floor(idx / 4) % ctx.media.clips.length],
         caption: 'Twelve seconds of the afternoon.',
         featured: false,
         sortOrder: photos.length,
-        createdAt: new Date(base + minutes(40)),
+        createdAt: new Date(Math.min(base + minutes(40), ctx.now.getTime() - minutes(20))),
       });
     }
   });
@@ -634,7 +638,7 @@ export async function seedStreams(ctx: SeedCtx, seededEvents: SeededEvent[]): Pr
       liveEndedAt: isRecorded ? endedAt : null,
       currentSessionId: null,
       peakViewers: peak,
-      createdAt: new Date(ev.plan.startsAt.getTime() - days(3)),
+      createdAt: new Date(Math.min(ev.plan.startsAt.getTime() - days(3), ctx.now.getTime() - minutes(rng.int(30, 600)))),
     });
     if (isRecorded && recording) {
       await ctx.db.insert(streamSessions).values({

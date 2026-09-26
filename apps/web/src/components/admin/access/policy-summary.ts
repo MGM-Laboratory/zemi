@@ -226,3 +226,44 @@ export function policyHints(input: Policy, opts: { expiresAt: string | null | un
   }
   return hints;
 }
+
+/* ------------------------------------------------------------------ compact (lists) */
+
+export interface CompactAccess {
+  /** Preset name, or "Custom" / "No access". */
+  label: string;
+  /** "Door crew on 2 events · 1 power". No item names, so a list needs no extra requests. */
+  detail: string;
+  empty: boolean;
+}
+
+/** A one-line description for list rows. Counts only, never names. */
+export function compactAccess(input: Policy, presetLabel: string | null): CompactAccess {
+  const policy = cleanPolicy(input);
+  if (!policy.capabilities.length && !policy.grants.length) return { label: 'No access', detail: 'Nothing granted yet', empty: true };
+  const bits: string[] = [];
+  for (const type of RESOURCE_ORDER) {
+    const meta = RESOURCE_META[type];
+    const grants = policy.grants.filter((g) => g.type === type);
+    if (!grants.length) continue;
+    const wildcard = grants.find((g) => g.id === '*');
+    const specific = grants.filter((g) => g.id !== '*').length;
+    if (wildcard) {
+      const acts = expandActions(wildcard.actions);
+      const onlyView = acts.size === 1 && acts.has('view');
+      bits.push(`${onlyView ? 'sees' : 'works on'} all ${meta.many}${specific ? ` (+${specific} more)` : ''}`);
+    } else {
+      bits.push(`${specific} ${specific === 1 ? meta.one : meta.many}`);
+    }
+  }
+  if (policy.capabilities.length) bits.push(`${policy.capabilities.length} ${policy.capabilities.length === 1 ? 'power' : 'powers'}`);
+  const detail = bits.join(' · ');
+  return { label: presetLabel ?? 'Custom', detail: detail.charAt(0).toUpperCase() + detail.slice(1), empty: false };
+}
+
+/** Does the policy touch personal data anywhere? For a small red flag in lists. */
+export function touchesPersonalData(input: Policy): boolean {
+  const policy = cleanPolicy(input);
+  if (policy.capabilities.includes('audience.view')) return true;
+  return policy.grants.some((g) => g.type === 'event' && expandActions(g.actions).has('registrations.view'));
+}

@@ -54,10 +54,10 @@ const ROOMS: Array<[string, number]> = [
 ];
 
 function themeFor(i: number): EventTheme {
-  if (i < EVENT_THEMES.length) return EVENT_THEMES[i]!;
+  if (i < EVENT_THEMES.length) return EVENT_THEMES[i];
   // Seeding long after the canonical date: recycle the middle of the list.
   const pool = EVENT_THEMES.slice(20, 90);
-  const base = pool[(i - EVENT_THEMES.length) % pool.length]!;
+  const base = pool[(i - EVENT_THEMES.length) % pool.length];
   return { ...base, title: `Encore: ${base.title}`.slice(0, 200) };
 }
 
@@ -98,7 +98,7 @@ export function planEvents(rng: Rng, now: Date, covers: ManifestItem[], speakers
         venueKey = rng.weighted(ROOMS.map(([k]) => k), weights);
       }
       const mode: EventMode = venueKey === 'online' ? 'online' : theme.small ? 'offline' : 'hybrid';
-      const cover = covers[(index * 11) % covers.length]!;
+      const cover = covers[(index * 11) % covers.length];
 
       const talks: PlannedTalk[] = [];
       const inEvent = new Set<string>();
@@ -143,7 +143,7 @@ export function planEvents(rng: Rng, now: Date, covers: ManifestItem[], speakers
         venueKey,
         mode,
         coverId: cover.id,
-        accent: (cover.accent ?? 'blue') as Accent,
+        accent: (cover.accent ?? 'blue'),
         talks,
       });
     }
@@ -171,16 +171,16 @@ export function rundownFor(e: PlannedEvent): Array<{ time: string; endTime: stri
   if (t.length === 2) {
     return [
       intro,
-      { time: '13:25', endTime: '14:00', agenda: t[0]!.title, note: null, speakerKey: t[0]!.speakerKey },
-      { time: '14:00', endTime: '14:35', agenda: t[1]!.title, note: null, speakerKey: t[1]!.speakerKey },
+      { time: '13:25', endTime: '14:00', agenda: t[0].title, note: null, speakerKey: t[0].speakerKey },
+      { time: '14:00', endTime: '14:35', agenda: t[1].title, note: null, speakerKey: t[1].speakerKey },
       ...tail('14:35'),
     ];
   }
   return [
     intro,
-    { time: '13:25', endTime: '13:50', agenda: t[0]!.title, note: null, speakerKey: t[0]!.speakerKey },
-    { time: '13:50', endTime: '14:15', agenda: t[1]!.title, note: null, speakerKey: t[1]!.speakerKey },
-    { time: '14:15', endTime: '14:40', agenda: t[2]!.title, note: null, speakerKey: t[2]!.speakerKey },
+    { time: '13:25', endTime: '13:50', agenda: t[0].title, note: null, speakerKey: t[0].speakerKey },
+    { time: '13:50', endTime: '14:15', agenda: t[1].title, note: null, speakerKey: t[1].speakerKey },
+    { time: '14:15', endTime: '14:40', agenda: t[2].title, note: null, speakerKey: t[2].speakerKey },
     ...tail('14:40'),
   ];
 }

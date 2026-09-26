@@ -1,0 +1,146 @@
+/* 14:50, coffee, the good part. */
+
+.coffee {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  background:
+    radial-gradient(45% 55% at 72% 70%, rgb(247 191 51 / 0.14), transparent 72%),
+    var(--color-yellow-50, #fef6e0);
+}
+
+.network {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  /* People fade out behind the copy so the words stay easy to read. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.2) 38%, #000 62%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.2) 38%, #000 62%);
+}
+
+@media (min-width: 1024px) {
+  .network {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      rgb(0 0 0 / 0.12) 0%,
+      rgb(0 0 0 / 0.2) 30%,
+      #000 50%
+    );
+    mask-image: linear-gradient(to right, rgb(0 0 0 / 0.12) 0%, rgb(0 0 0 / 0.2) 30%, #000 50%);
+  }
+}
+
+.layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 20px;
+  min-height: 100svh;
+  align-content: center;
+  padding-top: calc(var(--nav-h, 72px) + 84px);
+  padding-bottom: 48px;
+  /* The canvas behind reads the pointer; only real controls take clicks. */
+  pointer-events: none;
+}
+
+.layout a,
+.layout button,
+.stage {
+  pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: center;
+    gap: var(--gutter, 32px);
+    padding-top: calc(var(--nav-h, 72px) + 24px);
+  }
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.copy > * {
+  text-shadow: 0 0 18px rgb(254 246 224 / 0.95);
+}
+
+.tally {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tallyItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: var(--shadow-1);
+}
+
+.tallyNum {
+  font-family: var(--font-display);
+  font-weight: 950;
+  font-size: 1.75rem;
+  line-height: 1;
+  font-variation-settings:
+    'CASL' 1,
+    'MONO' 0;
+  color: var(--color-ink, #0e1116);
+}
+
+.hint {
+  margin-top: 16px;
+  max-width: 30rem;
+  min-height: 3em;
+  font-size: 0.9375rem;
+  color: var(--color-ink-2, #3b4150);
+}
+
+.stage {
+  position: relative;
+  height: clamp(320px, 50svh, 520px);
+  /* Let pointer moves over the cup still reach the constellation behind. */
+}
+
+@media (min-width: 1024px) {
+  .stage {
+    height: min(78svh, 780px);
+  }
+}
+
+.clink {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  translate: -50% 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--shadow-2);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--color-ink, #0e1116);
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms;
+}
+
+.clink:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-3);
+}
+
+.clink:active {
+  transform: scale(0.96);
+}

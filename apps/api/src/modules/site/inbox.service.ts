@@ -87,15 +87,15 @@ export class InboxService implements OnModuleInit {
         createElement(ContactAutoReplyEmail, {
           name: sample.name,
           topic: sample.topic,
-          message: sample.message,
           officeHours: 'Weekdays, 09:00 to 16:00 WIB',
           signature: 'See you Friday,\nThe Zemi crew',
           nextEvent: {
             title: 'Robots, rice fields and the stuff in between',
-            number: 106,
+            number: 98,
             date: 'Fri, 2 Oct 2026',
             time: '13:15 to 15:15 WIB',
             venue: 'Theater A',
+            mode: 'hybrid',
             url: `${this.config.env.PUBLIC_WEB_URL}/events`,
           },
         }),
@@ -183,7 +183,6 @@ export class InboxService implements OnModuleInit {
       react: createElement(ContactAutoReplyEmail, {
         name: row.name,
         topic: row.topic,
-        message: row.message,
         officeHours: contact.officeHours || 'Weekdays, 09:00 to 16:00 WIB',
         signature: email.signature || 'See you Friday,\nThe Zemi crew',
         nextEvent: nextEvent
@@ -193,6 +192,7 @@ export class InboxService implements OnModuleInit {
               date: formatJakarta(nextEvent.startsAt, 'date'),
               time: formatTimeRange(nextEvent.startsAt, nextEvent.endsAt),
               venue: nextEvent.venue,
+              mode: nextEvent.mode,
               url: `${web}/events/${nextEvent.slug}`,
             }
           : null,

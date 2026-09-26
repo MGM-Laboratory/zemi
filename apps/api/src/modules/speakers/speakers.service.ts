@@ -27,10 +27,12 @@ import { ensureFound, notFound } from '../../common/errors.js';
 import { pageToLimitOffset, paginated, searchPattern } from '../../common/pagination.js';
 import { SlugService } from '../../common/slug.service.js';
 import { DB, type Db, type DbOrTx } from '../../db/client.js';
-import { eventSpeakers, events, eventStreams, publicationAuthors, publications, speakers } from '../../db/schema.js';
+import { eventSpeakers, events, eventStreams, publicationAuthors, publications, rundownItems, speakers } from '../../db/schema.js';
 import { AuditService } from '../audit/audit.service.js';
 import { RevalidateService, tags } from '../revalidate/revalidate.service.js';
-import { assertAssets, blankToNull, dropUnchanged, has, isUniqueViolation, iso, slugTaken, type ContentCtx } from './content.util.js';
+import { assertAssets, assertNotBlank, blankToNull, dropUnchanged, has, isUniqueViolation, iso, slugTaken, type ContentCtx } from './content.util.js';
+
+const NAME_REQUIRED = 'Every speaker needs a name. Spaces alone do not count.';
 
 export type SpeakerRow = typeof speakers.$inferSelect;
 type ListQuery = z.infer<typeof speakerListQuery>;
@@ -214,15 +216,17 @@ export class SpeakersService {
     };
   }
 
-  /** Tags for pages that show this speaker: their page, events they're on, papers they wrote. */
+  /** Tags for pages that show this speaker: their page, events they're on (lineup or rundown), papers they wrote. */
   private async relatedTags(id: string, db: DbOrTx = this.db): Promise<string[]> {
-    const [evs, pubs] = await Promise.all([
+    const [lineup, rundown, pubs] = await Promise.all([
       db.selectDistinct({ id: eventSpeakers.eventId }).from(eventSpeakers).where(eq(eventSpeakers.speakerId, id)),
+      db.selectDistinct({ id: rundownItems.eventId }).from(rundownItems).where(eq(rundownItems.speakerId, id)),
       db
         .selectDistinct({ id: publicationAuthors.publicationId })
         .from(publicationAuthors)
         .where(eq(publicationAuthors.speakerId, id)),
     ]);
+    const evs = [...new Set([...lineup, ...rundown].map((e) => e.id))].map((eventId) => ({ id: eventId }));
     return [
       tags.speakers,
       tags.speaker(id),
@@ -319,6 +323,7 @@ export class SpeakersService {
   }
 
   async create(input: SpeakerCreateInput, ctx: ContentCtx): Promise<SpeakerAdmin> {
+    assertNotBlank(input.fullName, ['fullName'], NAME_REQUIRED);
     const slug = input.slug ? input.slug : await this.slugs.uniqueSlug('speaker', input.fullName);
     if (input.slug) await this.slugs.ensureUniqueSlug('speaker', slug);
     await assertAssets(this.db, [{ id: input.avatarAssetId, path: ['avatarAssetId'], kinds: ['image'], label: 'photo' }]);
@@ -369,6 +374,7 @@ export class SpeakersService {
   async update(id: string, patch: UpdateInput, ctx: ContentCtx): Promise<SpeakerAdmin> {
     const current = await this.load(id);
     assertCan(ctx.ability, 'speaker', id, 'edit');
+    if (has(patch, 'fullName')) assertNotBlank(patch.fullName, ['fullName'], NAME_REQUIRED);
     if (has(patch, 'visibility') && patch.visibility && patch.visibility !== current.visibility) {
       assertCan(ctx.ability, 'speaker', id, 'publish', "You can edit this speaker, but showing or hiding them needs publish access.");
     }

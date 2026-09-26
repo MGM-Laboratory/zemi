@@ -15,6 +15,9 @@ const atkinson = Atkinson_Hyperlegible_Next({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-atkinson',
   display: 'swap',
+  // Next has no metric overrides for this 2025 font and retries (and warns) on every compile.
+  adjustFontFallback: false,
+  fallback: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3300';

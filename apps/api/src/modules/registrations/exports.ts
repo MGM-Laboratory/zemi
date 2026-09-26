@@ -166,6 +166,10 @@ export async function toXlsx(rows: ExportRow[], event: ExportEvent): Promise<Buf
 
 /** `zemi-12-robots-registrations-2026-10-02.xlsx` */
 export function exportFilename(event: { number: number | null; slug: string }, ext: string, what = 'registrations'): string {
-  const base = [event.number != null ? `zemi-${event.number}` : 'zemi', event.slug.slice(0, 40), what, formatJakarta(new Date(), 'iso-date')].join('-');
-  return `${base.replace(/[^a-z0-9-]+/gi, '-')}.${ext}`;
+  const prefix = event.number != null ? `zemi-${event.number}` : 'zemi';
+  // Slugs like `zemi-97-participatory-ai` already carry the prefix: don't say it twice.
+  let slug = event.slug.toLowerCase();
+  if (slug === prefix || slug.startsWith(`${prefix}-`)) slug = slug.slice(prefix.length).replace(/^-+/, '');
+  const base = [prefix, slug.slice(0, 40).replace(/-+$/, ''), what, formatJakarta(new Date(), 'iso-date')].filter(Boolean).join('-');
+  return `${base.replace(/[^a-z0-9-]+/gi, '-').replace(/-{2,}/g, '-')}.${ext}`;
 }

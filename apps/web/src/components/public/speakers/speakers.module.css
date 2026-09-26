@@ -1,0 +1,279 @@
+/* Speakers pages. Tokens come from globals.css; every var() has a fallback. */
+
+/* Entrance styles set by motion are inline; without JS the content must still show. */
+:global(html:not([data-zemi-js])) .enter {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ------------------------------------------------------------------ portrait */
+
+.portrait {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  isolation: isolate;
+  container-type: inline-size;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 8%;
+  z-index: -1;
+  display: block;
+  will-change: transform;
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  transform-origin: 50% 100%;
+  background: var(--color-surface-muted, #f7f7f5);
+  will-change: transform;
+}
+
+.initials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--color-ink-3, #6b7280);
+  font-variation-settings:
+    'CASL' 0.7,
+    'MONO' 0;
+}
+
+/* ------------------------------------------------------------------ card */
+
+.card {
+  position: relative;
+  display: block;
+  border-radius: 28px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-focus, #3a6dc5);
+  outline-offset: 6px;
+}
+
+.bubble {
+  position: absolute;
+  top: 2%;
+  right: -2%;
+  z-index: 2;
+  padding: 0.45em 0.85em 0.5em;
+  border-radius: 999px 999px 999px 6px;
+  background: var(--color-ink, #0e1116);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(0.875rem, 1.1vw, 1.0625rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variation-settings:
+    'CASL' 1,
+    'MONO' 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0% 100%;
+  box-shadow: var(--shadow-2);
+}
+
+.count {
+  position: absolute;
+  bottom: 4%;
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: 0% 100%;
+}
+
+/* ------------------------------------------------------------------ talks timeline */
+
+.timeline {
+  position: relative;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 11px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-line, #ececea);
+}
+
+@media (min-width: 768px) {
+  .timeline::before {
+    left: calc(9.5rem + 24px + 11px);
+  }
+}
+
+.talk {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 0 18px;
+  padding-block: 18px;
+}
+
+@media (min-width: 768px) {
+  .talk {
+    grid-template-columns: 9.5rem 24px 1fr;
+    gap: 0 24px;
+  }
+}
+
+.talkDot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 280ms var(--ease-out, ease);
+}
+
+.talkLink {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 16px 16px 16px 18px;
+  margin: -16px -16px -16px -18px;
+  border-radius: 24px;
+  outline: none;
+  transition: background-color 280ms var(--ease-out, ease);
+}
+
+.talkLink:hover,
+.talkLink:focus-visible {
+  background: var(--color-surface-muted, #f7f7f5);
+}
+
+.talkLink:focus-visible {
+  outline: 2px solid var(--color-focus, #3a6dc5);
+  outline-offset: 2px;
+}
+
+.talk:has(.talkLink:hover) .talkDot,
+.talk:has(.talkLink:focus-visible) .talkDot {
+  transform: scale(1.25) rotate(90deg);
+}
+
+.talkCover {
+  width: clamp(64px, 9vw, 104px);
+  border-radius: 14px;
+  overflow: hidden;
+  transform: rotate(var(--rest, 3deg));
+  transition: transform 520ms var(--ease-out, ease);
+  box-shadow: var(--shadow-2);
+}
+
+.talkLink:hover .talkCover,
+.talkLink:focus-visible .talkCover {
+  transform: rotate(0deg) scale(1.06) translateY(-4px);
+}
+
+.talkArrow {
+  transition: transform 280ms var(--ease-out, ease);
+}
+
+.talkLink:hover .talkArrow,
+.talkLink:focus-visible .talkArrow {
+  transform: translateX(4px);
+}
+
+/* ------------------------------------------------------------------ strip */
+
+.strip {
+  display: flex;
+  gap: var(--gutter, 24px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--page-margin, 16px);
+  padding-inline: var(--page-margin, 16px);
+  padding-block: 12px 24px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.stripItem {
+  flex: none;
+  width: clamp(148px, 38vw, 220px);
+  scroll-snap-align: start;
+}
+
+/* ------------------------------------------------------------------ links */
+
+.linkPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  height: 44px;
+  padding: 0 1rem 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong, #d8d8d2);
+  background: #fff;
+  color: var(--color-ink, #0e1116);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  transition:
+    transform 200ms var(--ease-out, ease),
+    border-color 200ms,
+    background-color 200ms;
+}
+
+.linkPill:hover {
+  border-color: var(--color-ink, #0e1116);
+  background: var(--color-surface-muted, #f7f7f5);
+}
+
+.linkPill:active {
+  transform: scale(0.96);
+}
+
+.linkPill svg {
+  transition: transform 520ms var(--ease-out, ease);
+}
+
+.linkPill:hover svg {
+  transform: rotate(-12deg) scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talkCover,
+  .talkDot,
+  .talkArrow,
+  .linkPill svg {
+    transition: none;
+    transform: none !important;
+  }
+}

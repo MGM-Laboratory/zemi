@@ -1,0 +1,173 @@
+/* Numbers that matter. */
+
+.stats {
+  position: relative;
+  padding-block: var(--section-y, 120px);
+  overflow: hidden;
+}
+
+.grid {
+  margin: clamp(40px, 7vh, 88px) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 4vw, 56px) clamp(16px, 3vw, 48px);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cell {
+  min-width: 0;
+}
+
+/* Asymmetric rhythm: nudge alternate cells down. */
+@media (min-width: 900px) {
+  .cell1 {
+    margin-top: 72px;
+  }
+  .cell3 {
+    margin-top: -24px;
+  }
+  .cell4 {
+    margin-top: 40px;
+  }
+  .funCell {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 899.98px) {
+  .cell1,
+  .cell3 {
+    margin-top: 48px;
+  }
+}
+
+.holder {
+  position: relative;
+  width: min(100%, 270px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  container-type: inline-size;
+  transition: transform 520ms cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+
+.holder:hover {
+  transform: rotate(-4deg) scale(1.04);
+}
+
+.body {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.num {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variation-settings:
+    'CASL' 0.8,
+    'MONO' 0;
+  pointer-events: none;
+  font-size: 25cqi;
+}
+
+.circle .num {
+  top: 60%;
+  color: #fff;
+}
+.square .num {
+  top: 60%;
+  color: var(--color-ink, #0e1116);
+}
+.arch .num {
+  top: 64%;
+  color: #fff;
+}
+.triangle .num {
+  top: 73%;
+  color: #fff;
+  font-size: 17cqi;
+}
+
+.label {
+  margin-top: 14px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variation-settings:
+    'MONO' 1,
+    'CASL' 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-2, #3b4150);
+}
+
+.note {
+  position: relative;
+  width: min(100%, 270px);
+  margin: 12% auto 0;
+  aspect-ratio: 1;
+  padding: clamp(18px, 2vw, 28px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--color-yellow, #f7bf33);
+  border-radius: 6px 6px 28px 6px;
+  box-shadow: var(--shadow-2);
+  transform: rotate(3deg);
+  transition: transform 520ms cubic-bezier(0.34, 1.5, 0.5, 1);
+}
+
+.note::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  width: 42%;
+  height: 26px;
+  translate: -50% 0;
+  rotate: -3deg;
+  background: rgb(255 255 255 / 0.6);
+  box-shadow: 0 1px 3px rgb(14 17 22 / 0.08);
+}
+
+.note:hover {
+  transform: rotate(-2deg) scale(1.03);
+}
+
+.noteText {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.25rem, 2.2vw, 2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-variation-settings:
+    'CASL' 1,
+    'MONO' 0;
+  color: var(--color-ink, #0e1116);
+}
+
+.noteNum {
+  display: block;
+  font-size: 2.4em;
+  line-height: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holder,
+  .note {
+    transition: none;
+  }
+}

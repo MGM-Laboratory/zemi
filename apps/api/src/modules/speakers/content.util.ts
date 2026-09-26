@@ -34,6 +34,14 @@ export function blankToNull(v: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/**
+ * Required text that is only spaces. zod `min(1)` lets `"   "` through and we trim before saving,
+ * which would store an empty name or title. Throws a 400 whose issue pins the form field.
+ */
+export function assertNotBlank(value: string | null | undefined, path: Array<string | number>, message: string): void {
+  if (typeof value === 'string' && !value.trim()) throw validationError(message, [{ path, message, code: 'custom' }]);
+}
+
 export const iso = (d: Date) => d.toISOString();
 
 const KIND_WORD: Record<AssetKind, string> = { image: 'a photo', video: 'a video', document: 'a PDF', audio: 'an audio file' };

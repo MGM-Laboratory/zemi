@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import { REACTION_KINDS, type Accent, type ReactionKind } from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { ChipButton } from '@/components/public/ui/chip';
@@ -76,12 +77,15 @@ export function PlayerDemo() {
   /* live mock */
   const liveRef = useRef<ZemiPlayerHandle>(null);
   const [ingest, setIngest] = useState(true);
+  const [ended, setEnded] = useState(false);
   const [viewers, setViewers] = useState(42);
   const [crowd, setCrowd] = useState(false);
   const [pasted, setPasted] = useState('');
   const [eventId, setEventId] = useState('');
   const [startedAt] = useState(() => new Date(Date.now() - 42 * 60_000 - 17_000).toISOString());
-  const liveSrc = pasted.trim() || MUX_HLS;
+  const realEventId = /^[0-9a-f-]{36}$/i.test(eventId.trim()) ? eventId.trim() : undefined;
+  // With a real event id and no pasted url, the SSE brings the url on Go live (like a real page).
+  const liveSrc = pasted.trim() || (realEventId ? null : MUX_HLS);
 
   useEffect(() => {
     if (!crowd) return;
@@ -166,11 +170,12 @@ export function PlayerDemo() {
         dark
         eyebrow="Live · mock controls"
         title="Happening now."
-        description="Flip the signal off to see the slate, crank the viewers, or let the crowd react. Paste an HLS url and event id from the API to try the real thing."
+        description="Flip the signal off to see the slate, end the stream for the wrap card, crank the viewers, or let the crowd react. Paste an HLS url and event id from the API to try the real thing."
       >
         <div className="flex flex-wrap items-center gap-3">
           <Toggle dark label="Signal online" checked={ingest} onChange={setIngest} />
           <Toggle dark label="Crowd reacting" checked={crowd} onChange={setCrowd} />
+          <Toggle dark label="Stream ended" checked={ended} onChange={setEnded} />
           <label className="inline-flex items-center gap-3 rounded-full bg-white/10 px-4 py-2 text-[0.9375rem] font-semibold">
             Viewers
             <input
@@ -210,7 +215,7 @@ export function PlayerDemo() {
             />
           </label>
           <label className="flex flex-col gap-1.5 text-[0.875rem] font-semibold text-ink-4">
-            Event id (optional, turns on SSE, heartbeats and real reactions)
+            Event id (optional, turns on SSE, heartbeats and real reactions; leave the url empty to get it from the SSE)
             <input
               value={eventId}
               onChange={(e) => setEventId(e.target.value)}
@@ -222,7 +227,7 @@ export function PlayerDemo() {
         </div>
         <ZemiPlayerLazy
           ref={liveRef}
-          key={`${liveSrc}|${eventId.trim()}`}
+          key={`${liveSrc ?? ''}|${realEventId ?? ''}`}
           mode="live"
           title="Zemi #13: Robots that ask for help"
           subtitle="Theater 2 and online"
@@ -230,8 +235,10 @@ export function PlayerDemo() {
           poster={fakePoster('Zemi #13', 'red')}
           posterLqip={fakeLqip('red')}
           accent="red"
-          eventId={/^[0-9a-f-]{36}$/i.test(eventId.trim()) ? eventId.trim() : undefined}
-          live={{ ingestOnline: ingest, viewers, startedAt }}
+          eventId={realEventId}
+          // A real event: the SSE is the only source of truth, so the mock toggles step aside.
+          live={realEventId ? undefined : { ingestOnline: ingest, viewers, startedAt, state: ended ? 'ended' : 'live' }}
+          onStreamEnd={() => toast('onStreamEnd fired. A real page swaps in the recording here.')}
         />
         <p className="text-[0.875rem] text-ink-4">
           The default source is a recorded test stream pretending to be live, so the edge logic stays calm. Paste a real live url to see the

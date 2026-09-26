@@ -1,9 +1,7 @@
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
-import { useFieldContext } from '../ui/field';
-
-const ReadOnlyContext = createContext(false);
+import { useContext, type ReactNode } from 'react';
+import { ReadOnlyScopeContext as ReadOnlyContext, useFieldContext } from '../ui/field';
 
 /**
  * Make every field inside read-only (for people who can view but not edit).

@@ -148,7 +148,7 @@ function PresetPicker({ active, onPick, readOnly, empty }: { active: Preset | nu
   return (
     <section aria-labelledby="preset-title">
       <SectionTitle id="preset-title" title="Start from a preset" description="Pick the closest one, then fine-tune below. Nothing is saved until you press save." />
-      <div role="radiogroup" aria-labelledby="preset-title" className="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 lg:grid-cols-3">
+      <div role="group" aria-labelledby="preset-title" className="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 2xl:grid-cols-3">
         {POLICY_PRESETS.map((p) => {
           const on = active?.key === p.key;
           const look = PRESET_SHAPES[p.key] ?? { shape: 'circle', tone: 'text-ink-3' };
@@ -157,8 +157,7 @@ function PresetPicker({ active, onPick, readOnly, empty }: { active: Preset | nu
             <motion.button
               key={p.key}
               type="button"
-              role="radio"
-              aria-checked={on}
+              aria-pressed={on}
               disabled={readOnly}
               onClick={() => onPick(p)}
               whileHover={reduce || readOnly ? undefined : { y: -2 }}
@@ -421,7 +420,7 @@ function ItemPicker({
             const info = eventInfo(e);
             return {
               value: e.id,
-              label: e.number != null ? `Zemi #${e.number} · ${e.title}` : e.title,
+              label: e.number != null && !e.title.toLowerCase().includes(`zemi #${e.number}`) ? `Zemi #${e.number} · ${e.title}` : e.title,
               description: `${info.sub}${e.visibility === 'draft' ? ' · draft' : ''}`,
               keywords: [String(e.number ?? '')],
               data: info,
@@ -539,7 +538,7 @@ function ScopeRow({
       <span className="min-w-0">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate font-semibold text-ink">
-            {type === 'event' && state.info.short.startsWith('Zemi #') ? (
+            {type === 'event' && state.info.short.startsWith('Zemi #') && !state.info.title.toLowerCase().includes(state.info.short.toLowerCase()) ? (
               <>
                 <span className="mono mr-1.5 text-ink-3">{state.info.short.replace('Zemi ', '')}</span>
                 {state.info.title}

@@ -8,7 +8,13 @@ import { EventWorkspace } from '@/components/admin/events/workspace/event-worksp
  * client (React Query, `adminKeys.events.detail(id)`), so tabs share one cached record and
  * `useWorkspaceEvent()` works everywhere below.
  */
-export default async function EventWorkspaceLayout({ children, params }: { children: ReactNode; params: Promise<{ id: string }> }) {
+export default async function EventWorkspaceLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
   return <EventWorkspace id={id.toLowerCase()}>{children}</EventWorkspace>;

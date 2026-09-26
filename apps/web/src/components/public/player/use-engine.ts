@@ -23,6 +23,8 @@ export interface EngineState {
 interface Candidate {
   type: 'hls' | 'file';
   url: string;
+  /** MIME the browser is asked about, to tell "can't play this format" from "couldn't load it". */
+  mime: string;
 }
 
 interface Options {
@@ -35,14 +37,15 @@ interface Options {
 const INITIAL: EngineState = { kind: 'none', levels: [], level: -1, playingLevel: -1, error: null, reconnecting: false };
 
 const WEBM_TYPE = 'video/webm; codecs="vp9, opus"';
+const HLS_TYPE = 'application/vnd.apple.mpegurl';
 
 function buildCandidates(sources: PlayerSources, video: HTMLVideoElement | null): Candidate[] {
   const list: Candidate[] = [];
-  if (sources.hls) list.push({ type: 'hls', url: sources.hls });
+  if (sources.hls) list.push({ type: 'hls', url: sources.hls, mime: HLS_TYPE });
   const webmFirst = !!sources.webm && video?.canPlayType(WEBM_TYPE) === 'probably';
-  if (webmFirst) list.push({ type: 'file', url: sources.webm! });
-  if (sources.mp4) list.push({ type: 'file', url: sources.mp4 });
-  if (sources.webm && !webmFirst && video?.canPlayType('video/webm')) list.push({ type: 'file', url: sources.webm });
+  if (webmFirst) list.push({ type: 'file', url: sources.webm!, mime: 'video/webm' });
+  if (sources.mp4) list.push({ type: 'file', url: sources.mp4, mime: 'video/mp4' });
+  if (sources.webm && !webmFirst && video?.canPlayType('video/webm')) list.push({ type: 'file', url: sources.webm, mime: 'video/webm' });
   return list;
 }
 
@@ -60,14 +63,16 @@ function mapLevels(levels: Level[]): QualityLevel[] {
     .sort((a, b) => b.height - a.height || b.bitrate - a.bitrate);
 }
 
-function mediaErrorCode(err: MediaError | null): PlayerError {
+function mediaErrorCode(err: MediaError | null, canPlay: boolean): PlayerError {
   switch (err?.code) {
     case 2:
       return { code: 'network', detail: err.message };
     case 3:
       return { code: 'media', detail: err.message };
     case 4:
-      return { code: 'unsupported', detail: err.message };
+      // Browsers report a 404, a 5xx or an expired signed url as SRC_NOT_SUPPORTED too. Only blame
+      // the browser when it says it can't play the format at all.
+      return { code: canPlay ? 'unknown' : 'unsupported', detail: err.message };
     default:
       return { code: 'unknown', detail: err?.message };
   }
@@ -176,7 +181,7 @@ export function useEngine(videoRef: RefObject<HTMLVideoElement | null>, { source
       if (hls) return; // hls.js reports its own errors
       const e = video.error;
       if (!e || e.code === 1) return; // aborted
-      fail(mediaErrorCode(e));
+      fail(mediaErrorCode(e, video.canPlayType(c.mime) !== ''));
     };
     video.addEventListener('loadedmetadata', onMeta);
     video.addEventListener('playing', onPlaying);
@@ -242,7 +247,7 @@ export function useEngine(videoRef: RefObject<HTMLVideoElement | null>, { source
           instance.attachMedia(video);
           instance.loadSource(c.url);
           setState((s) => ({ ...s, kind: 'hls.js' }));
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        } else if (video.canPlayType(HLS_TYPE)) {
           attachFile(c.url, 'native-hls');
         } else {
           fail({ code: 'unsupported', detail: 'HLS not supported' });

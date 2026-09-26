@@ -150,3 +150,26 @@ src/modules/publications` in `apps/api` (Crossref mapping, error mapping, PATCH 
 - Citation styles don't have editors, edition, place or report series (the schema has no fields for them).
 - Crossref is called live on each lookup (no cache). Fine for an admin form; add a small LRU if it gets chatty.
 - Not verified: the admin/public web pages consuming these endpoints (other workstreams), Crossref rate limiting.
+
+## Review (2026-09-26)
+
+Re-checked against the shared API (Postgres and MinIO back up) with a throwaway limited admin, then deleted every test record.
+
+- **Draft-event fix confirmed.** Test admin had `view`+`edit` on `lukas-becker` and `view` on one paper. They no longer see the draft
+  `zemi-104` event in that speaker's talks or in the paper's events. Superadmin still sees it. Lists are filtered to the grants.
+  403 on edit without publish (visibility), delete, create without the capability, other people's records, and DOI lookup. 403 without CSRF, 401 anonymous.
+- **Fixed: spaces-only names and titles.** zod `min(1)` lets `"   "` through, and the service trims it before saving. So a speaker
+  create stored `fullName: ""` with slug `untitled`, and `PATCH {"fullName":"  "}` wiped a real name. The same happened to publication titles,
+  manual author names and quick stubs. There's a new helper, `assertNotBlank` in `content.util.ts`. It returns 400 `validation` with
+  `details[].path` (`fullName`, `title`, `authors.N.fullName`), so the form pins the error. It runs on speaker create and PATCH,
+  publication create and PATCH, quick create, and on manual authors in `validateRefs`. All six cases were re-tested with curl, and the
+  stored rows didn't change. There's a spec case too.
+- **Fixed: speaker revalidation now includes events where the person appears only in the rundown.** `rundown_items.speaker_id` is
+  `SET NULL` on delete, so those pages change too. Typechecked only: today every rundown speaker is also on the lineup.
+- Web: `/speakers` renders API data. `/speakers/[slug]` and `/publications` aren't built yet (404), so the redirect is proven only
+  at the API level (`{ redirect }`).
+
+Known gaps found in review:
+- For a speaker-only admin, the admin list's `talkCount` and `latestTalkAt` (speakers) and `eventCount` (publications) still count
+  draft events. They show a number or date, never a title.
+- All 60 seeded publications have `citation_key` null. Citations fall back to `makeCitationKey`, and the first PATCH saves a key.

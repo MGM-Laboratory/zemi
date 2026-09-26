@@ -23,7 +23,8 @@ export function StateBanner({ className }: { className?: string }) {
   const { restore } = useEventActions(id);
   const reg = event.counts.registrations;
 
-  const base = 'relative flex flex-col gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5';
+  const base =
+    'relative flex flex-col gap-3 overflow-hidden rounded-2xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5';
 
   if (status === 'cancelled') {
     return (
@@ -32,9 +33,23 @@ export function StateBanner({ className }: { className?: string }) {
           <ShapeGlyph shape="triangle" className="mt-1 size-3.5 shrink-0 text-red" />
           <div className="min-w-0">
             <p className="font-semibold text-ink">
-              Cancelled{event.cancelledAt ? <> <DateText value={event.cancelledAt} format="relative" className="font-normal text-ink-3" /></> : null}.
+              Cancelled
+              {event.cancelledAt ? (
+                <>
+                  {' '}
+                  <DateText
+                    value={event.cancelledAt}
+                    format="relative"
+                    className="font-normal text-ink-3"
+                  />
+                </>
+              ) : null}
+              .
             </p>
-            <p className="text-sm text-ink-3">{event.cancelReason ? `Reason: ${event.cancelReason}` : 'No reason given.'} The page stays up with a cancelled note, and registration is closed.</p>
+            <p className="text-sm text-ink-3">
+              {event.cancelReason ? `Reason: ${event.cancelReason}` : 'No reason given.'} The page
+              stays up with a cancelled note, and registration is closed.
+            </p>
           </div>
         </div>
         {can('publish') ? (
@@ -46,7 +61,8 @@ export function StateBanner({ className }: { className?: string }) {
             onClick={async () => {
               const ok = await confirm({
                 title: 'Bring this Friday back?',
-                description: 'The cancelled note goes away and registration follows its normal settings again. Nobody gets an email about it.',
+                description:
+                  'The cancelled note goes away and registration follows its normal settings again. Nobody gets an email about it.',
                 confirmLabel: 'Restore event',
               });
               if (ok) restore.mutate();
@@ -70,16 +86,26 @@ export function StateBanner({ className }: { className?: string }) {
         <div className="flex min-w-0 items-center gap-3">
           <LiveDot tone="white" />
           <div className="min-w-0">
-            <p className="font-display text-lg leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.4]">Happening now</p>
+            <p className="font-display text-lg leading-tight font-extrabold tracking-[-0.02em] [font-variation-settings:'CASL'_0.4]">
+              Happening now
+            </p>
             <p className="text-sm text-white/85">
-              {event.stream.state === 'live' ? 'The stream is live.' : event.mode === 'offline' ? 'In the room, no stream today.' : 'The stream is not live yet.'}{' '}
+              {event.stream.state === 'live'
+                ? 'The stream is live.'
+                : event.mode === 'offline'
+                  ? 'In the room, no stream today.'
+                  : 'The stream is not live yet.'}{' '}
               {event.counts.checkedIn} checked in so far.
             </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {can('stream.view') && event.mode !== 'offline' ? (
-            <Button asChild size="sm" className="border-transparent bg-white text-red-600 hover:bg-white/90">
+            <Button
+              asChild
+              size="sm"
+              className="border-transparent bg-white text-red-600 hover:bg-white/90"
+            >
               <Link href={adminRoutes.event(id, 'stream')}>
                 <Radio />
                 Stream controls
@@ -87,7 +113,12 @@ export function StateBanner({ className }: { className?: string }) {
             </Button>
           ) : null}
           {can('attendance.scan') && event.mode !== 'online' ? (
-            <Button asChild size="sm" variant="ghost" className="text-white hover:bg-white/15 hover:text-white">
+            <Button
+              asChild
+              size="sm"
+              variant="ghost"
+              className="text-white hover:bg-white/15 hover:text-white"
+            >
               <Link href={adminRoutes.event(id, 'attendance')}>
                 <ScanLine />
                 Open scanner
@@ -108,7 +139,9 @@ export function StateBanner({ className }: { className?: string }) {
           <ShapeGlyph shape="arch" className="mt-1 size-3.5 shrink-0 text-green" />
           <div className="min-w-0">
             <p className="font-semibold text-ink">
-              Wrapped <DateText value={event.endsAt} format="relative" className="font-normal text-ink-3" />.{' '}
+              Wrapped{' '}
+              <DateText value={event.endsAt} format="relative" className="font-normal text-ink-3" />
+              .{' '}
               <span className="font-normal text-ink-3">
                 {event.counts.checkedIn} of {reg} showed up.
               </span>
@@ -116,11 +149,17 @@ export function StateBanner({ className }: { className?: string }) {
             <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-3">
               <span className="inline-flex items-center gap-1.5">
                 <Film className="size-3.5" aria-hidden="true" />
-                {recordings.length ? `Recording ready${recordings.length > 1 ? ` (${recordings.length})` : ''}` : event.mode === 'offline' ? 'No stream, no recording' : 'No recording yet'}
+                {recordings.length
+                  ? `Recording ready${recordings.length > 1 ? ` (${recordings.length})` : ''}`
+                  : event.mode === 'offline'
+                    ? 'No stream, no recording'
+                    : 'No recording yet'}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Images className="size-3.5" aria-hidden="true" />
-                {media ? `${media} photo${media === 1 ? '' : 's'} and videos` : 'No documentation yet'}
+                {media
+                  ? `${media} photo${media === 1 ? '' : 's'} and videos`
+                  : 'No documentation yet'}
               </span>
             </p>
           </div>
@@ -161,12 +200,25 @@ export function StateBanner({ className }: { className?: string }) {
         </motion.span>
         <div className="min-w-0">
           <p className="font-semibold text-ink">
-            Coming up in <Countdown to={event.startsAt} className="text-blue-600" fallback={<DateText value={event.startsAt} format="relative" />} />
+            Coming up in{' '}
+            <Countdown
+              to={event.startsAt}
+              className="text-blue-600"
+              fallback={<DateText value={event.startsAt} format="relative" />}
+            />
           </p>
           <p className="text-sm text-ink-3">
-            <DateText value={event.startsAt} format="date-long" />, <DateText value={event.startsAt} end={event.endsAt} format="time-range" className="mono" />
+            <DateText value={event.startsAt} format="date-long" />,{' '}
+            <DateText
+              value={event.startsAt}
+              end={event.endsAt}
+              format="time-range"
+              className="mono"
+            />
             {' · '}
-            {reg ? `${reg} registered${event.capacity ? ` of ${event.capacity}` : ''}` : 'Nobody registered yet'}
+            {reg
+              ? `${reg} registered${event.capacity ? ` of ${event.capacity}` : ''}`
+              : 'Nobody registered yet'}
             {event.visibility === 'draft' ? '. Still a draft, so nobody can register.' : '.'}
           </p>
         </div>
