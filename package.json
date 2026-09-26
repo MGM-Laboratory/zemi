@@ -22,6 +22,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "prettier": "^3.7.4",
+    "railway": "^3.11.0",
     "turbo": "^2.8.18"
   }
 }

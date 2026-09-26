@@ -17,7 +17,6 @@ export default defineRailway(() => {
     healthcheck: "/",
     healthcheckTimeout: 180,
     replicas: { "asia-southeast1-eqsg3a": 1 },
-    domains: [{ domain: "shirasaka.work", port: 3000 }],
     env: { API_INTERNAL_URL: preserve(), NEXT_PUBLIC_API_PUBLIC_URL: preserve(), NEXT_PUBLIC_SITE_URL: preserve(), NEXT_TELEMETRY_DISABLED: preserve(), PORT: preserve(), REVALIDATE_SECRET: preserve() },
   });
   const media = service("media", {
