@@ -17,7 +17,7 @@ export default defineRailway(() => {
     healthcheck: "/",
     healthcheckTimeout: 180,
     replicas: { "asia-southeast1-eqsg3a": 1 },
-    env: { API_INTERNAL_URL: preserve(), NEXT_PUBLIC_API_PUBLIC_URL: preserve(), NEXT_PUBLIC_SITE_URL: preserve(), NEXT_TELEMETRY_DISABLED: preserve(), PORT: preserve(), REVALIDATE_SECRET: preserve() },
+    env: { API_INTERNAL_URL: preserve(), NEXT_PUBLIC_API_PUBLIC_URL: preserve(), NEXT_PUBLIC_SITE_URL: preserve(), NEXT_TELEMETRY_DISABLED: preserve(), PORT: preserve(), REVALIDATE_SECRET: preserve(), SITE_INDEXING: preserve() },
   });
   const media = service("media", {
     replicas: { "asia-southeast1-eqsg3a": 1 },
