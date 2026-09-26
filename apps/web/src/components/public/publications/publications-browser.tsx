@@ -198,6 +198,9 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
           className="h-12 rounded-full pl-5 text-[0.9375rem]"
         >
           <option value="">Any year</option>
+          {year && !options.years.some(([y]) => y === year) ? (
+            <option value={year}>{year} (0)</option>
+          ) : null}
           {options.years.map(([y, n]) => (
             <option key={y} value={y}>
               {y} ({n})
@@ -422,7 +425,7 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
                         <PublicationRow
                           pub={p}
                           onPreview={setHovered}
-                          titleAs="h3"
+                          titleAs={grouped ? 'h3' : 'h2'}
                           hideYear={grouped}
                         />
                       </motion.div>
@@ -440,7 +443,11 @@ export function PublicationsBrowser({ pubs, initial }: PublicationsBrowserProps)
                       amount={0.1}
                       className={cn(styles.enter, 'min-w-0')}
                     >
-                      <PublicationTile pub={p} onPreview={setHovered} />
+                      <PublicationTile
+                        pub={p}
+                        onPreview={setHovered}
+                        titleAs={grouped ? 'h3' : 'h2'}
+                      />
                     </Reveal>
                   ))}
                 </ul>

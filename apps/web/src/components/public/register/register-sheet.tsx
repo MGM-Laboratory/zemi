@@ -64,7 +64,9 @@ export function RegisterSheet({
         : "You're in"
       : view.kind === 'already'
         ? 'Already on the list'
-        : 'Save your seat';
+        : canRegister
+          ? 'Save your seat'
+          : 'Sign ups are closed';
   const description =
     view.kind === 'form'
       ? `${eventLabel(event)}, ${formatJakarta(event.startsAt, 'date')}, ${formatTimeRange(event.startsAt, event.endsAt)}`
@@ -105,12 +107,9 @@ export function RegisterSheet({
       <div className="flex flex-col items-center gap-5 py-4 text-center">
         <Character shape="arch" mood="sleepy" size={84} seed={2} />
         <p
-          className="display text-title text-ink"
+          className="display max-w-[30rem] text-title text-ink"
           style={{ fontVariationSettings: "'CASL' 0.7, 'MONO' 0" }}
         >
-          Sign ups are closed.
-        </p>
-        <p className="max-w-[30rem] text-ink-2">
           {closedReason ?? 'This Friday is not taking sign ups right now.'}
         </p>
         <Button

@@ -234,7 +234,7 @@ export function ArchiveBrowser({
             ) : null}
           </label>
           <div
-            role="radiogroup"
+            role="group"
             aria-label="Which Fridays"
             className="flex rounded-full border border-line-strong bg-white p-1"
           >
@@ -244,8 +244,7 @@ export function ArchiveBrowser({
                 <button
                   key={w}
                   type="button"
-                  role="radio"
-                  aria-checked={on}
+                  aria-pressed={on}
                   onClick={() => void setState({ when: w === 'past' ? null : w })}
                   className={cn(
                     'relative h-11 flex-1 whitespace-nowrap rounded-full px-3 text-[0.9375rem] font-bold transition-colors sm:px-5',

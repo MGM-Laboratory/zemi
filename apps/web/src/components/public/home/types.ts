@@ -41,6 +41,10 @@ export interface HomeData {
   stats: PublicSite['stats'];
   /** The API was unreachable: copy comes from defaults and lists are empty. */
   offline: boolean;
+  /** The upcoming schedule could not be loaded (the site settings may still have come from cache). */
+  scheduleOffline: boolean;
+  /** The past Fridays could not be loaded. */
+  archiveOffline: boolean;
   /** 13:15 beat, stamped in the hero. */
   doors: StoryBeat;
   /** Middle beats, staged as scroll scenes (13:20 to 14:50 by default). */

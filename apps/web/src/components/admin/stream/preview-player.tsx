@@ -85,10 +85,11 @@ export function PreviewPlayer({
       if (disposed) return;
       teardown();
       retries += 1;
-      setPhase(retries > 6 ? 'error' : 'tuning');
-      setErrorText(retries > 6 ? why : null);
-      // The first playlist 404s for a few seconds after OBS connects. Back off gently.
-      const delay = Math.min(8000, 700 * 2 ** Math.min(retries, 4));
+      setPhase(retries > 10 ? 'error' : 'tuning');
+      setErrorText(retries > 10 ? why : null);
+      // The first playlist 404s for several seconds after OBS connects (the muxer warms up on the
+      // first request). Retry every few seconds so the picture shows soon after it exists.
+      const delay = Math.min(3000, 700 * 2 ** Math.min(retries, 3));
       retryTimer = setTimeout(() => void start(refreshToken), delay);
     };
 

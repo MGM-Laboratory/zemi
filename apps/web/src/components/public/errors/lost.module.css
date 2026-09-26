@@ -146,6 +146,13 @@
   white-space: nowrap;
 }
 
+/* The orbit ring passes right behind the hint; a soft pill keeps it from reading as struck through. */
+.hint > p {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.9);
+}
+
 .shake {
   display: inline-flex;
   align-items: center;
@@ -253,6 +260,21 @@
 @media (orientation: landscape) and (max-height: 520px) {
   .play {
     height: 360px;
+  }
+}
+
+/* Phones on their side: put the planet next to the words so it is not below the fold. */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 640px) and (max-width: 1023.98px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'head play' 'rest play';
+    grid-template-rows: auto 1fr;
+    column-gap: 28px;
+    row-gap: 20px;
+    align-items: start;
+  }
+  .play {
+    height: min(340px, calc(100svh - 32px));
   }
 }
 

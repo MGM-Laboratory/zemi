@@ -145,7 +145,7 @@ export function Pillars({ pillars }: { pillars: Pillar[] }) {
                   data-shape={p.shape}
                   aria-hidden={i !== active}
                 >
-                  <p className="label flex items-center gap-2 text-ink-3">
+                  <p className="label flex items-center gap-2 text-ink-2">
                     <ShapeIcon shape={p.shape} size="1em" />
                     {SHAPE_CHARACTER[p.shape].name}, {SHAPE_CHARACTER[p.shape].meaning}
                   </p>

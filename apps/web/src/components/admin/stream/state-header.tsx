@@ -85,12 +85,15 @@ export function StateHeader({
   goingLive,
   ending,
   readOnlyText = 'You can watch the control room. Going live needs stream control access.',
+  goLiveBlocked,
   draft = false,
 }: {
   stream: StreamConfig;
   canControl: boolean;
   /** What to say instead of the buttons when `canControl` is false. */
   readOnlyText?: string;
+  /** Why Go live is off for everyone (a cancelled event). End stream stays available while live. */
+  goLiveBlocked?: string;
   /** The event is a draft: the public can't open the page or the stream yet. */
   draft?: boolean;
   sse: SseStatus;
@@ -104,6 +107,8 @@ export function StateHeader({
   const reduce = useReducedMotion();
   const now = useNow(1000);
   const light = look.ink === 'light';
+  // White on the live red is only about 3.6:1, so small copy on red stays fully opaque.
+  const onRed = room === 'live' || room === 'lost';
   const [confirm, setConfirm] = useState<'live' | 'end' | null>(null);
   const isLive = room === 'live' || room === 'lost';
   const elapsed = isLive ? clock(secondsSince(stream.liveStartedAt, now)) : null;
@@ -131,7 +136,7 @@ export function StateHeader({
       <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10 xl:p-9">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className={cn('mono text-[0.75rem] tracking-[0.08em] uppercase', light ? 'text-white/80' : 'text-ink-3')}>{look.eyebrow}</span>
+            <span className={cn('mono text-[0.75rem] tracking-[0.08em] uppercase', onRed ? 'text-white' : light ? 'text-white/80' : 'text-ink-3')}>{look.eyebrow}</span>
             <SseDot status={sse} light={light} />
           </div>
 
@@ -160,10 +165,12 @@ export function StateHeader({
             </div>
           </div>
 
-          <p className={cn('mt-3 max-w-[40rem] text-[0.9375rem] sm:text-base', light ? 'text-white/85' : 'text-ink-2')}>
+          <p className={cn('mt-3 max-w-[40rem] text-[0.9375rem] sm:text-base', onRed ? 'text-white' : light ? 'text-white/85' : 'text-ink-2')}>
             {room === 'ended' && stream.ingestOnline
               ? 'The public stream is off and the recording gets stitched below. OBS is still connected, so check the preview and go live again if you need a second round.'
-              : look.body}
+              : room === 'live' && draft
+                ? 'Still a draft, so only admins can watch until you publish. Every minute is being recorded.'
+                : look.body}
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -214,9 +221,10 @@ export function StateHeader({
               ending={ending}
               onAsk={setConfirm}
               light={light}
+              blocked={goLiveBlocked}
             />
           ) : (
-            <p className={cn('max-w-xs text-sm lg:text-right', light ? 'text-white/80' : 'text-ink-3')}>
+            <p className={cn('max-w-xs text-sm lg:text-right', onRed ? 'text-white' : light ? 'text-white/80' : 'text-ink-3')}>
               {readOnlyText}
             </p>
           )}
@@ -258,6 +266,7 @@ function Controls({
   ending,
   onAsk,
   light,
+  blocked,
 }: {
   stream: StreamConfig;
   room: RoomState;
@@ -265,6 +274,7 @@ function Controls({
   ending: boolean;
   onAsk: (v: 'live' | 'end') => void;
   light: boolean;
+  blocked?: string;
 }) {
   const live = room === 'live' || room === 'lost';
   const ready = canGoLive(stream);
@@ -280,9 +290,12 @@ function Controls({
         >
           End stream
         </Button>
-        <span className="text-xs text-white/75">Asks first. Nothing happens by accident.</span>
+        <span className="text-xs text-white">Asks first. Nothing happens by accident.</span>
       </div>
     );
+  }
+  if (blocked) {
+    return <p className={cn('max-w-xs text-sm lg:text-right', light ? 'text-white/80' : 'text-ink-3')}>{blocked}</p>;
   }
   return (
     <div className="flex flex-col gap-2 lg:items-end">
@@ -355,7 +368,7 @@ function SseDot({ status, light }: { status: SseStatus; light: boolean }) {
   const label =
     status === 'open' ? 'Live updates on' : status === 'forbidden' ? 'Live updates off' : status === 'connecting' ? 'Connecting...' : 'Reconnecting...';
   return (
-    <span className={cn('inline-flex items-center gap-1.5 text-xs', light ? 'text-white/75' : 'text-ink-3')} role="status">
+    <span className={cn('inline-flex items-center gap-1.5 text-xs', light ? 'text-white/90' : 'text-ink-3')} role="status">
       <span
         className={cn(
           'size-1.5 rounded-full',

@@ -85,7 +85,9 @@ export function LiveStage({
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: 'spring', stiffness: 180, damping: 26 }}
-          className="mx-auto w-full max-w-[calc((100svh-24px)*16/9)] overflow-hidden rounded-[24px] shadow-[0_40px_120px_-40px_rgb(0_0_0/0.8)] ring-1 ring-white/10"
+          // Laptops: the whole player (controls, reactions) fits under the nav and the title without
+          // scrolling. Short landscape phones keep the full-height player instead.
+          className="mx-auto w-full max-w-[calc((100svh-24px)*16/9)] overflow-hidden rounded-[24px] shadow-[0_40px_120px_-40px_rgb(0_0_0/0.8)] ring-1 ring-white/10 [@media(min-height:600px)]:max-w-[calc((100svh_-_var(--nav-h)_-_210px)*16/9)]"
           id="stream"
         >
           <ZemiPlayerLazy

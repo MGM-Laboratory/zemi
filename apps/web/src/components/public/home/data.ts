@@ -16,7 +16,7 @@ import { planStory } from './story-plan';
 import type { HomeData, HomeSpeaker } from './types';
 
 export async function loadHome(): Promise<HomeData> {
-  const [site, next, upcoming, past, speakers, publications] = await Promise.all([
+  const [site, nextEvent, upcoming, past, speakers, publications] = await Promise.all([
     getSiteOrDefaults(),
     getNextEvent(),
     getEvents({ when: 'upcoming', pageSize: 50 }),
@@ -25,6 +25,11 @@ export async function loadHome(): Promise<HomeData> {
     // Default sort is year, month, day desc: the newest papers first.
     getPublications({ pageSize: 8 }),
   ]);
+
+  // `/events/next` returns null both for "nothing booked" and "request failed": if it failed but the
+  // upcoming list (soonest first) loaded, the hero still shows the right Friday.
+  const next: EventCard | null =
+    nextEvent ?? upcoming.items.find((e) => e.status !== 'cancelled') ?? null;
 
   const home = site.settings.home;
   const featuredId = home.featuredEventId ?? null;
@@ -82,6 +87,8 @@ export async function loadHome(): Promise<HomeData> {
     general: { siteName: site.settings.general.siteName, labName: site.settings.general.labName },
     stats: site.stats,
     offline: site.isFallback,
+    scheduleOffline: site.isFallback || !!upcoming.unavailable,
+    archiveOffline: site.isFallback || !!past.unavailable,
     doors,
     scenes,
     closing,

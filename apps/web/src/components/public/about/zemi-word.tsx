@@ -55,7 +55,7 @@ export function ZemiWord({ firstEventAt }: { firstEventAt: string | null }) {
                 </li>
               </ol>
               <p className="border-t border-line pt-4 text-[0.9375rem] text-ink-3">
-                <span className="label mr-2 text-ink-4">See also</span>
+                <span className="label mr-2 text-ink-3">See also</span>
                 coffee, questions, “just one more slide”.
               </p>
             </div>

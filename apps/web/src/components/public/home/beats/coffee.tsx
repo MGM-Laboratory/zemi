@@ -14,7 +14,7 @@ import { NetworkCanvas } from './network-canvas';
 const CoffeeScene = lazy(() => import('./coffee-scene'));
 
 function collabLine(n: number, last: [string, string] | null): string {
-  if (n === 0) return 'Move around the table. Click near someone to introduce them.';
+  if (n === 0) return 'Move around the table. Tap or click near someone to introduce them.';
   const pair =
     last && last[0] && last[1] ? `${last[0].split(' ')[0]} meets ${last[1].split(' ')[0]}. ` : '';
   if (n === 1) return `${pair}That is how it starts.`;
@@ -125,7 +125,6 @@ export function CoffeeBeat({
             studio={{ floor: -1.6, shadowOpacity: 0.3, shadowScale: 10 }}
             rootMargin="100% 0px"
             label="A clay coffee cup, steaming, with Block the yellow square sitting next to it."
-            placeholder={null}
             fallback={
               <div className="flex items-end gap-4" aria-hidden="true">
                 <Character shape="square" size={96} seed={4} mood="happy" />

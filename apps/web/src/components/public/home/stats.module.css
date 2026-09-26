@@ -95,10 +95,11 @@
   top: 64%;
   color: #fff;
 }
+/* Low and a bit smaller: the triangle's eyes sit low and move with the cursor. */
 .triangle .num {
-  top: 73%;
+  top: 76.5%;
   color: #fff;
-  font-size: 17cqi;
+  font-size: 15cqi;
 }
 
 .label {

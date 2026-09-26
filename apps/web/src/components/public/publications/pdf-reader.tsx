@@ -1,7 +1,7 @@
 'use client';
 
 import { ExternalLink } from 'lucide-react';
-import { useState, type MouseEvent } from 'react';
+import { useRef, useState, type MouseEvent } from 'react';
 import { ZemiMark } from '@/components/brand/zemi-mark';
 import { Button, buttonVariants } from '@/components/public/ui/button';
 import { Dialog } from '@/components/public/ui/dialog';
@@ -34,6 +34,13 @@ function canInline(): boolean {
 export function PdfReader({ url, fileName, sizeLabel, title, className }: PdfReaderProps) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const readRef = useRef<HTMLAnchorElement>(null);
+
+  // The dialog has no Radix trigger, so Radix can't hand focus back on close. Do it here.
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) requestAnimationFrame(() => readRef.current?.focus({ preventScroll: true }));
+  };
 
   const onRead = (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
@@ -52,6 +59,7 @@ export function PdfReader({ url, fileName, sizeLabel, title, className }: PdfRea
         )}
       >
         <Button
+          ref={readRef}
           href={url}
           external
           size="lg"
@@ -84,7 +92,7 @@ export function PdfReader({ url, fileName, sizeLabel, title, className }: PdfRea
 
       <Dialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={onOpenChange}
         title="Read the PDF"
         description={<span className="line-clamp-1">{title}</span>}
         className="h-[calc(100dvh-32px)] max-w-[min(1200px,calc(100vw-32px))]"

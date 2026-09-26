@@ -39,6 +39,8 @@
   left: 0;
   bottom: calc(100% - 1px);
   width: 200%;
+  /* globals.css caps every svg at max-width: 100%, which would leave a flat step as it slides. */
+  max-width: none;
   height: clamp(28px, 4vw, 64px);
   animation: slide var(--speed, 8s) linear infinite;
 }

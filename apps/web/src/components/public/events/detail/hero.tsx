@@ -410,8 +410,15 @@ export function CancelledHero({ event }: { event: EventDetail }) {
           </div>
           <div className="flex flex-wrap gap-3">
             {next ? (
-              <Button href={`/events/${next.slug}`} size="lg" className="max-w-full">
-                <span className="truncate">Next Friday: {next.title}</span>
+              // No magnet: its inline-block wrapper sizes to the text, so a long title ran off phones.
+              <Button
+                href={`/events/${next.slug}`}
+                size="lg"
+                magnetic={false}
+                className="max-w-full [&>span]:min-w-0 [&>span]:truncate"
+                title={`Next Friday: ${next.title}`}
+              >
+                Next Friday: {next.title}
               </Button>
             ) : null}
             <Button href="/events" variant="secondary" size="lg" shape="circle">

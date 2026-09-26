@@ -14,11 +14,15 @@ RUN pnpm install --frozen-lockfile --filter "@zemi/web..."
 FROM deps AS build
 COPY packages/shared packages/shared
 COPY apps/web apps/web
-# NEXT_PUBLIC_* values are inlined at build time. Railway passes service variables as build args.
+# NEXT_PUBLIC_* values are inlined at build time, and next.config rewrites() are baked into the
+# routes manifest at build time too, so API_INTERNAL_URL must be present here as well.
+# Railway passes service variables as build args.
 ARG NEXT_PUBLIC_API_PUBLIC_URL
 ARG NEXT_PUBLIC_SITE_URL
+ARG API_INTERNAL_URL
 ENV NEXT_PUBLIC_API_PUBLIC_URL=$NEXT_PUBLIC_API_PUBLIC_URL \
-    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    API_INTERNAL_URL=$API_INTERNAL_URL
 RUN pnpm --filter @zemi/shared build && pnpm --filter @zemi/web build
 
 FROM node:24-slim AS run

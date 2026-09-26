@@ -128,7 +128,8 @@ export function AboutHero({ title, intro, stats }: AboutHeroProps) {
     keyTimer.current = setTimeout(release, 1100);
   };
 
-  const since = stats.firstEventAt ? formatJakarta(stats.firstEventAt, 'month-year') : null;
+  // "Sep 2024": short enough to sit on the same row as the numbers on a laptop.
+  const since = stats.firstEventAt ? formatJakarta(stats.firstEventAt, 'month-year').replace(/^([A-Za-z]{3})[A-Za-z]+/, '$1') : null;
   const statItems = [
     { value: stats.sessions, label: 'Fridays so far' },
     { value: stats.talks, label: 'talks' },

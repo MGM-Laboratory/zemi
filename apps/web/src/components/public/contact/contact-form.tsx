@@ -247,9 +247,9 @@ export function ContactForm({ topics, initialTopic, fallbackEmail, onSent }: Con
           />
           <span className="text-ink-2">{counterLine(n)}</span>
         </span>
-        <span className="mono text-ink-3">
+        <span className="mono text-ink-2">
           {n.toLocaleString('en-US')}
-          <span className="text-ink-4"> / {MAX.toLocaleString('en-US')}</span>
+          <span className="text-ink-3"> / {MAX.toLocaleString('en-US')}</span>
         </span>
       </div>
 

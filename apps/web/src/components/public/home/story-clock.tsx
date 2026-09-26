@@ -77,9 +77,23 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
       );
     };
 
+    // Phones and tablets pin the clock just under the nav (`--nav-h` + 8px). While the
+    // announcement bar is still on screen the nav sits lower by the bar's visible height, so the
+    // clock drops with it. `#main` starts right under the bar (the nav overlays it).
+    let drop = -1;
+    const main = document.getElementById('main');
+    const syncDrop = (y: number) => {
+      if (!main || (y > 240 && drop === 0)) return;
+      const next = Math.max(0, Math.min(160, Math.round(main.getBoundingClientRect().top)));
+      if (next === drop) return;
+      drop = next;
+      wrap.current?.style.setProperty('--clock-drop', `${next}px`);
+    };
+
     // An anchor above the fold (the hero) counts from the very top of the page.
     const at = (i: number) => Math.max(0, anchors[i]!.st.start);
     const update = (y: number) => {
+      syncDrop(y);
       const stepped = prefersReducedMotion();
       let min = anchors[0]!.min;
       for (let i = 0; i < anchors.length; i++) {
@@ -168,6 +182,7 @@ export function StoryClock({ beats, rootId }: StoryClockProps) {
   return (
     <div ref={wrap}>
       <FridayClock
+        className="max-lg:mt-[var(--clock-drop,0px)]"
         progress={hidden ? null : progress}
         time={hidden ? null : (override?.time ?? null)}
         label={override?.label}

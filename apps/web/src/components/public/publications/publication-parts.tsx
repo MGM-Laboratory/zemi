@@ -5,7 +5,12 @@
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { formatJakarta, type PublicationAuthor, type PublicationDetail } from '@zemi/shared';
+import {
+  formatJakarta,
+  type PublicationAuthor,
+  type PublicationDetail,
+  type ShapeName,
+} from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { EmailIcon } from '@/components/icons';
 import { ZemiImage } from '@/components/public/media/zemi-image';
@@ -23,6 +28,32 @@ import {
 } from './lib';
 import { DoiIcon, PubLinkIcon, PublisherIcon } from './pub-link-icon';
 import styles from './publications.module.css';
+
+/* ------------------------------------------------------------------ section titles */
+
+/**
+ * A section heading that looks like the foundation Eyebrow (mono label + shape) but is a real
+ * `h2`, so the reading page has an outline screen readers can jump through. (Eyebrow renders a
+ * `<p>`, which can't sit inside a heading.)
+ */
+export function SectionTitle({
+  children,
+  shape = 'circle',
+  id,
+  className,
+}: {
+  children: ReactNode;
+  shape?: ShapeName;
+  id?: string;
+  className?: string;
+}) {
+  return (
+    <h2 id={id} className={cn('label inline-flex items-center gap-2 text-ink-3', className)}>
+      <ShapeIcon shape={shape} size="0.95em" />
+      <span>{children}</span>
+    </h2>
+  );
+}
 
 /* ------------------------------------------------------------------ authors */
 
@@ -214,10 +245,21 @@ export function MetaTable({
 
 /* ------------------------------------------------------------------ links */
 
-/** Publisher, DOI and every other link, each with its kind icon. Unsafe URLs are dropped. */
-export function LinkList({ pub }: { pub: PublicationDetail }) {
-  const items: Array<{ key: string; href: string; label: string; sub: string; icon: ReactNode }> =
-    [];
+interface LinkItemView {
+  key: string;
+  href: string;
+  label: string;
+  sub: string;
+  icon: ReactNode;
+}
+
+/**
+ * Publisher, DOI and every other link, deduped, unsafe URLs dropped. PDF links are skipped only
+ * when the PDF is mirrored here (the Read / Download buttons cover it); otherwise they are the
+ * way to the paper and stay.
+ */
+export function publicationLinkItems(pub: PublicationDetail): LinkItemView[] {
+  const items: LinkItemView[] = [];
   const seen = new Set<string>();
   const add = (href: string | null, label: string, icon: ReactNode) => {
     if (!href || seen.has(href)) return;
@@ -238,9 +280,15 @@ export function LinkList({ pub }: { pub: PublicationDetail }) {
   add(doiHref, 'DOI', <DoiIcon size={20} />);
   for (const l of pub.links) {
     const href = safeHref(l.url);
-    if (!href || l.kind === 'pdf') continue;
+    if (!href || (l.kind === 'pdf' && pub.pdf)) continue;
     add(href, l.label || LINK_KIND_LABEL[l.kind], <PubLinkIcon kind={l.kind} size={20} />);
   }
+  return items;
+}
+
+/** The links from `publicationLinkItems`, each with its kind icon. */
+export function LinkList({ pub }: { pub: PublicationDetail }) {
+  const items = publicationLinkItems(pub);
   if (!items.length) return null;
   return (
     <ul className="flex flex-col">

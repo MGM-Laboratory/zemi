@@ -76,6 +76,8 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
     scale: 1,
   });
   const cooldown = useRef(0);
+  /** The button promised a question: it counts even if the lob misses. */
+  const promised = useRef(false);
   const asker = useRef(0);
   const [count, setCount] = useState(0);
   const [mood, setMood] = useState<CharacterMood>('idle');
@@ -126,6 +128,7 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
     const now = performance.now();
     if (now < cooldown.current) return;
     cooldown.current = now + 900;
+    promised.current = false;
     speaker.current?.squash();
     setMood('surprised');
     setCount((c) => c + 1);
@@ -170,12 +173,16 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
   }, []);
 
   const throwAtSpeaker = useCallback(() => {
-    if (prefersReducedMotion()) {
+    const st = stage.current?.getBoundingClientRect();
+    const onScreen = !!st && st.bottom > 0 && st.top < window.innerHeight;
+    const t = target();
+    // Reduced motion, or the stage is scrolled away (phones stack it under the button): just count it.
+    if (prefersReducedMotion() || !onScreen || !t) {
       hit();
       return;
     }
-    const t = target();
-    if (t) lob(t.x, t.y, 0.6);
+    promised.current = true;
+    lob(t.x, t.y, 0.6);
   }, [hit, lob, target]);
 
   // Physics loop (only while on screen).
@@ -227,6 +234,8 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
             b.vx *= 0.86;
           }
         } else {
+          // A button throw that bounced off somewhere still asks the question.
+          if (promised.current) hit();
           // Float home, bobbing, when nobody is throwing it.
           b.idle += dt;
           const k = b.idle > 0.8 ? 1 - Math.pow(0.9, dt * 60) : 0;

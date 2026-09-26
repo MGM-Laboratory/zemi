@@ -47,7 +47,9 @@ export function StreamControlRoom() {
     <div className="space-y-6">
       {cancelled ? (
         <Callout tone="red" icon={<Ban />} title="This event is cancelled.">
-          OBS can&apos;t connect and nobody can go live. Restore the event in Settings if plans changed.
+          {room === 'live' || room === 'lost'
+            ? "It's cancelled, but you're still on air. End the stream when you're ready."
+            : "OBS can't connect and nobody can go live. Restore the event in Settings if plans changed."}
         </Callout>
       ) : event.mode === 'offline' ? (
         <Callout
@@ -68,14 +70,17 @@ export function StreamControlRoom() {
 
       {!cancelled && event.visibility === 'draft' ? (
         <Callout tone="yellow" icon={<EyeOff />} title="Still a draft.">
-          Test OBS and the preview all you like. If you go live now, only admins can watch until the event is published.
+          {room === 'live' || room === 'lost'
+            ? "You're live, but only admins can watch until the event is published."
+            : 'Test OBS and the preview all you like. If you go live now, only admins can watch until the event is published.'}
         </Callout>
       ) : null}
 
       <StateHeader
         stream={stream}
-        canControl={canControl && !cancelled}
-        readOnlyText={cancelled && canControl ? "Cancelled events can't go live." : undefined}
+        canControl={canControl}
+        // A cancelled event can't go live, but a stream that is already live must still be endable.
+        goLiveBlocked={cancelled ? "Cancelled events can't go live." : undefined}
         draft={event.visibility === 'draft'}
         sse={sse}
         onGoLive={() => goLive.mutateAsync()}

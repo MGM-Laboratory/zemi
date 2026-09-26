@@ -26,7 +26,7 @@ import {
   licenseUrl,
   sitePdfPath,
   splitPages,
-  statusNote,
+  STATUS_LABEL,
   STATUS_TONE,
   typeLook,
 } from '@/components/public/publications/lib';
@@ -36,7 +36,9 @@ import {
   AuthorsRow,
   LinkList,
   MetaTable,
+  publicationLinkItems,
   RelatedEvents,
+  SectionTitle,
   VenueLine,
 } from '@/components/public/publications/publication-parts';
 import styles from '@/components/public/publications/publications.module.css';
@@ -44,7 +46,6 @@ import { Enter } from '@/components/public/speakers/enter';
 import { jsonLdString, siteUrl } from '@/components/public/speakers/lib';
 import { Chip, ChipLink } from '@/components/public/ui/chip';
 import { ApiUnavailable } from '@/components/public/ui/empty-state';
-import { Eyebrow } from '@/components/public/ui/section-header';
 import { getPublication, unwrapLookup } from '@/lib/api/server';
 import { cn } from '@/lib/utils';
 
@@ -272,7 +273,10 @@ export default async function PublicationPage({ params }: Props) {
   }
 
   const look = typeLook(pub.type);
-  const note = pub.type === 'preprint' && pub.status === 'preprint' ? null : statusNote(pub.status);
+  // The brief wants type + status chips here (cards stay quiet about plain "published").
+  const note =
+    pub.type === 'preprint' && pub.status === 'preprint' ? null : STATUS_LABEL[pub.status];
+  const hasLinks = publicationLinkItems(pub).length > 0;
   const src = publicationToCitationSource(pub, {
     fallbackUrl: siteUrl(`/publications/${pub.slug}`),
     accessedAt: jakartaDateInput(new Date()),
@@ -291,9 +295,9 @@ export default async function PublicationPage({ params }: Props) {
   const hasBody = hasBlocks(pub.body);
   const finePrint = (className: string) => (
     <div className={cn('rounded-[28px] border border-line bg-white p-5 sm:p-6', className)}>
-      <Eyebrow shape="square" className="mb-4">
+      <SectionTitle shape="square" className="mb-4">
         The fine print
-      </Eyebrow>
+      </SectionTitle>
       <MetaTable pub={pub} citationKey={citationKey} />
     </div>
   );
@@ -402,7 +406,9 @@ export default async function PublicationPage({ params }: Props) {
             ) : (
               <p className="flex items-start gap-2 rounded-2xl bg-surface-muted p-4 text-[0.9375rem] text-ink-2">
                 <ShapeIcon shape="square" size={14} className="mt-1" />
-                No PDF mirrored here yet. The links below should get you to it.
+                {hasLinks
+                  ? 'No PDF mirrored here yet. The links below should get you to it.'
+                  : "No PDF here yet. The citation below is the best trail we've got."}
               </p>
             )}
             <LinkList pub={pub} />
@@ -413,9 +419,9 @@ export default async function PublicationPage({ params }: Props) {
         <div className="flex min-w-0 flex-col gap-14 lg:order-1 lg:col-span-8 lg:pr-[4%] xl:col-span-7">
           {abstract.length ? (
             <section aria-labelledby="abstract" className="flex flex-col gap-5">
-              <Eyebrow shape="circle">
-                <span id="abstract">Abstract</span>
-              </Eyebrow>
+              <SectionTitle shape="circle" id="abstract">
+                Abstract
+              </SectionTitle>
               <div className={cn(styles.abstract, styles.measure, 'flex flex-col gap-4')}>
                 {abstract.map((para, i) => (
                   <p key={i}>{para}</p>
@@ -432,9 +438,9 @@ export default async function PublicationPage({ params }: Props) {
 
           {pub.keywords.length ? (
             <section aria-labelledby="keywords" className="flex flex-col gap-4">
-              <Eyebrow shape="triangle">
-                <span id="keywords">Keywords</span>
-              </Eyebrow>
+              <SectionTitle shape="triangle" id="keywords">
+                Keywords
+              </SectionTitle>
               <ul className="flex flex-wrap gap-2">
                 {pub.keywords.map((k) => (
                   <li key={k}>
@@ -453,9 +459,9 @@ export default async function PublicationPage({ params }: Props) {
 
           <section aria-labelledby="cite" className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Eyebrow shape="square">
-                <span id="cite">Cite this</span>
-              </Eyebrow>
+              <SectionTitle shape="square" id="cite">
+                Cite this
+              </SectionTitle>
               <p className="text-ink-2">
                 Pick your style. We did the commas so you don&apos;t have to.
               </p>
@@ -466,13 +472,13 @@ export default async function PublicationPage({ params }: Props) {
           {pub.events.length ? (
             <section aria-labelledby="presented" className="flex flex-col gap-5">
               <div className="flex flex-col gap-2">
-                <Eyebrow shape="arch">
-                  <span id="presented">Presented at Zemi</span>
-                </Eyebrow>
+                <SectionTitle shape="arch" id="presented">
+                  Presented at Zemi
+                </SectionTitle>
                 <p className="text-ink-2">
                   {pub.events.length === 1
                     ? 'This one got its Friday.'
-                    : `This one came back ${pub.events.length} times. Good papers do.`}
+                    : `This one got ${pub.events.length} Fridays. Good papers keep coming back.`}
                 </p>
               </div>
               <RelatedEvents events={pub.events} />

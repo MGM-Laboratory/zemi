@@ -9,6 +9,8 @@
 .rows {
   margin-top: clamp(36px, 6vh, 72px);
   display: grid;
+  /* An auto column would grow to the marquee track's max-content width and stretch its edge mask. */
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(20px, 3vh, 36px);
 }
 

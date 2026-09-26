@@ -12,6 +12,7 @@ import { CaslHeading } from '@/components/motion/casl-heading';
 import { LinkIcon, LINK_KIND_LABELS, linkDisplay } from '@/components/icons';
 import { BlocksRenderer, hasBlocks } from '@/components/public/media/blocks-renderer';
 import { slimCard } from '@/components/public/publications/lib';
+import { SectionTitle } from '@/components/public/publications/publication-parts';
 import { getAllPublications, getAllSpeakers } from '@/components/public/speakers/data';
 import { Enter } from '@/components/public/speakers/enter';
 import {
@@ -304,9 +305,9 @@ export default async function SpeakerPage({ params }: Props) {
         <section className="container-page pb-[var(--section-y)]" aria-labelledby="bio">
           <div className="grid gap-8 md:grid-cols-12 md:gap-[var(--gutter)]">
             <div className="md:col-span-4 lg:col-span-3">
-              <Eyebrow shape="circle">
-                <span id="bio">The short version</span>
-              </Eyebrow>
+              <SectionTitle shape="circle" id="bio">
+                The short version
+              </SectionTitle>
             </div>
             <div className="max-w-[42rem] md:col-span-8 lg:col-span-7">
               <BlocksRenderer blocks={speaker.bio} size="lg" />

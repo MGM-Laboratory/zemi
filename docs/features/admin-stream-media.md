@@ -116,9 +116,37 @@ Playwright against http://localhost:3300 as superadmin. Screenshots in the scrat
 ## Test data left behind
 
 Zemi #98 now has one public recording ("Zemi #98, the full session", 1:22, primary), 4 documentation items (3 photos, 1
-video, 2 captions, 1 starred) and stream state `preview` with ingest offline. Zemi #99 was used for upload tests and cleaned.
+video, 2 captions, 1 starred) and stream state `ended` with ingest offline. Zemi #99 was used for upload tests and cleaned.
+
+## Review pass (2026-09-26)
+
+Fixed:
+- **End stays available on a cancelled event that is live.** Cancelling doesn't end the stream (the API allows End on a
+  cancelled event), but the header hid both buttons. Now only Go live is blocked ("Cancelled events can't go live.").
+- **Preview starts sooner.** The retry backoff went up to 8 s while the HLS muxer warms up, so the first picture could take
+  about 20 s. Retries now run every 3 s at most (the error slate shows after about 30 s, and retries keep going).
+- **Small copy on the live red is fully white** (was 75 to 85 percent). This helps but does not reach 4.5:1, see Known gaps.
+- **Copy while live.** The header body and the draft callout no longer say "Everyone on the event page" or "If you go
+  live now" for a draft that is already live, and the cancelled callout says "you're still on air" instead of "OBS can't
+  connect" while a cancelled event is live. These strings were changed after the last live run (typecheck and lint only).
+
+Verified on a scratch draft event (since deleted), as scoped admins:
+- `stream.control` only: keys shown, 403 on another event's stream and on `POST /media`. Push, preview playing, Go live
+  (Cancel focused, Enter on Cancel does nothing), cancel while live, End still there and works, preview keeps playing after
+  End while OBS is still connected, recording ready in 9 s, one PATCH per title save (Enter and blur), upload a recording
+  attaches.
+- `media.manage` only: the Stream tab is hidden and blocked, 403 on another event's media. 2 photos and 1 video uploaded
+  and ready, one PATCH per caption save, star, keyboard reorder saved in the server order, lightbox focus returns to the
+  tile on screen, remove. Ran at 1440, and again at 390 with touch and reduced motion (all of the above except keyboard
+  reorder, which the 390 script drove with ArrowLeft on a 2-column grid, where the tile had nowhere to go; keyboard reorder
+  is verified at 1440). No console errors, no horizontal scroll.
 
 ## Known gaps
+
+- White on the live red (`#f94141`) is about 3.6:1, below 4.5:1 for the 15 to 16 px body copy on the live header. It is the
+  system's live pair (the workspace "Happening now" banner uses it too), so it is a design-system call, not changed here.
+- Uploaded recordings show the stream pipeline ("Recording, Last bits, Stitching") while they transcode. `StreamSessionAdmin`
+  has no flag that says a session is an upload, so the card can't tell them apart.
 
 - Frame rate is not shown: `StreamHealth` has no fps field (MediaMTX 1.21 doesn't report it in `/v3/paths/get`).
 - In-app navigation away from the Media tab mid-upload cancels the uploads (the App Router has no blocking API). The tab
@@ -131,3 +159,7 @@ video, 2 captions, 1 starred) and stream state `preview` with ingest offline. Ze
 - **api-stream**: `StreamHealth.fps` (optional) if MediaMTX ever exposes it, the health panel has a spot ready.
 - **public event page owner**: `media[].featured` is set from this tab ("starred ones get the big spots"); please give
   starred items the larger tiles.
+- **design system / admin kit owner**: white body copy on `--color-red` is about 3.6:1. Consider a darker live surface
+  (`red-600` gives about 4.8:1) or larger live copy, for this header and the workspace "Happening now" banner alike.
+- **api-stream (optional)**: a flag on `StreamSessionAdmin` for uploaded recordings (for example `source: 'live' | 'upload'`),
+  so the card can show "Transcoding" instead of the stream pipeline.

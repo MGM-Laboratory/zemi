@@ -2,7 +2,7 @@
 
 import { Play } from 'lucide-react';
 import Link from 'next/link';
-import { formatJakarta, type EventCard } from '@zemi/shared';
+import { EVENT_STATUS_LABEL, formatJakarta, type EventCard } from '@zemi/shared';
 import { ShapeIcon } from '@/components/brand/shape-icon';
 import { StatusBadge } from '@/components/public/ui/chip';
 import { cn } from '@/lib/utils';
@@ -67,6 +67,15 @@ export function ArchiveCard({ e, priority }: { e: EventCard; priority?: boolean 
           <span className="sr-only">, </span>
           {formatJakarta(e.startsAt, 'date')}
           {e.status === 'cancelled' ? ' · Cancelled' : ''}
+          {/* The badges on the cover are not part of the link's name, so say them here. */}
+          <span className="sr-only">
+            {e.isLive
+              ? ', live now'
+              : e.status === 'scheduled' || e.status === 'ongoing'
+                ? `, ${EVENT_STATUS_LABEL[e.status].toLowerCase()}`
+                : ''}
+            {e.hasRecording && e.status === 'past' ? ', recording available' : ''}
+          </span>
         </p>
         <h3
           id={titleId}

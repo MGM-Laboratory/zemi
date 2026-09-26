@@ -125,3 +125,39 @@ components/public/publications/
   `admin/ui/button.tsx` use them). Switching them to `120rem` / `23.75rem` fixes the order.
 - **api-content** (optional): a `?download=1` on `/media/*` (Content-Disposition: attachment) would make
   "Download" work even cross-origin; and co-speaker slugs on `SpeakerPublic` would improve "Other speakers".
+
+## Review (2026-09-26)
+
+Re-checked all four pages against SPEC, DESIGN and the shared contract with Playwright at 390, 820, 1440 and 2560
+(shots in `scratchpad/shots/rev-public-people-papers/`). I also made a throwaway empty speaker and paper (no photo,
+talks, bio, links, authors, year or PDF), checked them, then deleted both. Counts are back to 40 and 58.
+
+Checked and fine: URL-mirrored filters (`?type=dataset&q=batik`, `?tag=batik`, `?year=`, `?sort=title`, reload keeps
+them), shuffle and sorts, empty states, card focus ring and hover pops, the phone filter sheet, cite tabs (arrow keys,
+End), BibTeX copy and `.bib` download, the PDF dialog (renders in new-headless Chromium where
+`navigator.pdfViewerEnabled` is true), same-origin PDF download, and the new tab on phones (lands on `/media/...pdf`).
+Also: 18 Highwire tags, 404 and not-found for unknown and draft slugs, junk query params ignored, no horizontal
+scroll, and no console errors.
+
+Fixed:
+- **No headings on the publication page.** Abstract, Keywords, Cite this, Presented at Zemi and The fine print were
+  `<p>` eyebrows, so the outline was only the `h1`. There's a new `SectionTitle` (in `publication-parts.tsx`): it looks
+  like the eyebrow but it's a real `h2` with the same `aria-labelledby` ids. The speaker bio label uses it too.
+- **The PDF dialog dropped focus on close.** The dialog is controlled with no Radix trigger, so Esc or the close button
+  sent focus to `<body>`. `PdfReader` now puts focus back on "Read the PDF" (checked for Esc and the close button).
+- **External PDF links were always hidden.** `LinkList` skipped every `kind: 'pdf'` link, so a paper with no mirrored
+  PDF lost its only PDF link. Now they're skipped only when a mirror exists. `publicationLinkItems()` is exported, and
+  the page uses it to pick honest copy: "The links below should get you to it" only when there are links.
+- **The status chip was missing on the detail page.** The brief asks for type + status chips, so it now always shows,
+  "Published" included. Cards stay quiet about plain "published". Preprint + preprint still shows one chip.
+- **"This one came back 2 times" for 2 Fridays** read as 3 presentations. It now says "This one got 2 Fridays."
+- **List rows overhung the phone page margin by 2px** (-18px margin vs a 16px margin). Now -14px.
+- **URL year with no papers** (`?year=2010`): the select said "Any year" while filtering to 0. It now shows "2010 (0)".
+- **Title sort (not grouped)** jumped from `h1` to `h3`. Row and tile titles are `h2` when ungrouped.
+
+Not changed (noted):
+- On phones the sort chips and Shuffle sit at the end of a horizontal chip scroller with no fade hint. They're
+  reachable, just easy to miss.
+- On a loaded dev machine the result count can trail typing by 0.3 to 3s (deferred render with the R3F stack
+  running in SwiftShader). It hasn't been profiled on real hardware.
+- Unlisted papers and speakers don't get `noindex` (the public payload has no visibility field).

@@ -10,6 +10,7 @@ import { Closing } from './closing';
 import { IdlePeek } from './idle-peek';
 import { PastGallery } from './past-gallery';
 import { PublicationsTeaser } from './publications-teaser';
+import { SkipStoryLink } from './skip-story';
 import { SpeakersMarquee } from './speakers-marquee';
 import { Stats } from './stats';
 import { StoryClock } from './story-clock';
@@ -33,13 +34,14 @@ export function HomeStory({ data }: { data: HomeData }) {
 
   return (
     <div id={ROOT_ID}>
-      <a
-        href="#up-next"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-20 focus:z-[120] focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-white"
-      >
-        Skip the story, jump to the next Friday
-      </a>
-      <Hero home={home} doors={doors} next={data.next} storyId={storyId} offline={data.offline} />
+      <SkipStoryLink targetId="up-next">Skip the story, jump to the next Friday</SkipStoryLink>
+      <Hero
+        home={home}
+        doors={doors}
+        next={data.next}
+        storyId={storyId}
+        offline={data.scheduleOffline}
+      />
       {scenes.map((scene, i) => {
         switch (scene.kind) {
           case 'lonely':
@@ -63,8 +65,15 @@ export function HomeStory({ data }: { data: HomeData }) {
             return <GenericBeat key={scene.id} scene={scene} index={i} />;
         }
       })}
-      <UpNext data={data} />
-      <PastGallery events={data.past} total={data.pastTotal} offline={data.offline} />
+      <UpNext
+        data={{
+          featured: data.featured,
+          featuredDetail: data.featuredDetail,
+          next: data.next,
+          offline: data.scheduleOffline,
+        }}
+      />
+      <PastGallery events={data.past} total={data.pastTotal} offline={data.archiveOffline} />
       <SpeakersMarquee people={data.speakers} total={data.speakersTotal} />
       <Stats
         stats={data.stats}

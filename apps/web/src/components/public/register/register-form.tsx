@@ -55,9 +55,24 @@ function WaitLabel() {
 
 const STORAGE_KEY = 'zemi:register:last';
 
+type Saved = Pick<RegisterInput, 'fullName' | 'email' | 'phone'>;
+
+/** Name, email and phone saved on this device, only when the person ticked "Remember me". */
+function readSaved(): Partial<Saved> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw) as Partial<Saved> | null;
+    return v && typeof v === 'object' ? v : null;
+  } catch {
+    return null; // private mode or blocked storage
+  }
+}
+
 /**
  * The sign-up form. Plain and fast on purpose (the delight comes after success):
- * zod validation from shared, friendly API errors, a honeypot, remembered name/email/phone.
+ * zod validation from shared, friendly API errors, a honeypot, and an opt-in "remember me".
  */
 export function RegisterForm({ event, onSuccess, onAlready, spotsLeft }: RegisterFormProps) {
   const modes =
@@ -66,34 +81,29 @@ export function RegisterForm({ event, onSuccess, onAlready, spotsLeft }: Registe
       : event.mode === 'online'
         ? (['online'] as const)
         : (['in-person', 'online'] as const);
+  // The form only mounts inside the open sheet (client side), so reading the device here is safe.
+  const [saved] = useState(readSaved);
+  // Opt in only: lab and library computers are shared, so nobody's email or phone is kept by default.
+  const [remember, setRemember] = useState(saved != null);
   const form = useForm<FormIn, unknown, RegisterInput>({
     resolver: zodResolver(registerInput),
     mode: 'onTouched',
-    defaultValues: { fullName: '', email: '', phone: '', attendanceMode: modes[0], website: '' },
+    defaultValues: {
+      fullName: saved?.fullName ?? '',
+      email: saved?.email ?? '',
+      phone: saved?.phone ?? '',
+      attendanceMode: modes[0],
+      website: '',
+    },
   });
   const {
     register,
     handleSubmit,
     setError,
-    setValue,
     formState: { errors, isSubmitting },
   } = form;
   const [formError, setFormError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
-
-  // Remember the person on this device (never the honeypot), so next Friday is two taps.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as Partial<RegisterInput>;
-      if (saved.fullName) setValue('fullName', saved.fullName);
-      if (saved.email) setValue('email', saved.email);
-      if (saved.phone) setValue('phone', saved.phone);
-    } catch {
-      /* private mode */
-    }
-  }, [setValue]);
 
   useEffect(() => {
     if (formError) errorRef.current?.focus();
@@ -104,10 +114,12 @@ export function RegisterForm({ event, onSuccess, onAlready, spotsLeft }: Registe
     try {
       const result = await registerSeat(event.id, values);
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ fullName: values.fullName, email: values.email, phone: values.phone }),
-        );
+        if (remember)
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ fullName: values.fullName, email: values.email, phone: values.phone }),
+          );
+        else localStorage.removeItem(STORAGE_KEY);
       } catch {
         /* ignore */
       }
@@ -240,6 +252,29 @@ export function RegisterForm({ event, onSuccess, onAlready, spotsLeft }: Registe
           </p>
         ) : null}
       </fieldset>
+
+      <label className="flex cursor-pointer items-start gap-3 text-[0.9375rem] text-ink-3">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => {
+            setRemember(e.target.checked);
+            // Unticking forgets this device right away, not only after the next sign up.
+            if (!e.target.checked) {
+              try {
+                localStorage.removeItem(STORAGE_KEY);
+              } catch {
+                /* ignore */
+              }
+            }
+          }}
+          className="mt-0.5 size-5 flex-none cursor-pointer accent-[#0e1116] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-focus"
+        />
+        <span>
+          <span className="font-bold text-ink">Remember me on this device.</span> Skips the typing
+          next Friday. Leave it off on shared computers.
+        </span>
+      </label>
 
       {/* Honeypot: people never see it, bots love it. */}
       <div

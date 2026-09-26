@@ -83,6 +83,19 @@
   }
 }
 
+/* Phones on their side: clock next to the title, so the first screen is not only words. */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 640px) and (max-width: 1023.98px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-areas: 'text clock' 'intro intro';
+    column-gap: 28px;
+    align-items: center;
+  }
+  .clockBox {
+    width: min(100%, 300px, calc(100svh - 110px));
+  }
+}
+
 /* The drag layer is a circle over the clock face, so the rest of the box still scrolls on touch. */
 .clockLayer {
   position: absolute;
@@ -744,7 +757,8 @@
   gap: 4px;
   padding-top: 10px;
   max-width: 30rem;
-  opacity: 0.55;
+  /* Beats still to come stay dimmer, but readable: 0.75 keeps the ink-2 body at AA (4.9:1). */
+  opacity: 0.75;
   transition: opacity 400ms;
 }
 

@@ -5,7 +5,7 @@ import type { EventCard, SiteSettings } from '@zemi/shared';
 import { Character } from '@/components/brand/character';
 import { useSiteReady } from '@/components/brand/site-loader';
 import { CaslHeading } from '@/components/motion/casl-heading';
-import { gsap, useGSAP } from '@/components/motion/gsap';
+import { gsap, ScrollTrigger, useGSAP } from '@/components/motion/gsap';
 import { HighlightSwipe } from '@/components/motion/highlight-swipe';
 import { useLenis } from '@/components/motion/smooth-scroll';
 import { Button } from '@/components/public/ui/button';
@@ -50,20 +50,25 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
       mm.add({ long: MQ.long, short: MQ.short, flow: MQ.flow }, (ctx) => {
         const c = ctx.conditions as Record<string, boolean>;
         if (!c.long && !c.short && !c.flow) return;
-        gsap.to('[data-hero-parallax]', {
-          yPercent: -18,
-          opacity: 0.2,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: root.current,
-            start: 'top top',
-            end: 'bottom top',
-            scrub: true,
-            onUpdate: (self) => {
-              scroll.current.p = self.progress;
-            },
+        const trigger: ScrollTrigger.Vars = {
+          trigger: root.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+          onUpdate: (self) => {
+            scroll.current.p = self.progress;
           },
-        });
+        };
+        // Laptops: the hero fits the screen, so the copy drifts up and fades as it leaves.
+        // Phones and tablets: the copy is taller than the screen and still being read, keep it solid.
+        if (c.long)
+          gsap.to('[data-hero-parallax]', {
+            yPercent: -18,
+            opacity: 0.2,
+            ease: 'none',
+            scrollTrigger: trigger,
+          });
+        else ScrollTrigger.create(trigger);
       });
       return () => mm.revert();
     },
@@ -100,7 +105,6 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
         dpr={[1, 1.75]}
         rootMargin="100% 0px"
         label="Q, Hunch, Block and Bridge, four clay shapes, float around and watch your cursor."
-        placeholder={null}
         fallback={
           <div className={styles.fallback} aria-hidden="true">
             <Character shape="circle" size="clamp(64px, 9vw, 150px)" seed={0} />
@@ -148,7 +152,7 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
           </div>
         </div>
         <aside className={styles.side} aria-label="The next Friday">
-          <div className={cn(styles.doors, 'hidden lg:flex')}>
+          <div className={styles.doors}>
             <BeatStamp time={doors.time} label="doors open" />
             <p className="text-[0.9375rem] leading-[1.5] text-ink-2">
               <strong className="font-bold text-ink">{doors.title}</strong> {doors.body}

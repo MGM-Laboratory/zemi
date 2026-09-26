@@ -249,3 +249,13 @@
     transition: none;
   }
 }
+
+/*
+ * Keyboard users can tab into the hand before the scroll has dealt it (the section is pinned and
+ * scrubbed). Show every card in its resting place while one of them has keyboard focus; this wins
+ * over GSAP's inline styles.
+ */
+.table:has([data-deal] :focus-visible) [data-deal] {
+  opacity: 1 !important;
+  transform: none !important;
+}

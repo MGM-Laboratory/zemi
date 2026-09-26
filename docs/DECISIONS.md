@@ -29,3 +29,4 @@ Append-only. One line per judgment call: date, area, decision, why.
 - 2026-09-26 public-events: past event pages show "people saved a seat" from `registrationCount` (when public). There is no public check-in count, so we never claim how many people came.
 - 2026-09-26 public-events: no loading.tsx under /events or /tickets, so old-slug redirects and notFound() keep real 308/404 status codes (a streamed page would downgrade them).
 - 2026-09-26 stream: deleting or re-stitching a recording deletes its video asset only when it is purpose `recording` and no other session or gallery item uses it (otherwise it is detached); attaching a video as a recording uses the gallery rule (superadmin, `media.library`, or the uploader).
+- 2026-09-26 deploy: next.config rewrites() are baked into the routes manifest at build time, so the web Dockerfile passes API_INTERNAL_URL as a build arg (otherwise /api/v1 rewrites point at the localhost fallback in production).

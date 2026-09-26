@@ -205,7 +205,7 @@ export function EventExperience({ event, renderedAt, description }: EventExperie
   const reason = canRegister
     ? null
     : !timeOpen && status === 'past'
-      ? "This one's a wrap, so sign ups are closed."
+      ? "This one's a wrap. Everything from it lives on this page."
       : spotsLeft === 0 && event.registration.open
         ? event.mode === 'offline'
           ? 'Every seat is taken. Catch the next Friday?'

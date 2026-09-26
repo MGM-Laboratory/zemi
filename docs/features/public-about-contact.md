@@ -140,6 +140,55 @@ reach an `href` when they are `http(s):` or `mailto:`.
 
 ## Verified
 
+### Review pass (2026-09-26, 09:05 to 09:25 WIB)
+
+An independent review re-checked the status codes (a temporary `slug_redirects` row gave 308, then deleted;
+`/events/<nonsense>` and `/nope` 404, `/home` 308). It sent a real keyboard-only submission, which landed as
+topic "A question" and status `new`, and deleted the row afterwards. The submission's `contact.create` audit
+row and two `.mail-outbox` files remain. It also checked mocked 500 and 400 responses, the error boundary
+through a thrown server component (Try again recovers into the shell; the temporary route is deleted) and
+emulated touch on the 404 (a character drags without scrolling the page, and the empty stage still scrolls).
+An axe scan found WCAG AA contrast failures, now fixed:
+- Timeline beats still to come were at 2.9:1 (opacity 0.55). They are now 0.75, which gives 4.9:1.
+- The pillar panel label was ink-3 on the tint and is now ink-2.
+- The dictionary card's "See also" was ink-4 and is now ink-3.
+- The counter's "/ 5,000" was ink-4 and is now ink-3.
+
+The 404 hint "Drag us. We bounce." now sits on a soft white pill, so the orbit ring no longer strikes
+through it. Still open, foundation side: axe `aria-prohibited-attr` on the SplitText span of every
+`CaslHeading` (see Requests).
+
+### Re-verified after the reseed (2026-09-26, 08:40 to 09:10 WIB)
+
+The first round of checks below ran against the database that was lost in the incident. This
+round ran against the reseeded stack (native Postgres, MinIO, MediaMTX; 6 team members,
+10 FAQs, real stats, an active announcement bar):
+
+- `pnpm --filter @zemi/web typecheck` clean, eslint clean on every file I own, vitest 8/8.
+- Real submission through the UI (`/contact?topic=present`, no mocks) landed in
+  `contact_messages` with topic "I want to present" and status `new`. A honeypot submission
+  through the UI (hidden field filled, sent as `website`) got `{ok:true}` and stored nothing.
+  My test rows (`playwright.contact%@example.com`) were deleted afterwards; the 15 seed
+  messages were not touched.
+- Screenshots (full page) at 390, 820, 1440, 2560 and 844x390 landscape: `/about`, `/contact`,
+  `/nope`, contact states (errors, filled, in flight, error, success) at 390 and 2560, error
+  boundary and global error (temporary preview routes under `about/`, deleted afterwards).
+  Team photos from MinIO load, no 4xx on any asset.
+- Status codes with the new seed: a temporary `slug_redirects` row for an event gave 308 to
+  the current slug (row deleted afterwards), `/events/<nonsense>` 404, `/nope` 404, `/home` 308.
+- Console sweep at 1440 and 390 on `/about`, `/contact`, `/contact?topic=collab`, `/nope`, a
+  missing event and an admin typo: no console errors (one run caught the watchdog restarting
+  the dev server mid-load; the rerun was clean). Client navigation through the root 404 is
+  still clean (one main, one footer, no stuck curtain).
+- Fixed after looking at the shots: on phones held sideways (landscape, height up to ~520px,
+  640 to 1023px wide) the about hero and the 404 now go two columns, so the clock and the
+  planet sit next to the title instead of below the fold. Overflow checked at 640x360,
+  667x375, 740x360, 844x390 and 360x740 on `/about` and `/nope`: none.
+- The "first Friday" stat now reads "Sep 2024" (short month from `formatJakarta` 'month-year'),
+  so it stays on the same row as the numbers at 1440 instead of dropping to a row of its own.
+
+### First round (before the incident)
+
 - `pnpm --filter @zemi/web typecheck` clean; eslint clean on all my files.
 - Playwright (chromium) screenshots at 390x844, 820x1180, 1440x900, 2560x1440 (+ 360x740,
   844x390 landscape, 1024x768 overflow checks) under `scratchpad/shots/public-about-contact/`:
@@ -156,7 +205,7 @@ reach an `href` when they are `http(s):` or `mailto:`.
 - End to end against the shared API: two real submissions landed in `contact_messages`
   (topic "I want to present" from `?topic=present`, status `new`); a honeypot submission
   returned `{ok:true}` and stored nothing. Mocked 500 and success states via `page.route`.
-- Status codes: `/nope` 404, `/events/definitely-not-real` 404, `/events/zemi-107` 308.
+- Status codes (old DB): `/nope` 404, `/events/definitely-not-real` 404, an old event slug 308.
 - Client-side navigation through the root 404 (it mounts its own copy of the public shell):
   404 -> "Take me home", /about -> a broken link -> 404, 404 -> "See the Fridays". Each lands
   with one nav, one main, one footer, no stuck curtain, no console errors.
@@ -198,3 +247,7 @@ reach an `href` when they are `http(s):` or `mailto:`.
 4. **Foundation (three):** `SceneCanvas` gives no way to pass `style`/`className` to the
    `<Canvas>` itself, so overlay canvases have to force `pointer-events: none !important` on
    descendants. A `canvasClassName` or `interactive={false}` prop would be cleaner.
+5. **Foundation (motion):** the SplitText wrapper span inside `CaslHeading` / `SplitReveal` puts
+   an `aria-label` on a plain `<span>`. Axe flags this as `aria-prohibited-attr` (serious) on every
+   display heading. Either move the label to the heading element, or drop it and pair the
+   `aria-hidden` split pieces with an `sr-only` copy of the text.

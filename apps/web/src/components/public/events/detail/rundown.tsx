@@ -84,88 +84,90 @@ function RundownList({ items, startsAt, now, live, className, past }: RundownPro
             />
           </div>
         </div>
-        <ol
-          ref={listRef}
-          className="relative flex flex-col gap-2 lg:col-span-8"
+        {/* The rail lives on a wrapper: an <ol> may only hold <li> children. */}
+        <div
+          className="relative lg:col-span-8"
           style={{ '--rail-x': 'clamp(72px, 12vw, 120px)' } as CSSProperties}
         >
           <span className={styles.rundownRail} aria-hidden="true">
             <motion.span className={styles.rundownFill} style={{ scaleY: reduced ? 1 : fill }} />
           </span>
-          {items.map((it, i) => {
-            const isNow = i === current;
-            const done = current >= 0 && i < current;
-            const shape = SHAPE_ORDER[i % SHAPE_ORDER.length]!;
-            return (
-              <Reveal
-                as="li"
-                key={it.id}
-                delay={stagger(i, 0.05)}
-                x={-12}
-                y={0}
-                className={cn(styles.rundownItem, 'relative grid items-start py-4')}
-                style={{ gridTemplateColumns: 'var(--rail-x) 1fr' }}
-                aria-current={isNow ? 'step' : undefined}
-              >
-                <div className="pr-5 text-right sm:pr-7">
-                  <time
-                    className={cn(
-                      'mono block text-[clamp(1.125rem,2vw,1.5rem)] font-bold leading-none',
-                      done ? 'text-ink-4' : 'text-ink',
-                    )}
-                  >
-                    {it.time}
-                  </time>
-                  {it.endTime ? (
-                    <span className="mono mt-1 block text-[0.8125rem] text-ink-4">
-                      to {it.endTime}
-                    </span>
-                  ) : null}
-                </div>
-                <span className={styles.rundownDot} aria-hidden="true">
-                  {isNow ? <span className={styles.nowPulse} /> : null}
-                  <ShapeIcon shape={shape} size={14} color={done ? '#d8d8d2' : 'brand'} />
-                </span>
-                <div
-                  className={cn(
-                    'ml-5 rounded-[20px] px-5 py-4 transition-colors sm:ml-8',
-                    isNow ? 'bg-red-50 ring-1 ring-red/30' : 'hover:bg-surface-muted',
-                  )}
+          <ol ref={listRef} className="relative flex flex-col gap-2">
+            {items.map((it, i) => {
+              const isNow = i === current;
+              const done = current >= 0 && i < current;
+              const shape = SHAPE_ORDER[i % SHAPE_ORDER.length]!;
+              return (
+                <Reveal
+                  as="li"
+                  key={it.id}
+                  delay={stagger(i, 0.05)}
+                  x={-12}
+                  y={0}
+                  className={cn(styles.rundownItem, 'relative grid items-start py-4')}
+                  style={{ gridTemplateColumns: 'var(--rail-x) 1fr' }}
+                  aria-current={isNow ? 'step' : undefined}
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3
+                  <div className="pr-5 text-right sm:pr-7">
+                    <time
                       className={cn(
-                        'text-[1.1875rem] font-extrabold leading-snug',
-                        done ? 'text-ink-3' : 'text-ink',
+                        'mono block text-[clamp(1.125rem,2vw,1.5rem)] font-bold leading-none',
+                        done ? 'text-ink-4' : 'text-ink',
                       )}
                     >
-                      {it.agenda}
-                    </h3>
-                    {isNow ? (
-                      <span className="label inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 font-bold text-white">
-                        <span
-                          className="size-1.5 animate-pulse rounded-full bg-white"
-                          aria-hidden="true"
-                        />
-                        Now
+                      {it.time}
+                    </time>
+                    {it.endTime ? (
+                      <span className="mono mt-1 block text-[0.8125rem] text-ink-4">
+                        to {it.endTime}
                       </span>
                     ) : null}
                   </div>
-                  {it.note ? <p className="mt-1 text-[0.9375rem] text-ink-2">{it.note}</p> : null}
-                  {it.speaker ? (
-                    <Link
-                      href={`/speakers/${it.speaker.slug}`}
-                      className="mt-3 inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[0.9375rem] font-bold text-ink ring-1 ring-line transition-[background-color,box-shadow] hover:bg-white hover:ring-ink"
-                    >
-                      <Avatar name={it.speaker.fullName} image={it.speaker.avatar} size={28} />
-                      {it.speaker.fullName}
-                    </Link>
-                  ) : null}
-                </div>
-              </Reveal>
-            );
-          })}
-        </ol>
+                  <span className={styles.rundownDot} aria-hidden="true">
+                    {isNow ? <span className={styles.nowPulse} /> : null}
+                    <ShapeIcon shape={shape} size={14} color={done ? '#d8d8d2' : 'brand'} />
+                  </span>
+                  <div
+                    className={cn(
+                      'ml-5 rounded-[20px] px-5 py-4 transition-colors sm:ml-8',
+                      isNow ? 'bg-red-50 ring-1 ring-red/30' : 'hover:bg-surface-muted',
+                    )}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3
+                        className={cn(
+                          'text-[1.1875rem] font-extrabold leading-snug',
+                          done ? 'text-ink-3' : 'text-ink',
+                        )}
+                      >
+                        {it.agenda}
+                      </h3>
+                      {isNow ? (
+                        <span className="label inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 font-bold text-white">
+                          <span
+                            className="size-1.5 animate-pulse rounded-full bg-white"
+                            aria-hidden="true"
+                          />
+                          Now
+                        </span>
+                      ) : null}
+                    </div>
+                    {it.note ? <p className="mt-1 text-[0.9375rem] text-ink-2">{it.note}</p> : null}
+                    {it.speaker ? (
+                      <Link
+                        href={`/speakers/${it.speaker.slug}`}
+                        className="mt-3 inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[0.9375rem] font-bold text-ink ring-1 ring-line transition-[background-color,box-shadow] hover:bg-white hover:ring-ink"
+                      >
+                        <Avatar name={it.speaker.fullName} image={it.speaker.avatar} size={28} />
+                        {it.speaker.fullName}
+                      </Link>
+                    ) : null}
+                  </div>
+                </Reveal>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </section>
   );

@@ -57,7 +57,8 @@ components/public/events/
 components/public/register/
   register-sheet.tsx     bottom Sheet on phones, Dialog from 768px. Views: form, success, already registered, closed
   register-form.tsx      react-hook-form + zodResolver(registerInput), honeypot, attendance mode adapted to event.mode,
-                         remembered name/email/phone (localStorage), "13:14... 13:15" wait label, API error mapping
+                         opt-in "Remember me on this device" (off by default, so shared lab PCs keep nobody's
+                         email or phone; unticking clears it), "13:14... 13:15" wait label, API error mapping
   register-success.tsx   shapeConfetti + the cast cheering, the ticket card, Save ticket / Add to calendar / Show my ticket
 components/public/ticket/
   ticket-card.tsx        graph-paper ticket: accent stripe, perforated stub, branded QR (API qr.svg), code, mode
@@ -177,3 +178,29 @@ components/public/ticket/
   past pages say how many people actually came.
 - errors/404 owner: `LostPage` takes no props; `title`/`body` props would let `/tickets/*` say "We couldn't find
   that ticket" instead of the generic copy.
+
+## Review (public-events reviewer)
+
+Checked against SPEC, DESIGN and the shared contract: HTTP (missing slug 404, old slug 308 through a
+temporary `slug_redirects` row, bad and unknown ticket tokens 404, `/live` 307 + `no-store`, draft 404,
+unlisted 200), JSON-LD parses, absolute `og:image` + canonical (`metadataBase` is set), list filters
+(`speaker=<slug>`, `search=#42`, tag, year), cold `#register` deep links with and without the first-visit
+loader at 390 and 1440, client navigation from Coming up "Save my seat", `#recording` / `#photos`, a
+phone registration end to end, `?cancel=1`, and a real ffmpeg push on a throwaway event (waiting, preview,
+Go live, End, then the two-part recording) on one open page without a reload. Screenshots in the session
+scratchpad `shots/rev-public-events/` (`r2-*`) and `shots/rev-public-events2/`. Test data deleted.
+
+Fixed:
+- Register form no longer saves name, email and phone on every device. "Remember me on this device" is
+  opt in (off by default) and unticking forgets it at once. Shared lab PCs were leaking the last person's
+  details into the next person's form.
+- Cancelled page: the "Next Friday: <title>" button ran off 360 to 390 px phones (the magnet wrapper sized
+  to the text). It now truncates inside the page.
+- Register sheet on a closed Friday said "Save your seat", then "Sign ups are closed." twice. The title
+  now says "Sign ups are closed" and the body gives the reason once.
+- Live stage: on 16:10 laptops (1440x900, 1280x720) the player ran below the fold. From 600 px of height
+  up it now fits under the nav and the title. Landscape phones keep the full-height player.
+- Rundown: the rail `<span>` sat directly in the `<ol>` (only `<li>` is valid). It moved to a wrapper.
+- Archive cards: the link name now includes "coming up", "live now" or "recording available" (the
+  badges on the cover were not part of it). The Wrapped / Coming up / Everything switch uses
+  `aria-pressed` buttons instead of radios without arrow-key support.
