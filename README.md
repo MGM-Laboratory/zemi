@@ -4,9 +4,10 @@ The Friday seminar by [MGM Laboratory](https://labmgm.org). Every Friday, 13:15 
 postgrads share research in progress, undergrads get inspired, and everyone gets coffee.
 Hybrid: a classroom or theater on campus, plus a livestream on the site.
 
-- **Public site:** https://zemi.up.railway.app
-- **Admin dashboard:** https://zemi.up.railway.app/admin (passphrase login)
+- **Public site:** https://zemi.labmgm.org
+- **Admin dashboard:** https://zemi.labmgm.org/admin (passphrase login)
 - **API:** https://zemi-api.up.railway.app/api/v1
+- **Preview site:** https://zemi-preview.up.railway.app
 
 This repo holds the story-driven public site, the admin CMS and dashboard, the API, and the
 livestream ingest server.
@@ -91,8 +92,8 @@ pnpm e2e:quick                    # e2e against the running local stack
 pnpm e2e                          # includes @stream (real RTMP push) and @camera (fake webcam QR scan)
 ```
 
-The e2e suite also runs against production:
-`E2E_WEB_URL=https://zemi.up.railway.app E2E_API_URL=https://zemi-api.up.railway.app E2E_RTMP_URL=rtmp://altaria.proxy.rlwy.net:11280/live E2E_SUPERADMIN_PASSPHRASE=... npx playwright test e2e/smoke.spec.ts e2e/stream.spec.ts --project=chromium`
+Run data-changing e2e checks against preview:
+`E2E_WEB_URL=https://zemi-preview.up.railway.app E2E_API_URL=https://zemi-api-preview.up.railway.app E2E_RTMP_URL=rtmp://altaria.proxy.rlwy.net:11280/live E2E_SUPERADMIN_PASSPHRASE=... npx playwright test e2e/smoke.spec.ts e2e/stream.spec.ts --project=chromium`
 
 ## Running a Friday
 
@@ -102,7 +103,7 @@ The e2e suite also runs against production:
    `/admin/scan/<eventId>` on a laptop or phone, tap Enable camera, and scan tickets. Manual check-in and
    walk-ins are in the Attendance tab. Print the attendance paper from Registrations.
 3. **Stream:** in the event's Stream tab, copy the OBS settings (Custom service, Server
-   `rtmp://altaria.proxy.rlwy.net:11280/live`, Stream key `<key>?key=<private key>`, x264 CBR 3500 to
+   `rtmp://yamabiko.proxy.rlwy.net:48089/live`, Stream key `<key>?key=<private key>`, x264 CBR 3500 to
    4500 kbps at 1080p30, keyframe interval 2 s). Start streaming in OBS: the dashboard shows the preview.
    Press **Go live** when ready and **End stream** when done. The recording is stitched automatically and
    appears on the event page with chapters from the rundown.
@@ -111,20 +112,23 @@ The e2e suite also runs against production:
 ## Deploy (Railway)
 
 Project `zemi`: services `web`, `api`, `media`, `Postgres`, and bucket `zemi-media` (Singapore).
-Infrastructure is described in `.railway/railway.ts` (`railway config plan` shows drift).
+Infrastructure for production is described in `.railway/railway.ts` (`railway config plan` shows drift).
+Production is connected to `main`; preview is connected to the `preview` branch. A push to either
+branch deploys its own `web`, `api`, and `media` services. To test a change against preview, merge or
+cherry-pick it into `preview` before merging it into `main`.
 
-```bash
-railway up --service api --detach
-railway up --service web --detach
-railway up --service media --detach --path-as-root apps/media
-```
+- Production: https://zemi.labmgm.org, https://zemi-api.up.railway.app, and
+  `rtmp://yamabiko.proxy.rlwy.net:48089/live`.
+- Preview: https://zemi-preview.up.railway.app, https://zemi-api-preview.up.railway.app, and
+  `rtmp://altaria.proxy.rlwy.net:11280/live`.
+- Each environment has its own Postgres volume and Railway bucket. Production started with empty
+  application tables and an empty bucket; preview retains the former demo content and uploads.
 
 - The API applies migrations on boot. The web build bakes `API_INTERNAL_URL`, `NEXT_PUBLIC_*` and
   `SITE_INDEXING` in at build time (see `apps/web/Dockerfile`).
-- `SITE_INDEXING=false` on `web` sends `noindex` everywhere. It is set while production holds demo data.
-  Remove it (and redeploy web) when real content goes live.
-- Demo data: superadmins can wipe content in Admin > System (reset content). To re-seed production, see
-  `docs/features/api-site-seed.md` (seeded emails end in `.example`, so no real inbox is ever contacted).
+- `SITE_INDEXING=false` on `web` sends `noindex` everywhere. Keep it for preview; turn it on for
+  production and redeploy `web` when real content is ready for search engines.
+- Keep demo data in preview. The seed workflow is described in `docs/features/api-site-seed.md`.
 
 ## Email (Resend)
 
