@@ -226,6 +226,13 @@
   max-width: min(34rem, 100%);
 }
 
+/* Desktops: nudge the left column up so the words sit above the visual's center of mass. */
+@media (min-width: 1024px) {
+  .text {
+    padding-bottom: 128px;
+  }
+}
+
 .words {
   margin-top: 28px;
   font-size: clamp(1.125rem, 1.6vw, 1.5rem);
@@ -259,18 +266,31 @@
 }
 
 /*
- * Desktops: "Fridays aren't." floats at the top right, above where the friends gather once the
- * lights come on, so the top right corner is not dead space. The text column centers without it.
+ * Desktops: "Fridays aren't." floats at the center of the right side, above where the friends
+ * gather once the lights come on (the cluster sits around 62-85% width, low in the frame), so
+ * the top right corner is not dead space. The text column centers without it.
  */
 @media (min-width: 1024px) {
   /* `.text > *` (0,1,1) caps children at 34rem; the floating kicker gets its own width. */
   .text .kickerWrap {
     position: absolute;
-    right: 0;
-    top: calc(var(--nav-h, 72px) + clamp(48px, 9vh, 110px));
-    max-width: min(52rem, 100%);
+    left: 70%;
+    top: 44%;
+    transform: translate(-50%, -100%);
+    max-width: min(56rem, 70%);
     margin-top: 0;
-    text-align: right;
+    text-align: center;
+  }
+}
+
+/* Short landscape screens don't pin: the kicker stays in flow under the words. */
+@media (min-width: 1024px) and (max-height: 599.98px) {
+  .text .kickerWrap {
+    position: static;
+    transform: none;
+    max-width: min(34rem, 100%);
+    margin-top: 28px;
+    text-align: left;
   }
 }
 

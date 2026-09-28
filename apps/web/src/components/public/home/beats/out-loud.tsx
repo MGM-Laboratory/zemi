@@ -1,6 +1,6 @@
 'use client';
 
-import { lazy, useRef, useState } from 'react';
+import { lazy, useRef } from 'react';
 import { Character } from '@/components/brand/character';
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { gsap, useGSAP } from '@/components/motion/gsap';
@@ -14,21 +14,14 @@ import styles from './beats.module.css';
 
 const TableScene = lazy(() => import('./table-scene'));
 
-const TICKER = [
-  { at: 0, text: 'Four stools. Nobody sitting yet.' },
-  { at: 0.3, text: 'Everyone rolls in, fashionably late.' },
-  { at: 0.52, text: 'Laptop open. Slides about 60% done.' },
-  { at: 0.72, text: 'Hunch says it out loud anyway.' },
-];
-
 /**
  * 13:30, we say it out loud. Pinned 3D scene: the characters roll in and gather around the
- * seminar table while the camera dollies in; a small ticker narrates the scrub.
+ * seminar table while the camera dollies in. The models were preloaded and cached by the
+ * first-visit loader, so the scene never waits for a download mid-scroll.
  */
 export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: string[] }) {
   const root = useRef<HTMLElement>(null);
   const progress = useRef(0);
-  const [tick, setTick] = useState(0);
   const narrow = useMediaQuery('(max-width: 1023.98px)', false);
 
   useGSAP(
@@ -40,7 +33,6 @@ export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: stri
         const c = ctx.conditions as Record<string, boolean>;
         if (c.reduced) {
           progress.current = 1;
-          setTick(TICKER.length - 1);
           return;
         }
         const end = pinEnd(c, 2.2, 1.3);
@@ -65,11 +57,6 @@ export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: stri
             scrub: true,
             onUpdate: (self) => {
               progress.current = self.progress;
-              let i = 0;
-              TICKER.forEach((t, k) => {
-                if (self.progress >= t.at) i = k;
-              });
-              setTick((prev) => (prev === i ? prev : i));
             },
           },
         });
@@ -97,13 +84,6 @@ export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: stri
           <p className="text-body-l mt-6 max-w-[32rem] text-ink-2" data-loud-copy="">
             {scene.beat.body}
           </p>
-          <div className={styles.ticker} data-loud-copy="">
-            <span className={styles.tickerDot} aria-hidden="true" />
-            <span className="sr-only">Meanwhile at the table: </span>
-            <span key={tick} className={styles.tickerText}>
-              {TICKER[tick]!.text}
-            </span>
-          </div>
         </div>
         <div className={styles.stage}>
           <SceneCanvas

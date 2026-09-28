@@ -22,10 +22,41 @@
 @media (min-width: 1024px) {
   .layout {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: repeat(4, min-content);
+    column-gap: var(--gutter, 32px);
+    row-gap: 0;
     align-items: center;
-    gap: var(--gutter, 32px);
+    justify-items: start;
+    align-content: center;
     padding-top: calc(var(--nav-h, 72px) + 32px);
     padding-bottom: 48px;
+  }
+  /* The copy spreads its children down the left column so the button sits right under the body,
+     while the visual keeps its full height in the right column. */
+  .copy {
+    display: contents;
+  }
+  .copy > *:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .copy > *:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .copy > *:nth-child(3) {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .actions {
+    grid-column: 1;
+    grid-row: 4;
+    margin-top: 32px;
+  }
+  .stage {
+    grid-column: 2;
+    grid-row: 1 / 5;
+    align-self: center;
   }
 }
 
@@ -33,6 +64,13 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
 }
 
 .counter {

@@ -363,20 +363,6 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
             {scene.beat.title}
           </CaslHeading>
           <p className="text-body-l mt-6 max-w-[30rem] text-ink-2">{scene.beat.body}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Button onClick={throwAtSpeaker} size="lg" shape="circle" variant="accent">
-              Ask the question
-            </Button>
-            <p className={styles.counter} aria-live="polite">
-              <span className={styles.counterNum}>{count}</span>
-              <span>
-                {count === 1 ? 'good question' : 'good questions'}
-                <span className="block text-ink-3">
-                  {line ?? 'Drag the bubble, then throw it.'}
-                </span>
-              </span>
-            </p>
-          </div>
         </div>
 
         <div ref={stage} className={styles.stage} aria-hidden="true">
@@ -449,6 +435,21 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
               </text>
             </svg>
           </div>
+        </div>
+
+        {/* Phones: the button sits below the visual, so the lecture room is seen first.
+            Desktops: it lands right under the body text, in the copy column. */}
+        <div className={styles.actions}>
+          <Button onClick={throwAtSpeaker} size="lg" shape="circle" variant="accent">
+            Ask the question
+          </Button>
+          <p className={styles.counter} aria-live="polite">
+            <span className={styles.counterNum}>{count}</span>
+            <span>
+              {count === 1 ? 'good question' : 'good questions'}
+              <span className="block text-ink-3">{line ?? 'Drag the bubble, then throw it.'}</span>
+            </span>
+          </p>
         </div>
       </div>
     </section>

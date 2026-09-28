@@ -26,8 +26,15 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     align-items: center;
     gap: var(--gutter, 32px);
-    padding-top: calc(var(--nav-h, 72px) + 8px);
+    padding-top: calc(var(--nav-h, 72px) + clamp(16px, 4vh, 40px));
     padding-bottom: 24px;
+  }
+}
+
+/* Desktops: the copy sits up near the nav while the hand stays centered. */
+@media (min-width: 900px) and (min-height: 700px) {
+  .copy {
+    align-self: start;
   }
 }
 
@@ -207,6 +214,19 @@
   display: block;
   font-size: clamp(0.9375rem, 1.05vw, 1.0625rem);
   line-height: 1.35;
+}
+
+/* Desktops: the flipped face gets a calmer, smaller read so the three facts fit easily. */
+@media (min-width: 900px) {
+  .roleBack {
+    font-size: clamp(1.25rem, 1.7vw, 1.75rem);
+  }
+  .fact {
+    font-size: clamp(0.8125rem, 0.85vw, 0.9375rem);
+  }
+  .facts {
+    gap: clamp(8px, 1.2vh, 14px);
+  }
 }
 
 .factKey {

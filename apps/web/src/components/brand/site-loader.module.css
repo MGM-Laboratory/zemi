@@ -15,6 +15,31 @@
   will-change: clip-path;
 }
 
+/*
+ * First visit: the curtain holds after the intro until the 3D models are downloaded and
+ * cached. JS swaps the attribute to data-lift when the preload resolves; the 12s delays are
+ * the no-JS fallback so the loader still ends on its own.
+ */
+.root[data-hold] {
+  animation:
+    lift 0.4s cubic-bezier(0.65, 0, 0.35, 1) 12s forwards,
+    gone 0s linear 12.4s forwards;
+}
+
+.root[data-hold] .stage {
+  animation: stageOut 0.4s cubic-bezier(0.65, 0, 0.35, 1) 12s forwards;
+}
+
+.root[data-lift] {
+  animation:
+    lift 0.4s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    gone 0s linear 0.45s forwards;
+}
+
+.root[data-lift] .stage {
+  animation: stageOut 0.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
 :global(html[data-zemi-seen]) .root {
   display: none;
 }

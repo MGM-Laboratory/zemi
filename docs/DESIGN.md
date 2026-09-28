@@ -121,7 +121,10 @@ label       0.75rem mono, uppercase, tracking 0.08em
 - Idle: characters blink and sway. After 25s idle on the home page, Q peeks in from the screen edge.
 - Celebrate: shape confetti (four brand shapes) + characters cheer. Use for registration success,
   check-in success on the ticket page, publishing an event in admin.
-- Wait: the mark's `loading` loop, or a "13:14... 13:15" ticking clock for long waits.
+- Wait: the mark's `loading` loop, or a "13:14... 13:15" ticking clock for long waits. On a first
+  visit the loader holds its curtain (capped, with a no-JS fallback lift) until every GLB model is
+  downloaded, parsed and cached, so pinned 3D scenes never wait for a model mid-scroll; repeat
+  visits preload in the background.
 - Page transitions: the four shapes sweep across as a curtain (motion + View Transitions where possible).
 - `prefers-reduced-motion: reduce`: no smooth scroll, no parallax, 3D renders a still frame,
   transitions become 150ms fades, confetti is a static burst.
@@ -144,9 +147,11 @@ Props (Blender-generated GLB in `apps/web/public/models/`): round seminar table,
 cup, paper stack, paper plane, microphone, wall clock. Draco/meshopt compressed, each < 300KB.
 
 Performance: one canvas per section, lazy mounted when near viewport, paused offscreen,
-`dpr={[1, 1.75]}`, `PerformanceMonitor` to drop effects, no postprocessing on mobile. The home
-hero has no 3D scene (it was too heavy on low-end machines): the 3D stays in the pinned story
-sections (out-loud table, coffee cup), one live canvas at a time.
+`dpr={[1, 1.75]}`, `PerformanceMonitor` to drop effects, no postprocessing on mobile. All GLB
+models are preloaded and cached by the first-visit loader (`preload-models.ts` warms the shared
+drei `useGLTF` cache), so scenes never wait mid-scroll and client-side navigation never
+re-downloads them. The home hero has no 3D scene (it was too heavy on low-end machines): the 3D
+stays in the pinned story sections (out-loud table, coffee cup), one live canvas at a time.
 
 ## 10. Voice
 

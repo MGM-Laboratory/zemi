@@ -116,7 +116,7 @@ export function LonelyBeat({
           el.style.setProperty('--lights', '1');
           return;
         }
-        const end = pinEnd(c, 1.7, 1.0);
+        const end = pinEnd(c, 2.1, 1.3);
         const tl = gsap.timeline({
           defaults: { ease: 'none' },
           scrollTrigger: {
@@ -138,7 +138,9 @@ export function LonelyBeat({
           '>+0.04',
         );
         tl.fromTo(el, { '--lights': 0 }, { '--lights': 1, duration: 0.14 }, '<');
-        tl.to({}, { duration: 0.12 });
+        // The kicker and the lit room hold for the last chunk of the pin, so the payoff
+        // ("Fridays aren't.") needs a real scroll to leave and can't be scrolled past by accident.
+        tl.to({}, { duration: 0.55 });
       });
       return () => mm.revert();
     },
@@ -212,7 +214,8 @@ export function LonelyBeat({
         el.style.setProperty('--beam-h', (Math.max(0, cur.y) / Math.max(1, r.height)).toFixed(4));
       }
 
-      const lights = p > 0.8;
+      // The lights come on as the last words land, so the room is lit by the time the kicker shows.
+      const lights = p > 0.62;
       const d = Math.hypot(cur.x - qx, cur.y - qy);
       const next: CharacterMood =
         lights || reduced

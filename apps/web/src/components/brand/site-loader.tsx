@@ -1,25 +1,41 @@
 'use client';
 
-import { useLayoutEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { MARK_PATHS, SHAPE_COLORS, SHAPE_ORDER } from '@zemi/shared';
 import loader from './site-loader.module.css';
+
+/** The curtain holds at most this long for the model preload (slow networks still get the site). */
+const PRELOAD_CAP_MS = 12_000;
+
+/** Warm the 3D model cache. The import is lazy so three.js stays out of the first bundle. */
+function preload(): Promise<void> {
+  return import('@/components/three/preload-models')
+    .then((m) => m.preloadModels())
+    .catch(() => {
+      /* network failed: the scenes have 2D fallbacks */
+    });
+}
 
 /**
  * First-visit loader. The four shapes tumble in and snap into the mark while a mono clock ticks
  * 13:14 to 13:15 ("doors open"), then the curtain lifts.
  *
- * - Pure CSS timeline, so it plays before hydration and finishes on its own at ~1.15s even if
- *   JavaScript is slow or off. Page content renders underneath at full opacity (LCP is not delayed).
+ * - Pure CSS timeline, so it plays before hydration. On a first visit the curtain holds after
+ *   the intro (`data-hold`) until every 3D model is downloaded, parsed and cached
+ *   (`data-lift`, set by JS when the preload resolves), so the pinned scenes never wait for a
+ *   model mid-scroll. Without JavaScript the hold state lifts on its own after 12s.
  * - Skipped for the rest of the tab session: `SITE_LOADER_SCRIPT` (inline, in the public layout)
  *   sets `data-zemi-seen` on <html> before first paint when sessionStorage says we've been here.
- * - Client-side navigations never show it (the layout persists).
+ *   The preload still runs in the background on those visits (bytes are cached, parsing is local).
+ * - Client-side navigations never show the loader (the layout persists), and the model cache
+ *   lives in the same session, so returning to `/` never re-downloads anything.
  * - Hidden entirely under prefers-reduced-motion.
  */
 export function SiteLoader() {
   const [gone, setGone] = useState(false);
+  const [lift, setLift] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // A layout effect: on a client-side entry (from /admin, say) the attribute below must be on
-  // <html> before the first paint, or the page's h1 would wait for a curtain that never shows.
   useLayoutEffect(() => {
     const html = document.documentElement;
     let seen = html.hasAttribute('data-zemi-seen');
@@ -31,35 +47,51 @@ export function SiteLoader() {
       /* storage blocked */
     }
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const skip = seen || reduced;
-    if (skip) {
+    if (seen || reduced) {
       markReady();
       html.setAttribute('data-zemi-seen', '');
+      setGone(true);
+      void preload();
+      return;
     }
-    const ready = skip ? undefined : setTimeout(markReady, 820);
-    const done = setTimeout(() => setGone(true), skip ? 0 : 1300);
-    // The h1 paint rise (motion.module.css) waits for the curtain while data-zemi-seen is missing.
-    // Once the curtain is long gone, set it so later client navigations rise right away. A rise
-    // still running (a slow stream) keeps its delay pinned inline, so the flip can't make it jump.
-    const settle = skip
-      ? undefined
-      : setTimeout(() => {
-          for (const el of document.querySelectorAll<HTMLElement>('[data-split-paint]')) {
-            el.style.animationDelay = getComputedStyle(el).animationDelay;
-          }
-          html.setAttribute('data-zemi-seen', '');
-        }, 2400);
+    // First visit: the curtain waits for the models (capped, see PRELOAD_CAP_MS).
+    const cap = setTimeout(() => setLift(true), PRELOAD_CAP_MS);
+    void preload().finally(() => {
+      clearTimeout(cap);
+      setLift(true);
+    });
+    return () => clearTimeout(cap);
+  }, []);
+
+  useEffect(() => {
+    if (!lift) return;
+    markReady();
+    const root = rootRef.current;
+    if (root) {
+      root.removeAttribute('data-hold');
+      root.setAttribute('data-lift', '');
+    }
+    const done = setTimeout(() => setGone(true), 500);
+    // The h1 paint rise (motion.module.css) waits for the curtain while data-zemi-seen is
+    // missing. Once the curtain is long gone, set it so later client navigations rise right
+    // away. A rise still running (a slow stream) keeps its delay pinned inline, so the flip
+    // can't make it jump.
+    const settle = setTimeout(() => {
+      for (const el of document.querySelectorAll<HTMLElement>('[data-split-paint]')) {
+        el.style.animationDelay = getComputedStyle(el).animationDelay;
+      }
+      document.documentElement.setAttribute('data-zemi-seen', '');
+    }, 1700);
     return () => {
-      clearTimeout(ready);
       clearTimeout(done);
       clearTimeout(settle);
     };
-  }, []);
+  }, [lift]);
 
   if (gone) return null;
 
   return (
-    <div className={loader.root} aria-hidden="true" data-site-loader="">
+    <div ref={rootRef} className={loader.root} data-hold="" aria-hidden="true" data-site-loader="">
       <div className={loader.stage}>
         <svg viewBox="0 0 100 100" className={loader.mark}>
           {SHAPE_ORDER.map((s) => (
