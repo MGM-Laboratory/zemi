@@ -24,12 +24,11 @@ Keep them simple: that's the charm.
 
 ## 2. Signature: the Friday clock
 
-The home page is a session that runs from **13:15 to 15:15** as you scroll. A sticky clock pill
-(bottom-left on desktop, top-center under the nav on mobile) shows the current story time in mono
-digits with a tiny analog face whose hands sweep with scroll. Each story beat is stamped with its
-real time (13:15 doors open, 13:30 first talk, 14:30 questions, 14:50 coffee, 15:15 see you next week).
-Structure = information: the times are a true sequence of a real session. Don't use time stamps
-or numbered markers anywhere else as decoration.
+The home page is a session that runs from **13:15 to 15:15**. Each story beat is stamped
+**1, 2, 3...** in story order (doors open, then "1 - THE LONELY PART" through "N - SEE YOU NEXT
+WEEK"), so the structure reads without clock times. Beat times still exist in the data model: they
+order the scenes and drive the admin's beat-time preview (Admin > Site > Home). Don't use clock
+times or numbers anywhere else as decoration.
 
 Second signature, used with restraint: **type that loosens up.** Display headings are Recursive.
 Hovering or scrolling into them animates the `CASL` axis from 0 (formal) to 1 (casual) and a little
@@ -129,9 +128,12 @@ label       0.75rem mono, uppercase, tracking 0.08em
 
 ## 8. Cursor
 
-On `(pointer: fine)` only: a 12px ink dot that lerps to the pointer. Over links/buttons it grows
-into a 56px shape (circle by default; `data-cursor="play|drag|open|register"` shows a label and
-picks a shape). Hidden on touch devices. Never hide the native cursor on inputs.
+On `(pointer: fine)` only: a 12px white dot that lerps to the pointer with a distance-adaptive
+follow (fast catch-up on long jumps, gentle glide on small moves). The dot blends with
+`mix-blend-mode: difference`, so it renders black on light backgrounds and white on dark ones,
+photos included. Over links/buttons it grows into a 56px shape (circle by default;
+`data-cursor="play|drag|open|register"` shows a label and picks a shape). Hidden on touch devices.
+Never hide the native cursor on inputs.
 
 ## 9. 3D art direction
 
@@ -142,7 +144,9 @@ Props (Blender-generated GLB in `apps/web/public/models/`): round seminar table,
 cup, paper stack, paper plane, microphone, wall clock. Draco/meshopt compressed, each < 300KB.
 
 Performance: one canvas per section, lazy mounted when near viewport, paused offscreen,
-`dpr={[1, 1.75]}`, `PerformanceMonitor` to drop effects, no postprocessing on mobile.
+`dpr={[1, 1.75]}`, `PerformanceMonitor` to drop effects, no postprocessing on mobile. The home
+hero has no 3D scene (it was too heavy on low-end machines): the 3D stays in the pinned story
+sections (out-loud table, coffee cup), one live canvas at a time.
 
 ## 10. Voice
 

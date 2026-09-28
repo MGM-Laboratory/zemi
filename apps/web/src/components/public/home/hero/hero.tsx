@@ -1,8 +1,7 @@
 'use client';
 
-import { lazy, useRef } from 'react';
+import { useRef } from 'react';
 import type { EventCard, SiteSettings } from '@zemi/shared';
-import { Character } from '@/components/brand/character';
 import { useSiteReady } from '@/components/brand/site-loader';
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { gsap, ScrollTrigger, useGSAP } from '@/components/motion/gsap';
@@ -10,7 +9,6 @@ import { HighlightSwipe } from '@/components/motion/highlight-swipe';
 import { useLenis } from '@/components/motion/smooth-scroll';
 import { Button } from '@/components/public/ui/button';
 import { Eyebrow } from '@/components/public/ui/section-header';
-import { SceneCanvas } from '@/components/three/scene-canvas';
 import { cn } from '@/lib/utils';
 import { BeatStamp } from '../beat-stamp';
 import { MQ } from '../motion-config';
@@ -18,12 +16,12 @@ import type { StoryBeat } from '../types';
 import styles from './hero.module.css';
 import { NextMiniCard } from './next-mini-card';
 
-const HeroScene = lazy(() => import('./hero-scene'));
-
 export interface HeroProps {
   home: SiteSettings['home'];
   doors: StoryBeat;
   next: EventCard | null;
+  /** The most recent past Friday, shown in the card when nothing is booked. */
+  lastFriday: EventCard | null;
   /** Where "What happens here?" scrolls to. */
   storyId: string;
   /** The API is down: the mini card says so instead of "nothing booked". */
@@ -36,11 +34,10 @@ function sentences(text: string): string[] {
 }
 
 /**
- * 13:15, doors open. Full-viewport clay scene, the giant title, the next Friday ticket.
+ * Doors open. Full-viewport hero with the giant title and the next Friday ticket.
  */
-export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
+export function Hero({ home, doors, next, lastFriday, storyId, offline }: HeroProps) {
   const root = useRef<HTMLElement>(null);
-  const scroll = useRef({ p: 0 });
   const ready = useSiteReady();
   const lenis = useLenis();
 
@@ -55,9 +52,6 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
           start: 'top top',
           end: 'bottom top',
           scrub: true,
-          onUpdate: (self) => {
-            scroll.current.p = self.progress;
-          },
         };
         // Laptops: the hero fits the screen, so the copy drifts up and fades as it leaves.
         // Phones and tablets: the copy is taller than the screen and still being read, keep it solid.
@@ -95,27 +89,7 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
       ref={root}
       className={styles.hero}
       aria-labelledby="home-hero-title"
-      data-story-time={doors.time}
     >
-      <SceneCanvas
-        className={styles.scene}
-        camera={{ position: [0, 0.2, 16], fov: 28 }}
-        studio={{ shadows: false }}
-        dpr={[1, 1.75]}
-        rootMargin="100% 0px"
-        label="Q, Hunch, Block and Bridge, four clay shapes, float around and watch your cursor."
-        fallback={
-          <div className={styles.fallback} aria-hidden="true">
-            <Character shape="circle" size="clamp(64px, 9vw, 150px)" seed={0} />
-            <Character shape="triangle" size="clamp(64px, 9vw, 150px)" seed={1} />
-            <Character shape="square" size="clamp(64px, 9vw, 150px)" seed={2} mood="thinking" />
-            <Character shape="arch" size="clamp(64px, 9vw, 150px)" seed={3} />
-          </div>
-        }
-      >
-        <HeroScene scroll={scroll} ready={ready} />
-      </SceneCanvas>
-
       <div className={cn('container-page', styles.content)} data-hero-parallax="">
         <div className={styles.main}>
           <Eyebrow shape="square" className="mb-5">
@@ -152,12 +126,17 @@ export function Hero({ home, doors, next, storyId, offline }: HeroProps) {
         </div>
         <aside className={styles.side} aria-label="The next Friday">
           <div className={styles.doors}>
-            <BeatStamp time={doors.time} label="doors open" />
+            <BeatStamp label="doors open" />
             <p className="text-[0.9375rem] leading-[1.5] text-ink-2">
               <strong className="font-bold text-ink">{doors.title}</strong> {doors.body}
             </p>
           </div>
-          <NextMiniCard event={next} offline={offline} className={styles.miniSlot} />
+          <NextMiniCard
+            event={next}
+            lastFriday={lastFriday}
+            offline={offline}
+            className={styles.miniSlot}
+          />
         </aside>
       </div>
 

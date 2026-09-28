@@ -261,7 +261,6 @@ export function LonelyBeat({
       id={scene.id}
       className={cn(styles.lonely, lit && styles.isLit)}
       data-nav-theme="dark"
-      data-story-time={scene.beat.time}
       aria-labelledby={`${scene.id}-title`}
     >
       {/* The room. Everything below the text layer is decorative. */}
@@ -298,7 +297,7 @@ export function LonelyBeat({
       <div className={styles.beam} aria-hidden="true" />
 
       <div className={cn('container-page', styles.text)}>
-        <BeatStamp time={scene.beat.time} label={scene.clockLabel} inverse />
+        <BeatStamp n={scene.n} label={scene.label} inverse />
         <CaslHeading id={`${scene.id}-title`} size="l" className="mt-6 text-white">
           {scene.beat.title}
         </CaslHeading>

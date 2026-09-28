@@ -29,8 +29,9 @@ characters, the Friday clock, typography, motion, voice).
 
 ## Features at a glance
 
-**Public site:** home story that runs like a Friday session from 13:15 to 15:15 (scroll-driven clock,
-3D clay characters, Blender props), events archive with a timeline ribbon of every Friday, event pages
+**Public site:** home story that runs like a Friday session from 13:15 to 15:15 (numbered story
+beats, 3D clay characters and Blender props in the pinned scenes), events archive with a timeline
+ribbon of every Friday, event pages
 that change by state (coming up, happening now with the live player and reactions, wrapped with the
 recording, chapters and photo gallery, cancelled), free registration with a branded QR ticket,
 speakers directory and profiles, publications library with cite-this (APA, IEEE, MLA, Chicago, Harvard,

@@ -1,4 +1,4 @@
-/* Home hero: 13:15, doors open. */
+/* Home hero: doors open. */
 
 .hero {
   /*
@@ -20,40 +20,9 @@
     var(--color-bg, #fff);
 }
 
-.scene {
-  position: absolute !important;
-  inset: 0;
-  z-index: 0;
-}
-
-.fallback {
-  position: absolute;
-  top: calc(var(--nav-h, 72px) + 6vh);
-  right: var(--page-margin, 24px);
-  display: flex;
-  gap: 12px;
-}
-
-@media (max-width: 767.98px) {
-  .fallback {
-    left: 50%;
-    right: auto;
-    translate: -50% 0;
-  }
-}
-
-/* Landscape phones: the Friday clock pill sits top-center under the nav, keep the row below it. */
-@media (orientation: landscape) and (max-height: 599.98px) {
-  .fallback {
-    top: calc(var(--nav-h, 72px) + 76px);
-  }
-}
-
 .content {
   position: relative;
   z-index: 1;
-  /* Clicks fall through to the characters; only real controls take them. */
-  pointer-events: none;
   display: grid;
   gap: 28px;
   align-items: end;
@@ -74,18 +43,17 @@
 
 @media (min-width: 1024px) {
   .content {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 356px);
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
     column-gap: clamp(32px, 4vw, 72px);
     /* Content sits at the bottom of the screen; this is only the minimum gap under the nav. */
     padding-top: calc(var(--nav-h, 72px) + clamp(12px, 4svh, 48px));
-    /* The Friday clock sits bottom-left on desktop: keep the CTAs clear of it. */
-    padding-bottom: clamp(92px, 11vh, 128px);
+    padding-bottom: clamp(40px, 7vh, 88px);
   }
 }
 
 @media (min-width: 1920px) {
   .content {
-    grid-template-columns: minmax(0, 1fr) 400px;
+    grid-template-columns: minmax(0, 1fr) minmax(440px, 540px);
   }
 }
 
@@ -101,7 +69,7 @@
 
 @media (min-width: 1024px) {
   .main {
-    /* The title sizes against its own column (cqi), next to the next-Friday card. */
+    /* The title sizes against its own column (cqi), next to the Friday card. */
     container-type: inline-size;
   }
 }
@@ -110,22 +78,20 @@
   max-width: 12.5ch;
   font-size: clamp(3.25rem, min(10.6vw, 16.5vh), 11rem);
   color: var(--color-ink, #0e1116);
-  /* Soft white halo so the title stays crisp when a character floats behind it. */
-  text-shadow: 0 0 40px rgb(255 255 255 / 0.85);
 }
 
 @media (min-width: 1024px) {
   .title {
     /*
-     * Laptops: the whole hero (title, body, CTAs, clear of the Friday clock) fits one screen.
+     * Laptops: the whole hero (title, body, CTAs) fits one screen.
      * - 16cqi keeps the longest default word ("half-finished", about 6em wide) on one line,
      *   so 1024 and 1280 don't break it into "half-" / "finished".
-     * - The svh term leaves about 420px for the nav, eyebrow, body, CTAs and the clock gap, and
-     *   gives the rest to three lines of title (each line plus the reveal mask is ~1.03em).
+     * - The svh term leaves about 400px for the nav, eyebrow, body and CTAs, and gives the
+     *   rest to three lines of title (each line plus the reveal mask is ~1.03em).
      */
     font-size: clamp(
       3.25rem,
-      min(9.2vw, 16.5vh, 16cqi, calc((100svh - var(--hero-bar) - 420px) / 3.1)),
+      min(9.2vw, 16.5vh, 16cqi, calc((100svh - var(--hero-bar) - 400px) / 3.1)),
       11rem
     );
   }
@@ -133,7 +99,6 @@
 
 .body {
   margin-top: clamp(20px, 3.4vh, 36px);
-  text-shadow: 0 0 18px rgb(255 255 255 / 0.9);
 }
 
 .cta {
@@ -147,8 +112,24 @@
   min-width: 0;
 }
 
+@media (min-width: 1024px) {
+  /* The card stretches to fill the right side of the hero, under the doors note. */
+  .side {
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+}
+
 .miniSlot {
   pointer-events: auto;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .miniSlot {
+    flex: 1;
+    min-height: min(46vh, 460px);
+  }
 }
 
 /* --------------------------------------------------------------- doors note */
@@ -159,7 +140,7 @@
   align-items: flex-start;
   gap: 10px;
   padding-left: 4px;
-  /* Phones and tablets: the next Friday card stays right under the buttons, doors open follows. */
+  /* Phones and tablets: the Friday card stays right under the buttons, doors open follows. */
   order: 2;
 }
 
@@ -171,12 +152,11 @@
 
 .doors p {
   max-width: 21rem;
-  text-shadow: 0 0 14px rgb(255 255 255 / 0.95);
 }
 
 /*
- * Short laptop screens (1024x768, 1280x800, 1366x768 and friends): the clay cluster needs that room, so the doors note
- * steps aside. The Friday clock already reads "13:15 doors open" there.
+ * Short laptop screens (1024x768, 1280x800, 1366x768 and friends): the card needs that room, so
+ * the doors note steps aside. The stamp above the card already reads "doors open" there.
  */
 @media (min-width: 1024px) and (max-height: 800px) {
   .doors {
@@ -189,6 +169,8 @@
 .mini {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border-radius: 24px;
   border: 1px solid var(--color-line, #ececea);
   background: rgb(255 255 255 / 0.86);
@@ -221,6 +203,31 @@
   top: 0;
   bottom: 0;
   width: 6px;
+}
+
+.miniSpeakers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.miniSpeaker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 12px 3px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line, #ececea);
+  background: rgb(255 255 255 / 0.7);
+  color: var(--color-ink, #0e1116);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: border-color 200ms;
+}
+
+.miniSpeaker:hover {
+  border-color: var(--color-line-strong, #d8d8d2);
 }
 
 .miniArrow {

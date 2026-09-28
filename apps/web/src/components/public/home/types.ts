@@ -21,8 +21,10 @@ export type SceneKind =
 export interface StoryScene {
   kind: SceneKind;
   beat: StoryBeat;
-  /** Short lowercase label for the Friday clock pill. */
-  clockLabel: string;
+  /** Short lowercase label for the section stamp ("the lonely part"). */
+  label: string;
+  /** Position in the story, 1-based ("1 - THE LONELY PART"). */
+  n: number;
   /** DOM id for anchors (e.g. "story-lonely"). */
   id: string;
 }

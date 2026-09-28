@@ -349,12 +349,11 @@ export function QuestionBeat({ scene }: { scene: StoryScene }) {
       ref={root}
       id={scene.id}
       className={styles.question}
-      data-story-time={scene.beat.time}
       aria-labelledby={`${scene.id}-title`}
     >
       <div className={cn('container-page', styles.layout)}>
         <div className={styles.copy}>
-          <BeatStamp time={scene.beat.time} label={scene.clockLabel} />
+          <BeatStamp n={scene.n} label={scene.label} />
           <CaslHeading
             id={`${scene.id}-title`}
             size="l"

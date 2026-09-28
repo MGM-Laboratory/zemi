@@ -71,7 +71,7 @@ function HomeForm({ data }: { data: SiteSettings['home'] }) {
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="grid content-start gap-4">
             <FormField control={form.control} name="heroEyebrow" label="Small line above" maxLength={120}>
-              {(field) => <Input {...field} placeholder="Fridays, 13:15 WIB" />}
+              {(field) => <Input {...field} placeholder="Friday, FILKOM UB" />}
             </FormField>
             <FormField control={form.control} name="heroTitle" label="Big line" required maxLength={200}>
               {(field) => <Textarea {...field} autosize minRows={2} maxRows={4} className="font-display text-lg font-extrabold" />}

@@ -24,6 +24,3 @@ export function pinEnd(c: MQConditions, long: number, short: number): string | n
   if (c.short) return `+=${Math.round(short * 100)}%`;
   return null;
 }
-
-/** Story clock anchors: the element's top crossing this viewport line stamps its time. */
-export const STAMP_LINE = 'top 55%';

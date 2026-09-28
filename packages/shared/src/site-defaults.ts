@@ -94,7 +94,7 @@ export const SITE_DEFAULTS: SiteSettings = {
     ],
   },
   home: {
-    heroEyebrow: 'Fridays, 13:15 WIB',
+    heroEyebrow: 'Friday, FILKOM UB',
     heroTitle: 'Bring your half-finished research.',
     heroBody:
       'Every Friday we pull up chairs and talk about the stuff that is not done yet. Master’s, PhD, undergrads. Same table.',

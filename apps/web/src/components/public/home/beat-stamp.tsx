@@ -1,93 +1,43 @@
 import { cn } from '@/lib/utils';
 
-/** Tiny analog face showing `time` (HH:mm). */
-export function ClockGlyph({ time, className }: { time: string; className?: string }) {
-  const [h = 13, m = 15] = time.split(':').map(Number);
-  const minute = m * 6;
-  const hour = ((h % 12) + m / 60) * 30;
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className={cn('size-[1.35em] flex-none', className)}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle
-        cx="10"
-        cy="10"
-        r="8.6"
-        fill="none"
-        stroke="currentColor"
-        strokeOpacity="0.45"
-        strokeWidth="1.4"
-      />
-      <line
-        x1="10"
-        y1="10.6"
-        x2="10"
-        y2="5.6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        transform={`rotate(${hour} 10 10)`}
-      />
-      <line
-        x1="10"
-        y1="10.8"
-        x2="10"
-        y2="3.6"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        transform={`rotate(${minute} 10 10)`}
-      />
-      <circle cx="10" cy="10" r="1.3" fill="#f94141" />
-    </svg>
-  );
-}
-
 export interface BeatStampProps {
-  time: string;
-  /** Short words after the time ("doors open"). */
+  /** Story position, 1-based. Omit to show just the label (the hero's doors note). */
+  n?: number;
+  /** Short words ("the lonely part"). */
   label?: string;
   inverse?: boolean;
   className?: string;
 }
 
 /**
- * The real time of a story beat (DESIGN.md section 2): "13:30 WIB · first talk".
- * Server-safe. The only place on the site where times are used as markers.
+ * A story beat stamp: "1 - THE LONELY PART". The story runs from doors open to the closing,
+ * so the beats count 1, 2, 3... instead of showing a time. Server-safe.
  */
-export function BeatStamp({ time, label, inverse, className }: BeatStampProps) {
+export function BeatStamp({ n, label, inverse, className }: BeatStampProps) {
   return (
     <p
       className={cn(
-        'label inline-flex items-center gap-2 rounded-full border py-1.5 pl-1.5 pr-3',
+        'label inline-flex items-center gap-2 rounded-full border py-1.5 pl-3.5 pr-3.5',
         inverse
           ? 'border-white/15 bg-white/[0.06] text-ink-inverse/80'
           : 'border-line-strong bg-white text-ink-2',
         className,
       )}
     >
-      <ClockGlyph time={time} className={inverse ? 'text-white' : 'text-ink'} />
-      <time
-        dateTime={time}
-        className={cn(
-          'text-[0.8125rem] font-bold tracking-[0.04em]',
-          inverse ? 'text-white' : 'text-ink',
-        )}
-      >
-        {time}
-      </time>
-      {/* A real color, not opacity: at 12px it must stay above 4.5:1 (ink-3 on white is 4.8:1). */}
-      <span className={cn('-ml-1', inverse ? 'text-white/70' : 'text-ink-3')}>WIB</span>
-      {label ? (
+      {n != null ? (
         <>
-          <span aria-hidden="true" className="opacity-40">
-            ·
+          <span className={cn('text-[0.8125rem] font-bold tracking-[0.04em]', inverse ? 'text-white' : 'text-ink')}>
+            {n}
           </span>
-          <span>{label}</span>
+          <span aria-hidden="true" className="opacity-40">
+            -
+          </span>
         </>
+      ) : null}
+      {label ? (
+        <span className={cn('font-bold tracking-[0.08em]', inverse ? 'text-white/80' : 'text-ink-2')}>
+          {label}
+        </span>
       ) : null}
     </p>
   );

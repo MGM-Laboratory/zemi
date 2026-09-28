@@ -15,13 +15,12 @@ export function GenericBeat({ scene, index }: { scene: StoryScene; index: number
   return (
     <section
       id={scene.id}
-      data-story-time={scene.beat.time}
       aria-labelledby={`${scene.id}-title`}
       className="relative overflow-hidden bg-surface-muted py-[var(--section-y)]"
     >
       <div className="container-page grid items-center gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <div className="flex flex-col items-start">
-          <BeatStamp time={scene.beat.time} label={scene.clockLabel} />
+          <BeatStamp n={scene.n} label={scene.label} />
           <CaslHeading
             id={`${scene.id}-title`}
             size="l"

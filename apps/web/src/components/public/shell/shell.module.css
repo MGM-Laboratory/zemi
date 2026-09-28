@@ -207,7 +207,31 @@
   opacity: 1;
 }
 
+/*
+ * The dot is its own fixed element, outside the badge wrapper. The wrapper is a stacking
+ * context (fixed + z-index), and a blend inside one only sees the wrapper's transparent
+ * backdrop, so the dot would stay white. At the root level the difference blend sees the
+ * page: white dot, black on light backgrounds, white on dark ones.
+ */
 .cursorDot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 250;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  mix-blend-mode: difference;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  will-change: transform;
+}
+
+.cursorDot[data-visible='true'] {
+  opacity: 1;
+}
+
+.cursorDotCore {
   position: absolute;
   left: 0;
   top: 0;
@@ -216,26 +240,25 @@
   margin: -6px 0 0 -6px;
   border-radius: 999px;
   background: #fff;
-  mix-blend-mode: difference;
   transition:
     transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 160ms ease;
 }
 
-.cursor[data-state='link'] .cursorDot {
+.cursorDot[data-state='link'] .cursorDotCore {
   transform: scale(3.6);
 }
 
-.cursor[data-state='text'] .cursorDot,
-.cursor[data-state='label'] .cursorDot {
+.cursorDot[data-state='text'] .cursorDotCore,
+.cursorDot[data-state='label'] .cursorDotCore {
   transform: scale(0);
   opacity: 0;
 }
 
-.cursor[data-down='true'] .cursorDot {
+.cursorDot[data-down='true'] .cursorDotCore {
   transform: scale(0.7);
 }
-.cursor[data-down='true'][data-state='link'] .cursorDot {
+.cursorDot[data-down='true'][data-state='link'] .cursorDotCore {
   transform: scale(3);
 }
 

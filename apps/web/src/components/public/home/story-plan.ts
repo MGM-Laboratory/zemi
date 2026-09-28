@@ -85,16 +85,19 @@ export function planStory(input: StoryBeat[] | null | undefined): {
   const scenes: StoryScene[] = [];
   for (const s of STAGED) {
     const beat = assigned.get(s.kind);
-    if (beat) scenes.push({ kind: s.kind, beat, clockLabel: s.label, id: `story-${s.kind}` });
+    if (beat) scenes.push({ kind: s.kind, beat, label: s.label, n: 0, id: `story-${s.kind}` });
   }
   pool.forEach((beat, i) =>
     scenes.push({
       kind: 'generic',
       beat,
-      clockLabel: shortLabel(beat.title),
+      label: shortLabel(beat.title),
+      n: 0,
       id: `story-beat-${i + 1}`,
     }),
   );
   scenes.sort((a, b) => toMin(a.beat.time) - toMin(b.beat.time));
+  // Number the story 1, 2, 3... in order (the stamps read "1 - THE LONELY PART" and so on).
+  scenes.forEach((s, i) => (s.n = i + 1));
   return { doors, scenes, closing };
 }

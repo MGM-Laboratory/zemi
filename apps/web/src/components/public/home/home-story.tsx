@@ -1,4 +1,3 @@
-import type { ClockBeat } from '@/components/public/shell/friday-clock';
 import { CoffeeBeat } from './beats/coffee';
 import { GenericBeat } from './beats/generic-beat';
 import { LonelyBeat } from './beats/lonely';
@@ -13,23 +12,17 @@ import { PublicationsTeaser } from './publications-teaser';
 import { SkipStoryLink } from './skip-story';
 import { SpeakersMarquee } from './speakers-marquee';
 import { Stats } from './stats';
-import { StoryClock } from './story-clock';
 import { UpNext } from './up-next';
 import type { HomeData } from './types';
 
 const ROOT_ID = 'home-story';
 
 /**
- * The home page composition (server). Sections run in story order; the Friday clock is rendered
- * last so its triggers see every pin.
+ * The home page composition (server). Sections run in story order, stamped 1, 2, 3... from the
+ * first beat to the closing.
  */
 export function HomeStory({ data }: { data: HomeData }) {
   const { home, doors, scenes, closing } = data;
-  const clockBeats: ClockBeat[] = [
-    { time: doors.time, label: 'doors open' },
-    ...scenes.map((s) => ({ time: s.beat.time, label: s.clockLabel })),
-    { time: closing.time, label: 'see you next week' },
-  ];
   const storyId = scenes[0]?.id ?? 'up-next';
 
   return (
@@ -39,6 +32,7 @@ export function HomeStory({ data }: { data: HomeData }) {
         home={home}
         doors={doors}
         next={data.next}
+        lastFriday={data.past[0] ?? null}
         storyId={storyId}
         offline={data.scheduleOffline}
       />
@@ -82,8 +76,7 @@ export function HomeStory({ data }: { data: HomeData }) {
         offline={data.offline}
       />
       <PublicationsTeaser items={data.publications} total={data.publicationsTotal} />
-      <Closing beat={closing} next={data.next} />
-      <StoryClock beats={clockBeats} rootId={ROOT_ID} />
+      <Closing beat={closing} n={scenes.length + 1} next={data.next} />
       <IdlePeek />
     </div>
   );

@@ -41,7 +41,7 @@ const beat = z.object({
 });
 
 export const homeSettings = z.object({
-  heroEyebrow: z.string().max(120).default('Fridays, 13:15 WIB'),
+  heroEyebrow: z.string().max(120).default('Friday, FILKOM UB'),
   heroTitle: z.string().max(200).default('Bring your half-finished research.'),
   heroBody: z.string().max(400).default('Every Friday we pull up chairs and talk about the stuff that is not done yet. Master’s, PhD, undergrads. Same table.'),
   heroPrimaryCta: z.string().max(40).default('Save me a seat'),

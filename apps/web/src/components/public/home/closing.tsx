@@ -47,10 +47,8 @@ function WaveEdge({ color }: { color: string }) {
 }
 
 /**
- * 15:15, see you next Friday. The four colors pour up like a layered drink, each character riding
- * its own wave, then the ink floods in and hands the page to the footer. The Friday clock reads
- * 15:15 as soon as this copy comes in (its stamp is the story's last anchor), celebrates once and
- * holds there until the footer takes over.
+ * The closing, see you next Friday. The four colors pour up like a layered drink, each character
+ * riding its own wave, then the ink floods in and hands the page to the footer.
  *
  * - The heading and body blend with `difference`, so they stay readable while the ink passes
  *   behind them. The buttons and the stamp switch to their paper versions the moment the ink
@@ -58,7 +56,7 @@ function WaveEdge({ color }: { color: string }) {
  * - The ink layer is marked `data-nav-theme="dark"`: the nav flips exactly when the ink reaches it.
  * - Once flooded, the four friends pop up at the bottom and wave (tap them).
  */
-export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | null }) {
+export function Closing({ beat, next, n }: { beat: StoryBeat; next: EventCard | null; n?: number }) {
   const root = useRef<HTMLElement>(null);
   const riders = useRef<Array<CharacterHandle | null>>([]);
   const friends = useRef<Array<CharacterHandle | null>>([]);
@@ -200,15 +198,13 @@ export function Closing({ beat, next }: { beat: StoryBeat; next: EventCard | nul
         </div>
       </div>
 
-      {/* The story's last anchor: the clock lands on 15:15 as this copy comes in. */}
+      {/* The story's last section. */}
       <div
         className={cn('container-page', styles.content)}
         data-closing-copy=""
-        data-story-time={beat.time}
-        data-story-at="top 82%"
       >
         <div data-closing-stamp="">
-          <BeatStamp time={beat.time} label="see you next week" inverse={inked.stamp} />
+          <BeatStamp n={n} label="see you next week" inverse={inked.stamp} />
         </div>
         <CaslHeading as="h2" id="closing-title" size="xl" reveal className={styles.title}>
           {beat.title}

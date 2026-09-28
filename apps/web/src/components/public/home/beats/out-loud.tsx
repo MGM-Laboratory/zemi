@@ -84,13 +84,12 @@ export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: stri
       ref={root}
       id={scene.id}
       className={cn(styles.pinned, styles.loud)}
-      data-story-time={scene.beat.time}
       aria-labelledby={`${scene.id}-title`}
     >
       <div className={cn('container-page', styles.split)}>
         <div className={styles.copy}>
           <div data-loud-copy="">
-            <BeatStamp time={scene.beat.time} label={scene.clockLabel} />
+            <BeatStamp n={scene.n} label={scene.label} />
           </div>
           <CaslHeading id={`${scene.id}-title`} size="l" reveal className="mt-6 text-ink">
             {scene.beat.title}

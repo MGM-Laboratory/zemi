@@ -75,7 +75,6 @@ export function CoffeeBeat({
       ref={root}
       id={scene.id}
       className={styles.coffee}
-      data-story-time={scene.beat.time}
       aria-labelledby={`${scene.id}-title`}
     >
       <NetworkCanvas
@@ -87,7 +86,7 @@ export function CoffeeBeat({
       <div className={cn('container-page', styles.layout)}>
         <div className={styles.copy}>
           <div data-coffee-in="">
-            <BeatStamp time={scene.beat.time} label={scene.clockLabel} />
+            <BeatStamp n={scene.n} label={scene.label} />
           </div>
           <CaslHeading
             id={`${scene.id}-title`}
