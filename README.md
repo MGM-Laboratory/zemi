@@ -4,8 +4,8 @@ The Friday seminar by [MGM Laboratory](https://labmgm.org). Every Friday, 13:15 
 postgrads share research in progress, undergrads get inspired, and everyone gets coffee.
 Hybrid: a classroom or theater on campus, plus a livestream on the site.
 
-- **Public site:** https://zemi.labmgm.org
-- **Admin dashboard:** https://zemi.labmgm.org/admin (passphrase login)
+- **Public site:** https://zemi.ac
+- **Admin dashboard:** https://zemi.ac/admin (passphrase login)
 - **API:** https://zemi-api.up.railway.app/api/v1
 - **Preview site:** https://zemi-preview.up.railway.app
 
@@ -117,7 +117,7 @@ Production is connected to `main`; preview is connected to the `preview` branch.
 branch deploys its own `web`, `api`, and `media` services. To test a change against preview, merge or
 cherry-pick it into `preview` before merging it into `main`.
 
-- Production: https://zemi.labmgm.org, https://zemi-api.up.railway.app, and
+- Production: https://zemi.ac, https://zemi-api.up.railway.app, and
   `rtmp://yamabiko.proxy.rlwy.net:48089/live`.
 - Preview: https://zemi-preview.up.railway.app, https://zemi-api-preview.up.railway.app, and
   `rtmp://altaria.proxy.rlwy.net:11280/live`.
@@ -132,6 +132,7 @@ cherry-pick it into `preview` before merging it into `main`.
 
 ## Email (Resend)
 
-Emails are sent from `no-reply@labmgm.org` through Resend once `RESEND_API_KEY` is set on the `api` service
-and `labmgm.org` is verified in Resend (SPF/DKIM DNS records). Until then every email is rendered and logged
-instead of sent. Superadmins can preview every template at Admin > System.
+Production sends email through Resend from `Zemi <no-reply@zemi.ac>`. Its `api` service holds the
+`RESEND_API_KEY` Railway variable, and `zemi.ac` is verified for sending in Resend. Preview uses the
+local outbox unless a separate key is configured. Superadmins can inspect all 10 registered templates
+and send a test email from Admin > System.
