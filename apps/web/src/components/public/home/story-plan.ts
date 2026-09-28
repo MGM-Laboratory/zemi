@@ -19,7 +19,6 @@ const STAGED: Array<{ kind: SceneKind; time: string; label: string }> = [
   { kind: 'loud', time: '13:30', label: 'first talk' },
   { kind: 'table', time: '14:00', label: 'same table' },
   { kind: 'question', time: '14:30', label: 'questions' },
-  { kind: 'coffee', time: '14:50', label: 'coffee' },
 ];
 
 const toMin = (hhmm: string) => {
@@ -57,13 +56,13 @@ export function planStory(input: StoryBeat[] | null | undefined): {
 } {
   const source = (input?.length ? input : SITE_DEFAULTS.home.beats)
     .map(clean)
-    .filter((b) => Number.isFinite(toMin(b.time)) && b.title);
-  const beats = (source.length ? source : SITE_DEFAULTS.home.beats.map(clean)).sort(
-    (a, b) => toMin(a.time) - toMin(b.time),
-  );
+    .filter((b) => Number.isFinite(toMin(b.time)) && b.title && b.time !== '14:50');
+  const beats = (
+    source.length ? source : SITE_DEFAULTS.home.beats.map(clean).filter((b) => b.time !== '14:50')
+  ).sort((a, b) => toMin(a.time) - toMin(b.time));
   const defaults = SITE_DEFAULTS.home.beats;
 
-  let pool = [...beats];
+  const pool = [...beats];
   const doorsIdx = pool.findIndex((b) => toMin(b.time) <= toMin('13:15'));
   const doors = doorsIdx >= 0 ? pool.splice(doorsIdx, 1)[0]! : defaults[0]!;
   const last = pool[pool.length - 1];

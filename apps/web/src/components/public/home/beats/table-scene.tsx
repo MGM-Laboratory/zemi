@@ -214,8 +214,8 @@ export default function TableScene({ progress, models, narrow }: TableSceneProps
     const c = ease(seg(p, 0.02, 0.85));
     const cam = camera as unknown as { fov: number; aspect: number };
     const tanH = Math.tan(((cam.fov ?? 30) * Math.PI) / 360) * Math.max(0.4, cam.aspect ?? 1);
-    const fitDist = MathUtils.clamp((narrow ? 5.6 : 5.3) / tanH, 12, 34);
-    const dist = MathUtils.lerp(fitDist * 1.45, fitDist, c);
+    const fitDist = MathUtils.clamp((narrow ? 5.6 : 5.3) / tanH, 12, narrow ? 25 : 34);
+    const dist = MathUtils.lerp(fitDist * (narrow ? 1.2 : 1.45), fitDist, c);
     camera.position.set(
       MathUtils.lerp(-2.2, 0.6, c),
       1.2 + dist * MathUtils.lerp(0.58, 0.42, c),

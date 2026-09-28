@@ -18,7 +18,17 @@
 
 @media (min-width: 900px) {
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .cell {
+    grid-column: span 2;
+  }
+  /* The two figures on the last row sit symmetrically under the first three. */
+  .grid:has(> :nth-child(5):last-child) .cell:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+  .grid:has(> :nth-child(5):last-child) .cell:nth-child(5) {
+    grid-column: 4 / span 2;
   }
 }
 
@@ -26,26 +36,11 @@
   min-width: 0;
 }
 
-/* Asymmetric rhythm: nudge alternate cells down. */
-@media (min-width: 900px) {
-  .cell1 {
-    margin-top: 72px;
-  }
-  .cell3 {
-    margin-top: -24px;
-  }
-  .cell4 {
-    margin-top: 40px;
-  }
-  .funCell {
-    margin-top: 8px;
-  }
-}
-
 @media (max-width: 899.98px) {
-  .cell1,
-  .cell3 {
-    margin-top: 48px;
+  .grid:has(> :nth-child(5):last-child) .cell:nth-child(5) {
+    grid-column: 1 / -1;
+    width: 50%;
+    justify-self: center;
   }
 }
 
@@ -115,60 +110,8 @@
   color: var(--color-ink-2, #3b4150);
 }
 
-.note {
-  position: relative;
-  width: min(100%, 270px);
-  margin: 12% auto 0;
-  aspect-ratio: 1;
-  padding: clamp(18px, 2vw, 28px);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: var(--color-yellow, #f7bf33);
-  border-radius: 6px 6px 28px 6px;
-  box-shadow: var(--shadow-2);
-  transform: rotate(3deg);
-  transition: transform 520ms cubic-bezier(0.34, 1.5, 0.5, 1);
-}
-
-.note::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -12px;
-  width: 42%;
-  height: 26px;
-  translate: -50% 0;
-  rotate: -3deg;
-  background: rgb(255 255 255 / 0.6);
-  box-shadow: 0 1px 3px rgb(14 17 22 / 0.08);
-}
-
-.note:hover {
-  transform: rotate(-2deg) scale(1.03);
-}
-
-.noteText {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: clamp(1.25rem, 2.2vw, 2rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  font-variation-settings:
-    'CASL' 1,
-    'MONO' 0;
-  color: var(--color-ink, #0e1116);
-}
-
-.noteNum {
-  display: block;
-  font-size: 2.4em;
-  line-height: 0.9;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .holder,
-  .note {
+  .holder {
     transition: none;
   }
 }

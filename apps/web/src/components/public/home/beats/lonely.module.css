@@ -265,19 +265,44 @@
   color: var(--color-yellow, #f7bf33);
 }
 
-/*
- * Desktops: "Fridays aren't." floats at the center of the right side, above where the friends
- * gather once the lights come on (the cluster sits around 62-85% width, low in the frame), so
- * the top right corner is not dead space. The text column centers without it.
- */
+/* The characters gather in the upper right; the payoff lands centered beneath them. */
 @media (min-width: 1024px) {
+  .q {
+    left: 68%;
+    bottom: 46%;
+  }
+  .friendA {
+    left: 90%;
+    bottom: 57%;
+  }
+  .friendB {
+    left: 53%;
+    bottom: 57%;
+  }
+  .friendC {
+    left: 79%;
+    bottom: 43%;
+  }
+  .isLit .friendA {
+    left: 82%;
+    bottom: 49%;
+  }
+  .isLit .friendB {
+    left: 56%;
+    bottom: 45%;
+  }
+  .isLit .friendC {
+    left: 87%;
+    bottom: 40%;
+  }
   /* `.text > *` (0,1,1) caps children at 34rem; the floating kicker gets its own width. */
   .text .kickerWrap {
     position: absolute;
-    left: 62%;
-    top: 44%;
-    transform: translate(-50%, -100%);
-    max-width: min(56rem, 70%);
+    left: 73%;
+    top: 76%;
+    transform: translate(-50%, -50%);
+    width: 46%;
+    max-width: 46%;
     margin-top: 0;
     text-align: center;
   }

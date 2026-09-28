@@ -15,8 +15,7 @@ export interface StoryBeat {
 }
 
 /** Scenes the home page knows how to stage. `generic` is any extra beat an admin adds. */
-export type SceneKind =
-  'doors' | 'lonely' | 'loud' | 'table' | 'question' | 'coffee' | 'closing' | 'generic';
+export type SceneKind = 'doors' | 'lonely' | 'loud' | 'table' | 'question' | 'closing' | 'generic';
 
 export interface StoryScene {
   kind: SceneKind;
@@ -49,7 +48,7 @@ export interface HomeData {
   archiveOffline: boolean;
   /** 13:15 beat, stamped in the hero. */
   doors: StoryBeat;
-  /** Middle beats, staged as scroll scenes (13:20 to 14:50 by default). */
+  /** Middle beats, staged as scroll scenes (13:20 to 14:30 by default). */
   scenes: StoryScene[];
   /** 15:15 beat, the closing. */
   closing: StoryBeat;

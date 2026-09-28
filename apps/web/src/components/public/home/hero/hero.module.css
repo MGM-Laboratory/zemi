@@ -27,8 +27,8 @@
   gap: 28px;
   align-items: end;
   /* The copy starts right under the nav; the hero fills the rest of the screen below it. */
-  padding-top: calc(var(--nav-h, 72px) + clamp(12px, 4svh, 28px));
-  padding-bottom: clamp(28px, 5vh, 56px);
+  padding-top: calc(var(--nav-h, 72px) + clamp(8px, 2svh, 20px));
+  padding-bottom: clamp(48px, 7vh, 72px);
 }
 
 .content a,
@@ -41,8 +41,8 @@
     grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
     column-gap: clamp(32px, 4vw, 72px);
     /* Content sits at the bottom of the screen; this is only the minimum gap under the nav. */
-    padding-top: calc(var(--nav-h, 72px) + clamp(12px, 4svh, 48px));
-    padding-bottom: clamp(40px, 7vh, 88px);
+    padding-top: calc(var(--nav-h, 72px) + clamp(8px, 2svh, 24px));
+    padding-bottom: clamp(128px, 15vh, 160px);
   }
 }
 
@@ -239,7 +239,7 @@
   position: absolute;
   z-index: 1;
   left: 50%;
-  bottom: clamp(40px, 6vh, 64px);
+  bottom: clamp(16px, 2.5vh, 28px);
   translate: -50% 0;
   align-items: center;
   gap: 10px;

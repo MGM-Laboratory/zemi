@@ -46,7 +46,7 @@
   align-items: flex-start;
 }
 
-/* Desktops: the copy sits up near the nav while the 3D stage stays centered. */
+/* Other beats keep their copy near the top of the split. */
 @media (min-width: 1024px) {
   .copy {
     align-self: start;
@@ -78,11 +78,25 @@
     var(--color-bg, #fff);
 }
 
+@media (min-width: 1024px) {
+  .loud .copy {
+    align-self: center;
+    padding-top: 0;
+    translate: 0 calc(-1 * clamp(92px, 13svh, 132px));
+  }
+  .loud .stage {
+    translate: 0 calc(-1 * clamp(92px, 12svh, 124px));
+  }
+}
+
 /*
  * Phones and tablets: compact the copy so the pinned scene keeps its whole visual in frame
  * (the stage takes whatever is left after the text, so the text must stay short).
  */
 @media (max-width: 1023.98px) {
+  .loud .stage {
+    translate: 0 calc(-1 * clamp(36px, 6svh, 64px));
+  }
   .copy :global(h2) {
     margin-top: 16px;
   }

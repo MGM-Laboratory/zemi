@@ -1,4 +1,3 @@
-import { CoffeeBeat } from './beats/coffee';
 import { GenericBeat } from './beats/generic-beat';
 import { LonelyBeat } from './beats/lonely';
 import { OutLoudBeat } from './beats/out-loud';
@@ -44,15 +43,6 @@ export function HomeStory({ data }: { data: HomeData }) {
             return <SameTableBeat key={scene.id} scene={scene} />;
           case 'question':
             return <QuestionBeat key={scene.id} scene={scene} />;
-          case 'coffee':
-            return (
-              <CoffeeBeat
-                key={scene.id}
-                scene={scene}
-                models={data.models}
-                people={data.speakers}
-              />
-            );
           case 'loud':
             return <OutLoudBeat key={scene.id} scene={scene} models={data.models} />;
           default:
@@ -69,12 +59,7 @@ export function HomeStory({ data }: { data: HomeData }) {
       />
       <PastGallery events={data.past} total={data.pastTotal} offline={data.archiveOffline} />
       <SpeakersMarquee people={data.speakers} total={data.speakersTotal} />
-      <Stats
-        stats={data.stats}
-        funStat={home.funStat}
-        enabled={home.statsEnabled}
-        offline={data.offline}
-      />
+      <Stats stats={data.stats} enabled={home.statsEnabled} offline={data.offline} />
       <PublicationsTeaser items={data.publications} total={data.publicationsTotal} />
       <Closing beat={closing} n={scenes.length + 1} next={data.next} />
       <IdlePeek />

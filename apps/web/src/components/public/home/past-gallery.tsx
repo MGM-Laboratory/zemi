@@ -83,8 +83,6 @@ export function PastGallery({ events, total, offline }: PastGalleryProps) {
       lastX: e.clientX,
       lastT: performance.now(),
     };
-    el.setPointerCapture(e.pointerId);
-    el.dataset.dragging = '';
   };
   const onMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
@@ -92,6 +90,11 @@ export function PastGallery({ events, total, offline }: PastGalleryProps) {
     if (!d.on || !el) return;
     const dx = e.clientX - d.x;
     d.moved = Math.max(d.moved, Math.abs(dx));
+    if (d.moved <= 6) return;
+    if (!el.hasPointerCapture(e.pointerId)) {
+      el.setPointerCapture(e.pointerId);
+      el.dataset.dragging = '';
+    }
     el.scrollLeft = d.left - dx;
     const now = performance.now();
     const dt = Math.max(1, now - d.lastT);
@@ -105,8 +108,8 @@ export function PastGallery({ events, total, offline }: PastGalleryProps) {
     if (!d.on || !el) return;
     d.on = false;
     delete el.dataset.dragging;
-    el.releasePointerCapture?.(e.pointerId);
-    if (prefersReducedMotion() || performance.now() - d.lastT > 90) return;
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    if (d.moved <= 6 || prefersReducedMotion() || performance.now() - d.lastT > 90) return;
     let v = Math.max(-80, Math.min(80, d.v));
     const glide = () => {
       el.scrollLeft += v;
@@ -192,6 +195,7 @@ export function PastGallery({ events, total, offline }: PastGalleryProps) {
                 <Link
                   href={`/events/${e.slug}`}
                   className={styles.card}
+                  data-cursor="open"
                   draggable={false}
                   onFocus={(ev) =>
                     ev.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })
