@@ -258,12 +258,29 @@
   color: var(--color-yellow, #f7bf33);
 }
 
+/*
+ * Desktops: "Fridays aren't." floats at the top right, above where the friends gather once the
+ * lights come on, so the top right corner is not dead space. The text column centers without it.
+ */
+@media (min-width: 1024px) {
+  /* `.text > *` (0,1,1) caps children at 34rem; the floating kicker gets its own width. */
+  .text .kickerWrap {
+    position: absolute;
+    right: 0;
+    top: calc(var(--nav-h, 72px) + clamp(48px, 9vh, 110px));
+    max-width: min(52rem, 100%);
+    margin-top: 0;
+    text-align: right;
+  }
+}
+
 /* ------------------------------------------------------------------ small screens */
 
 @media (max-width: 1023.98px) {
   .text {
     justify-content: flex-start;
-    padding-top: calc(var(--nav-h, 72px) + 84px);
+    /* The stamp and title start right under the nav; the room lives below them. */
+    padding-top: calc(var(--nav-h, 72px) + clamp(16px, 4vh, 24px));
   }
   .q {
     left: 50%;

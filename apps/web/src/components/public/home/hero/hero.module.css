@@ -26,19 +26,14 @@
   display: grid;
   gap: 28px;
   align-items: end;
-  padding-top: calc(var(--nav-h, 72px) + 250px);
+  /* The copy starts right under the nav; the hero fills the rest of the screen below it. */
+  padding-top: calc(var(--nav-h, 72px) + clamp(12px, 4svh, 28px));
   padding-bottom: clamp(28px, 5vh, 56px);
 }
 
 .content a,
 .content button {
   pointer-events: auto;
-}
-
-@media (min-width: 768px) {
-  .content {
-    padding-top: calc(var(--nav-h, 72px) + 300px);
-  }
 }
 
 @media (min-width: 1024px) {
