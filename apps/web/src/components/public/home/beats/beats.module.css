@@ -50,6 +50,7 @@
 @media (min-width: 1024px) {
   .copy {
     align-self: start;
+    padding-top: clamp(28px, 4.5vh, 56px);
   }
 }
 
