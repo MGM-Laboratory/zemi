@@ -55,6 +55,7 @@ import { MANUAL_AUTHORS, PUBLICATIONS } from './data/publications.js';
 import { TEAM } from './data/site.js';
 import { SPEAKERS } from './data/speakers.js';
 import { seedAdmins, seedAudit, seedFaqTeamInbox, seedSiteSettings } from './extras.js';
+import { seedDiscussions } from './discussions.js';
 import { Rng } from './lib/rng.js';
 import { SeedMedia, readManifest, type Manifest, type ManifestItem } from './media.js';
 import { seedRegistrations } from './people.js';
@@ -349,6 +350,12 @@ async function summary(db: Db, app: INestApplicationContext): Promise<void> {
     ['faqs', schema.faqs],
     ['team_members', schema.teamMembers],
     ['contact_messages', schema.contactMessages],
+    ['discussion_identities', schema.discussionIdentities],
+    ['discussion_threads', schema.discussionThreads],
+    ['discussion_comments', schema.discussionComments],
+    ['discussion_votes', schema.discussionVotes],
+    ['discussion_reactions', schema.discussionReactions],
+    ['discussion_reports', schema.discussionReports],
     ['admins', schema.admins],
   ];
   log('\nRows:');
@@ -429,7 +436,7 @@ async function main(): Promise<void> {
       const now = process.env.SEED_NOW ? new Date(process.env.SEED_NOW) : new Date();
       if (Number.isNaN(now.getTime())) throw new Error('SEED_NOW is not a valid date');
       const rng = new Rng(Number(process.env.SEED_RANDOM ?? 20240906));
-      const assetsDir = join(apiDir, 'seed', 'assets');
+      const assetsDir = process.env.SEED_ASSETS_DIR ? resolve(process.env.SEED_ASSETS_DIR) : join(apiDir, 'seed', 'assets');
       const loops = Math.max(1, Math.min(60, Number(process.env.SEED_RECORDING_LOOPS ?? 31) || 1));
       const concurrency = Math.max(1, Math.min(8, Number(process.env.SEED_CONCURRENCY ?? 4) || 4));
       // Everything that can fail cheaply fails here, before the reset deletes anything.
@@ -504,6 +511,10 @@ async function main(): Promise<void> {
       log(
         `  ${people.registrations} registrations, ${people.checkedIn} checked in, pool of ${people.poolSize} regulars`,
       );
+
+      log('Discussion participants, questions, replies, votes...');
+      const discussion = await seedDiscussions(ctx, seeded);
+      log(`  ${discussion.identities} identities, ${discussion.threads} threads, ${discussion.comments} comments, ${discussion.votes} votes, ${discussion.reactions} reactions, ${discussion.reports} reports`);
 
       log('Site settings, FAQ, team, inbox, admins, audit...');
       await seedSiteSettings(ctx, seeded, venueMap);

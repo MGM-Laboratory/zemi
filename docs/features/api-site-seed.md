@@ -124,6 +124,7 @@ What it creates (run of 2026-09-26 03:45 WIB, `now` = then):
 | site | all six settings sections from `SITE_DEFAULTS`, plus a default venue, an announcement for next Friday (worded for the room kind), a featured upcoming event, contact details, socials and `notifyEmails`. 10 FAQs, 6 team members with portraits, 15 contact messages (new/read/replied/archived) |
 | admins | 6 demo admins (below). Found again by the note tag `[demo admin, created by the seeder]` and updated in place, so grants follow the new event ids |
 | audit | about 16 believable entries tagged `meta.seed = true` (replaced on every run) |
+| discussion | 70 fictional identities, around 175 event and general questions, hundreds of replies, votes, reactions, accepted answers, and a few open moderation reports. Identity tokens are discarded and cannot be used to sign in |
 
 At the end it prints counts, public stats and the demo passphrases, warns about any seeded row dated after `now` (rows
 that real services or teammates write during the run don't count), and posts one revalidate to the web. A full run takes
@@ -155,6 +156,7 @@ In production each run generates fresh passphrases and prints them once.
 | `SEED_LIFECYCLE_SENT` | on in production | marks reminder / starting-now / thank-you as already sent on upcoming events too |
 | `SEED_ENV_FILE` | `apps/api/.env` | another env file, or `none`. Never read in production |
 | `SEED_SKIP_MEDIA` | off | rows only, no uploads, done in seconds (for checking the data logic against a scratch database). Combined with `--reset` it still empties the bucket's `assets/` |
+| `SEED_ASSETS_DIR` | `apps/api/seed/assets` | absolute path to the seed asset directory, useful when running the compiled seeder in a Railway API container |
 | `SEED_CONFIRM_PRODUCTION=yes` | | same as `--production` |
 
 ### Production
