@@ -72,6 +72,7 @@ export const envSchema = z
     S3_AUTO_CREATE_BUCKET: bool(false),
 
     RESEND_API_KEY: optStr(),
+    TURNSTILE_SECRET_KEY: optStr(),
     MAIL_FROM: z.preprocess(blank, z.string().default('Zemi <no-reply@labmgm.org>')),
     MAIL_REPLY_TO: optStr(),
     /** Where rendered emails go when RESEND_API_KEY is empty. Defaults to apps/api/.mail-outbox. */

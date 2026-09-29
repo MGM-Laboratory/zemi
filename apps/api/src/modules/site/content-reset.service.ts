@@ -8,6 +8,12 @@ import {
   assets,
   checkins,
   contactMessages,
+  discussionComments,
+  discussionIdentities,
+  discussionReactions,
+  discussionReports,
+  discussionThreads,
+  discussionVotes,
   emailLogs,
   eventMedia,
   eventPublications,
@@ -38,6 +44,12 @@ import { SiteService } from './site.service.js';
  * admins, sessions, audit_logs and site_settings (their references to deleted rows are nulled).
  */
 const WIPE: Array<[string, PgTable]> = [
+  ['discussion_votes', discussionVotes],
+  ['discussion_reactions', discussionReactions],
+  ['discussion_reports', discussionReports],
+  ['discussion_comments', discussionComments],
+  ['discussion_threads', discussionThreads],
+  ['discussion_identities', discussionIdentities],
   ['checkins', checkins],
   ['email_logs', emailLogs],
   ['registrations', registrations],

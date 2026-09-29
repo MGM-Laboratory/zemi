@@ -9,6 +9,7 @@ export const adminRoutes = {
   login: '/admin/login',
   kit: '/admin/kit',
   events: '/admin/events',
+  discussion: '/admin/discussion',
   newEvent: '/admin/events/new',
   /** Event workspace. `tab` is a sub-route like 'registrations', 'attendance', 'stream', 'media'. */
   event: (id: string, tab?: string) => `/admin/events/${id}${tab ? `/${tab}` : ''}`,
@@ -33,6 +34,7 @@ export const adminRoutes = {
 export type NavIconName =
   | 'overview'
   | 'events'
+  | 'discussion'
   | 'speakers'
   | 'publications'
   | 'venues'
@@ -83,6 +85,11 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         shortcut: 'g e',
         keywords: ['fridays', 'sessions', 'seminar'],
         visible: (a) => a.canAny('event', 'view') || a.has('events.create'),
+      },
+      {
+        key: 'discussion', label: 'Discussion', href: adminRoutes.discussion, icon: 'discussion',
+        keywords: ['questions', 'threads', 'reports', 'moderation'],
+        visible: (a) => a.has('discussion.view') || a.has('discussion.manage'),
       },
       {
         key: 'speakers',

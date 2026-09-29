@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { CommonModule } from './common/common.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DbModule } from './db/db.module.js';
+import { DiscussionModule } from './modules/discussion/discussion.module.js';
 import { HealthController } from './health.controller.js';
 import { AdminsModule } from './modules/admins/admins.module.js';
 import { AssetsModule } from './modules/assets/assets.module.js';
@@ -50,6 +51,7 @@ import { VenuesModule } from './modules/venues/venues.module.js';
     StreamModule,
     SiteModule,
     OverviewModule,
+    DiscussionModule,
   ],
   controllers: [HealthController],
 })

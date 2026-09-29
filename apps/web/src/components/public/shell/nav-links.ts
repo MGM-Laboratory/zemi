@@ -9,6 +9,7 @@ export interface NavLink {
 /** Primary public navigation, in order. */
 export const NAV_LINKS: NavLink[] = [
   { href: '/events', label: 'Events', shape: 'circle' },
+  { href: '/discussion', label: 'Discussion', shape: 'arch' },
   { href: '/speakers', label: 'Speakers', shape: 'triangle' },
   { href: '/publications', label: 'Publications', shape: 'square' },
   { href: '/about', label: 'About', shape: 'arch' },

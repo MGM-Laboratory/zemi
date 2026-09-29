@@ -61,7 +61,7 @@ export function MobileMenu({ open, onOpenChange, nextEvent, pathname, returnFocu
             >
               <motion.div
                 id="zemi-mobile-menu"
-                className="fixed inset-0 z-[110] flex flex-col overflow-y-auto overflow-x-hidden bg-white text-ink outline-none lg:hidden"
+                className="fixed inset-0 z-[110] flex flex-col overflow-y-auto overflow-x-hidden bg-white text-ink outline-none xl:hidden"
                 data-lenis-prevent=""
                 {...panel}
                 transition={{ duration: reduced ? 0.15 : 0.62, ease: EASE }}

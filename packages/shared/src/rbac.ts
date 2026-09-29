@@ -15,6 +15,8 @@ export const CAPABILITIES = [
   'media.library',
   'audience.view',
   'audit.view',
+  'discussion.view',
+  'discussion.manage',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -61,6 +63,8 @@ export const CAPABILITY_META: Record<Capability, { label: string; hint: string }
   'media.library': { label: 'Browse media library', hint: 'See every uploaded file across the site.' },
   'audience.view': { label: 'See audience list', hint: 'Everyone who ever registered, across all events. Contains personal data.' },
   'audit.view': { label: 'Read the audit log', hint: 'Who changed what, and when.' },
+  'discussion.view': { label: 'Read discussions', hint: 'See all questions, replies and reports in Studio.' },
+  'discussion.manage': { label: 'Moderate discussions', hint: 'Pin, lock, archive or hide questions, manage replies, reports and participants.' },
 };
 
 export const EVENT_ACTION_META: Record<EventAction, { label: string; group: string; hint: string }> = {
@@ -279,7 +283,7 @@ export const POLICY_PRESETS: Array<{ key: string; label: string; description: st
     label: 'Content manager',
     description: 'Owns speakers, publications and site pages. No registrant data.',
     policy: {
-      capabilities: ['speakers.create', 'publications.create', 'site.edit', 'media.library'],
+      capabilities: ['speakers.create', 'publications.create', 'site.edit', 'media.library', 'discussion.view', 'discussion.manage'],
       grants: [
         { type: 'speaker', id: '*', actions: ['view', 'edit', 'publish', 'delete'] },
         { type: 'publication', id: '*', actions: ['view', 'edit', 'publish', 'delete'] },

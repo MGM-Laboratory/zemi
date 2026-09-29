@@ -9,7 +9,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 export function needsCsrf(method: string, path: string): boolean {
   if (SAFE_METHODS.has(method.toUpperCase())) return false;
   // Case-insensitive on purpose: Express routing ignores case, so `/api/v1/Admin/...` reaches the same handlers.
-  return /^\/api\/v1\/admin(\/|$)/i.test(path) || /^\/api\/v1\/auth\/logout\/?$/i.test(path);
+  return /^\/api\/v1\/(admin|public\/discussion)(\/|$)/i.test(path) || /^\/api\/v1\/auth\/logout\/?$/i.test(path);
 }
 
 /**

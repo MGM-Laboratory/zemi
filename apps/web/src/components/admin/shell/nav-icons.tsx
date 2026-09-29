@@ -21,6 +21,12 @@ const ICONS: Record<NavIconName, (p: IconProps) => React.ReactNode> = {
       <circle cx="15.5" cy="15.3" r="2" fill="currentColor" stroke="none" />
     </IconBase>
   ),
+  discussion: (p) => (
+    <IconBase {...p}>
+      <path d="M4 5h16v11H9l-5 4V5Z" />
+      <path d="M8 9h8M8 12h5" />
+    </IconBase>
+  ),
   speakers: (p) => (
     <IconBase {...p}>
       <circle cx="12" cy="7.5" r="4" />
@@ -109,6 +115,7 @@ export function NavIcon({ name, ...props }: IconProps & { name: NavIconName }) {
 export const NAV_ACCENT: Partial<Record<NavIconName, { shape: 'circle' | 'triangle' | 'square' | 'arch'; color: string }>> = {
   overview: { shape: 'circle', color: 'var(--color-blue)' },
   events: { shape: 'circle', color: 'var(--color-blue)' },
+  discussion: { shape: 'arch', color: 'var(--color-green)' },
   speakers: { shape: 'arch', color: 'var(--color-green)' },
   publications: { shape: 'square', color: 'var(--color-yellow)' },
   venues: { shape: 'arch', color: 'var(--color-green)' },

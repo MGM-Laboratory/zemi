@@ -15,12 +15,12 @@ The product has two halves:
 
 1. **Public site**: an Awwwards-level, story-driven, playful, 3D and animation-heavy experience.
    Pages: `/` (home), `/about`, `/events`, `/events/[slug]`, `/speakers`, `/speakers/[slug]`,
-   `/publications`, `/publications/[slug]`, `/contact`, `/tickets/[token]`. `/home` redirects to `/`.
+   `/publications`, `/publications/[slug]`, `/discussion`, `/discussion/[id]`, `/contact`, `/tickets/[token]`. `/home` redirects to `/`.
    `/speaker/[slug]` redirects to `/speakers/[slug]`. `/live` redirects to the event that is live now
    (or `/events`).
 2. **Admin dashboard** at `/admin`: passphrase login, RBAC, a full CMS for every public piece of
    content, registrations with analytics, QR attendance scanning, OBS livestream control,
-   recordings and documentation media.
+   recordings and documentation media. Discussion moderation has its own workspace.
 
 ## 1. Repo layout and ownership
 
@@ -146,6 +146,11 @@ The schema file is the authority. Summary:
 | `team_members` | organizers: name, role, avatarAssetId, links, bio, sortOrder, visibility |
 | `contact_messages` | name, email, topic, message, status (new/read/replied/archived), ip |
 | `slug_redirects` | resourceType, oldSlug -> resourceId (old slugs keep working with 308) |
+| `discussion_identities` | name-only participant identity, numeric tag and hashed browser token |
+| `discussion_threads` | event or general questions with BlockNote body, tags, state and counters |
+| `discussion_comments` | threaded plain-text replies, moderation state and score |
+| `discussion_votes` / `discussion_reactions` | one vote and one reaction of each kind per participant and target |
+| `discussion_reports` | participant reports and moderator resolutions |
 
 Slugs: lowercase kebab `^[a-z0-9]+(?:-[a-z0-9]+)*$`, 1 to 96 chars, unique per type. Changing a slug
 writes the old one to `slug_redirects`. Public GET by slug checks redirects and responds
@@ -180,7 +185,8 @@ type Grant = { type: 'event' | 'speaker' | 'publication'; id: string | '*'; acti
 ```
 
 Capabilities: `events.create`, `speakers.create`, `publications.create`, `venues.manage`,
-`site.edit`, `inbox.view`, `media.library`, `audience.view`, `audit.view`.
+`site.edit`, `inbox.view`, `media.library`, `audience.view`, `audit.view`,
+`discussion.view`, `discussion.manage`.
 
 Event actions: `view`, `edit`, `publish`, `delete`, `registrations.view`, `registrations.manage`,
 `registrations.export`, `attendance.scan`, `attendance.manage`, `stream.view`, `stream.control`,

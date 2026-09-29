@@ -78,6 +78,7 @@ const SENSITIVE_CAPS: Partial<Record<Capability, string>> = {
   'audience.view': 'Personal data',
   'inbox.view': 'Messages',
   'media.library': 'Drafts too',
+  'discussion.manage': 'Can hide content',
 };
 
 /**
@@ -741,4 +742,3 @@ function SectionTitle({ id, title, description }: { id: string; title: string; d
     </div>
   );
 }
-

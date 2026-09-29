@@ -60,6 +60,7 @@ export function PublicFooter({ site }: PublicFooterProps) {
       title: 'Explore',
       links: [
         { href: '/events', label: 'Events' },
+        { href: '/discussion', label: 'Discussion' },
         { href: '/speakers', label: 'Speakers' },
         { href: '/publications', label: 'Publications' },
       ],

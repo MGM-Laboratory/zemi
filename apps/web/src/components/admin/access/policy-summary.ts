@@ -87,6 +87,8 @@ const CAP_SENTENCE: Record<Capability, string> = {
   'media.library': 'Can browse every uploaded file.',
   'audience.view': 'Can see everyone who ever registered, across all events.',
   'audit.view': 'Can read the audit log.',
+  'discussion.view': 'Can read questions, replies and reports in discussion.',
+  'discussion.manage': 'Can moderate discussion threads, replies, reports and participants.',
 };
 
 /* ------------------------------------------------------------------ summary */
@@ -216,6 +218,9 @@ export function policyHints(input: Policy, opts: { expiresAt: string | null | un
   }
   if (policy.capabilities.includes('media.library')) {
     hints.push({ key: 'media', tone: 'info', title: 'Sees every upload', body: 'Including files that are not public yet, like covers for draft events.' });
+  }
+  if (policy.capabilities.includes('discussion.manage')) {
+    hints.push({ key: 'discussion-manage', tone: 'info', title: 'Can moderate every conversation', body: 'They can hide questions and replies, review reports, and suspend participants.' });
   }
   const broad = policy.grants.some((g) => g.id === '*' && expandActions(g.actions).size > 1) || policy.capabilities.length >= 3;
   if (!opts.expiresAt && broad) {

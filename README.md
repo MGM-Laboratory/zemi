@@ -36,7 +36,8 @@ ribbon of every Friday, event pages
 that change by state (coming up, happening now with the live player and reactions, wrapped with the
 recording, chapters and photo gallery, cancelled), free registration with a branded QR ticket,
 speakers directory and profiles, publications library with cite-this (APA, IEEE, MLA, Chicago, Harvard,
-Vancouver, BibTeX, RIS), PDF viewer and Scholar meta tags, about, contact, and a playful 404.
+Vancouver, BibTeX, RIS), PDF viewer and Scholar meta tags, discussion threads for each Friday
+or general questions, about, contact, and a playful 404.
 
 **Admin dashboard:** passphrase login, superadmin from env, admins with expiry and least-privilege RBAC
 (per-event, per-speaker, per-publication grants plus global capabilities, with presets), audit log.
@@ -46,7 +47,16 @@ export (CSV/XLSX) and the printable attendance paper (PDF), live attendance boar
 scanner (webcam or phone camera, low-light preprocessing, torch, zoom), email broadcasts, OBS
 stream control room (preview, go live, end, recordings), documentation media. Plus speakers,
 publications (DOI autofill from Crossref), rooms, media library, site CMS (home, about, contact, SEO,
-FAQ, team, emails), inbox, audience, and system status.
+FAQ, team, emails), discussion moderation, inbox, audience, and system status.
+
+**Discussion:** visitors enter with a name only. A long-lived, httpOnly cookie holds one identity
+per browser; duplicate names get different four-digit suffixes. Participants can ask with BlockNote
+(including processed image uploads), pick a published event or General, tag, search, vote, react,
+reply, mark a helpful answer, save locally and report. Current or next Friday threads lead the feed,
+then General. Admins with `discussion.view` can inspect all content and reports; `discussion.manage`
+adds pinning, locking, archiving, hiding, deleting, report review and suspending participants.
+Cloudflare Turnstile protects joins and content submission; per-identity/IP limits protect interactions.
+See `docs/features/discussion.md` for operations and limitations.
 
 ## Run it locally
 

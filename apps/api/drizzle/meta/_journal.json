@@ -22,6 +22,20 @@
       "when": 1790392976788,
       "tag": "0002_checkin_actor_schedule_change",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790630000000,
+      "tag": "0003_discussions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790630500000,
+      "tag": "0004_discussion_flags",
+      "breakpoints": true
     }
   ]
 }

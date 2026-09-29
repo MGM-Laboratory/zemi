@@ -562,3 +562,82 @@ export const slugRedirects = pgTable(
   },
   (t) => [uniqueIndex('slug_redirects_uq').on(t.resourceType, t.oldSlug)],
 );
+
+/* ------------------------------------------------------------------ discussions */
+
+export const discussionIdentities = pgTable('discussion_identities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  tag: text('tag').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  status: text('status', { enum: ['active', 'suspended', 'deleted'] }).notNull().default('active'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [uniqueIndex('discussion_identity_name_tag_uq').on(sql`lower(${t.name})`, t.tag)]);
+
+export const discussionThreads = pgTable('discussion_threads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  authorId: uuid('author_id').references(() => discussionIdentities.id, { onDelete: 'set null' }),
+  authorLabel: text('author_label').notNull(),
+  eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  body: jsonb('body').$type<Blocks>().notNull(),
+  bodyText: text('body_text').notNull(),
+  tags: jsonb('tags').$type<string[]>().notNull().default([]),
+  status: text('status', { enum: ['open', 'locked', 'archived', 'hidden', 'deleted'] }).notNull().default('open'),
+  pinned: boolean('pinned').notNull().default(false),
+  flagged: boolean('flagged').notNull().default(false),
+  acceptedCommentId: uuid('accepted_comment_id'),
+  score: integer('score').notNull().default(0),
+  commentCount: integer('comment_count').notNull().default(0),
+  reportCount: integer('report_count').notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [
+  index('discussion_threads_created_idx').on(t.createdAt),
+  index('discussion_threads_event_idx').on(t.eventId, t.createdAt),
+  index('discussion_threads_status_idx').on(t.status, t.reportCount),
+]);
+
+export const discussionComments = pgTable('discussion_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  threadId: uuid('thread_id').notNull().references(() => discussionThreads.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id'),
+  authorId: uuid('author_id').references(() => discussionIdentities.id, { onDelete: 'set null' }),
+  authorLabel: text('author_label').notNull(),
+  body: text('body').notNull(),
+  status: text('status', { enum: ['visible', 'hidden', 'deleted'] }).notNull().default('visible'),
+  score: integer('score').notNull().default(0),
+  reportCount: integer('report_count').notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+}, (t) => [index('discussion_comments_thread_idx').on(t.threadId, t.createdAt)]);
+
+export const discussionVotes = pgTable('discussion_votes', {
+  identityId: uuid('identity_id').notNull().references(() => discussionIdentities.id, { onDelete: 'cascade' }),
+  targetType: text('target_type', { enum: ['thread', 'comment'] }).notNull(),
+  targetId: uuid('target_id').notNull(),
+  value: integer('value').notNull(),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.identityId, t.targetType, t.targetId] }), index('discussion_votes_target_idx').on(t.targetType, t.targetId)]);
+
+export const discussionReactions = pgTable('discussion_reactions', {
+  identityId: uuid('identity_id').notNull().references(() => discussionIdentities.id, { onDelete: 'cascade' }),
+  targetType: text('target_type', { enum: ['thread', 'comment'] }).notNull(),
+  targetId: uuid('target_id').notNull(),
+  kind: text('kind').notNull(),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.identityId, t.targetType, t.targetId, t.kind] })]);
+
+export const discussionReports = pgTable('discussion_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  reporterId: uuid('reporter_id').references(() => discussionIdentities.id, { onDelete: 'set null' }),
+  targetType: text('target_type', { enum: ['thread', 'comment'] }).notNull(),
+  targetId: uuid('target_id').notNull(),
+  reason: text('reason').notNull(),
+  note: text('note'),
+  status: text('status', { enum: ['open', 'resolved', 'dismissed'] }).notNull().default('open'),
+  createdAt: createdAt(),
+  resolvedAt: ts('resolved_at'),
+  resolvedBy: text('resolved_by'),
+}, (t) => [index('discussion_reports_status_idx').on(t.status, t.createdAt)]);

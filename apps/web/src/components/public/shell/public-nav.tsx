@@ -87,7 +87,7 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
           <LayoutGroup id="public-nav">
             <ul
               className={cn(
-                'hidden items-center gap-0.5 rounded-full border border-ink/[0.07] bg-white/70 p-1 backdrop-blur-md transition-colors duration-300 lg:flex',
+                'hidden items-center gap-0.5 rounded-full border border-ink/[0.07] bg-white/70 p-1 backdrop-blur-md transition-colors duration-300 xl:flex',
                 'group-data-[theme=dark]/bar:border-white/12 group-data-[theme=dark]/bar:bg-white/[0.06] group-data-[theme=dark]/bar:backdrop-blur-none',
               )}
               onPointerLeave={() => setHover(null)}
@@ -135,7 +135,7 @@ export function PublicNav({ nextEvent, theme: forcedTheme, pinned }: PublicNavPr
               type="button"
               className={cn(
                 styles.burger,
-                'bg-surface-muted text-ink transition-colors hover:bg-line active:scale-95 lg:hidden',
+                'bg-surface-muted text-ink transition-colors hover:bg-line active:scale-95 xl:hidden',
                 'group-data-[theme=dark]/bar:bg-white/10 group-data-[theme=dark]/bar:text-white group-data-[theme=dark]/bar:hover:bg-white/20',
               )}
               aria-expanded={open}
