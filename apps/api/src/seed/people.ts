@@ -90,7 +90,9 @@ export async function seedRegistrations(ctx: SeedCtx, seeded: SeededEvent[]): Pr
   const rng = ctx.rng.fork('registrations');
   const usedEmails = new Set<string>();
   const usedNames = new Set<string>();
-  const usedCodes = new Set<string>();
+  // The preview extension adds registrations beside existing tickets, so codes must be unique
+  // across the whole database, not just this invocation.
+  const usedCodes = new Set((await ctx.db.select({ code: registrations.ticketCode }).from(registrations)).map(r => r.code));
   const pastCount = seeded.filter((e) => e.plan.past).length;
   const total = seeded.length;
 

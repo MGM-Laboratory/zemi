@@ -55,17 +55,19 @@ const ROOMS: Array<[string, number]> = [
 
 function themeFor(i: number): EventTheme {
   if (i < EVENT_THEMES.length) return EVENT_THEMES[i];
-  // Seeding long after the canonical date: recycle the middle of the list.
+  // Long-running previews revisit established topics without repeating an event title.
   const pool = EVENT_THEMES.slice(20, 90);
-  const base = pool[(i - EVENT_THEMES.length) % pool.length];
-  return { ...base, title: `Encore: ${base.title}`.slice(0, 200) };
+  const offset = i - EVENT_THEMES.length;
+  const base = pool[offset % pool.length];
+  const series = ['Revisited', 'New directions', 'Field notes'][Math.floor(offset / pool.length) % 3];
+  return { ...base, title: `${series}: ${base.title}`.slice(0, 200) };
 }
 
 /**
- * Every Friday from the first Friday of September 2024 until `UPCOMING_FRIDAYS` Fridays after today,
- * minus holidays, with themes, rooms, covers and a speaker for every talk. Pure: no database.
+ * Every Friday from the first Friday of September 2024 until `UPCOMING_FRIDAYS` Fridays after today
+ * (or an explicit inclusive end date), minus holidays, with themes, rooms, covers and speakers.
  */
-export function planEvents(rng: Rng, now: Date, covers: ManifestItem[], speakers: SpeakerSeed[]): PlannedEvent[] {
+export function planEvents(rng: Rng, now: Date, covers: ManifestItem[], speakers: SpeakerSeed[], throughDate?: string): PlannedEvent[] {
   const today = jakartaDate(now);
   const byKey = new Map(speakers.map((s) => [s.key, s]));
   const talkCount = new Map<string, number>();
@@ -77,7 +79,7 @@ export function planEvents(rng: Rng, now: Date, covers: ManifestItem[], speakers
   let upcoming = 0;
   for (;;) {
     if (date > today) fridaysAfterToday++;
-    if (fridaysAfterToday > UPCOMING_FRIDAYS) break;
+    if (throughDate ? date > throughDate : fridaysAfterToday > UPCOMING_FRIDAYS) break;
     if (!HOLIDAY_FRIDAYS[date]) {
       const index = out.length;
       const theme = themeFor(index);

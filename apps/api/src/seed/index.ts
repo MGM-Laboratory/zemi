@@ -9,7 +9,7 @@
  *   NODE_ENV=production DATABASE_URL=... S3_ENDPOINT=... S3_BUCKET=... (the API's usual env) \
  *     pnpm --filter @zemi/api seed:reset -- --production
  *
- * Env knobs: SEED_RANDOM (default 20240906), SEED_NOW (ISO instant), SEED_RECORDING_LOOPS (default 31,
+ * Env knobs: SEED_RANDOM (default 20240906), SEED_NOW (ISO instant), SEED_THROUGH (inclusive YYYY-MM-DD), SEED_RECORDING_LOOPS (default 31,
  * 1 = the raw 4 minute clip), SEED_CONCURRENCY (4), SEED_SAFE_EMAILS (default on in production),
  * SEED_LIFECYCLE_SENT (default on in production), SEED_ENV_FILE (path, or "none"), SEED_SKIP_MEDIA (rows only).
  * See docs/features/api-site-seed.md.
@@ -435,6 +435,8 @@ async function main(): Promise<void> {
     } else {
       const now = process.env.SEED_NOW ? new Date(process.env.SEED_NOW) : new Date();
       if (Number.isNaN(now.getTime())) throw new Error('SEED_NOW is not a valid date');
+      const throughDate = process.env.SEED_THROUGH;
+      if (throughDate && !/^\d{4}-\d{2}-\d{2}$/.test(throughDate)) throw new Error('SEED_THROUGH must be YYYY-MM-DD');
       const rng = new Rng(Number(process.env.SEED_RANDOM ?? 20240906));
       const assetsDir = process.env.SEED_ASSETS_DIR ? resolve(process.env.SEED_ASSETS_DIR) : join(apiDir, 'seed', 'assets');
       const loops = Math.max(1, Math.min(60, Number(process.env.SEED_RECORDING_LOOPS ?? 31) || 1));
@@ -486,6 +488,7 @@ async function main(): Promise<void> {
         now,
         manifest.sections.covers?.items ?? [],
         SPEAKERS,
+        throughDate,
       );
       const venueMap = await seedVenues(ctx);
       const firstAdmins = await seedAdmins(ctx, passphrases, [], production);

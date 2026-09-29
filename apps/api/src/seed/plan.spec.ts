@@ -53,6 +53,15 @@ describe('planEvents', () => {
     const again = planEvents(new Rng(20240906), NOW, covers, SPEAKERS);
     expect(again.map((e) => [e.title, e.venueKey, e.talks.map((t) => t.speakerKey)])).toEqual(plan.map((e) => [e.title, e.venueKey, e.talks.map((t) => t.speakerKey)]));
   });
+
+  it('can extend an existing preview through December 2028 without changing earlier Fridays', () => {
+    const extended = planEvents(new Rng(20240906), NOW, covers, SPEAKERS, '2028-12-31');
+    expect(extended.at(-1)?.date).toBe('2028-12-29');
+    expect(extended.slice(0, plan.length).map(e => [e.date, e.title, e.talks.map(t => t.speakerKey)]))
+      .toEqual(plan.map(e => [e.date, e.title, e.talks.map(t => t.speakerKey)]));
+    expect(extended.filter(e => e.date.startsWith('2028-')).length).toBe(52);
+    expect(new Set(extended.map(e => e.title)).size).toBe(extended.length);
+  });
 });
 
 describe('rundownFor', () => {

@@ -18,6 +18,7 @@
     "db:studio": "drizzle-kit studio",
     "seed": "mkdir -p .tmp && tsc -p tsconfig.build.json --outDir .tmp/seed-build --sourceMap false --incremental --tsBuildInfoFile .tmp/seed-build/.tsbuildinfo > .tmp/seed-build.log 2>&1 || echo 'tsc reported type errors (see .tmp/seed-build.log); JS was still emitted, continuing'; node .tmp/seed-build/seed/index.js",
     "seed:reset": "pnpm run seed --reset",
+    "seed:extend-preview": "node dist/seed/extend.js",
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {

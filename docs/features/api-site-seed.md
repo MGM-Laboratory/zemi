@@ -150,6 +150,7 @@ In production each run generates fresh passphrases and prints them once.
 |---|---|---|
 | `SEED_RANDOM` | `20240906` | PRNG seed |
 | `SEED_NOW` | real now | ISO instant treated as "now" (past vs upcoming, timestamps) |
+| `SEED_THROUGH` | unset | optional inclusive `YYYY-MM-DD` end date for a full seed; unset keeps eight upcoming Fridays |
 | `SEED_RECORDING_LOOPS` | `31` | 1 = the raw 4 minute clip (fast, small, chapters past 4 min point beyond the video) |
 | `SEED_CONCURRENCY` | `4` | media processing in parallel (1 to 8) |
 | `SEED_SAFE_EMAILS` | on in production | every seeded address gets a `.example` suffix, so no real inbox ever hears from demo data |
@@ -158,6 +159,16 @@ In production each run generates fresh passphrases and prints them once.
 | `SEED_SKIP_MEDIA` | off | rows only, no uploads, done in seconds (for checking the data logic against a scratch database). Combined with `--reset` it still empties the bucket's `assets/` |
 | `SEED_ASSETS_DIR` | `apps/api/seed/assets` | absolute path to the seed asset directory, useful when running the compiled seeder in a Railway API container |
 | `SEED_CONFIRM_PRODUCTION=yes` | | same as `--production` |
+
+### Extend the Railway preview without resetting it
+
+`node apps/api/dist/seed/extend.js 2028-12-31` runs only inside this project's Railway
+`preview` API service. It checks the existing event calendar and ready covers first, then adds the
+missing Fridays through the requested date. It reuses seeded speakers, venues and images, adds
+stream configuration and safe synthetic registrations, and makes the preview announcement timeless.
+Existing event, discussion and identity IDs stay intact. Repeating a completed run adds no duplicates.
+Run it over `railway ssh --project <project-id> --environment preview --service api` after the
+preview API deployment containing the command reaches `SUCCESS`.
 
 ### Production
 
