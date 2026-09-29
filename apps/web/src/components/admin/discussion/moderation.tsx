@@ -8,6 +8,8 @@ import { BlocksRenderer } from '@/components/public/media/blocks-renderer';
 import { api } from '@/lib/admin/api';
 import { useAbility } from '@/lib/admin/ability';
 import { notify } from '@/components/admin/ui/toast';
+import { Select } from '@/components/admin/ui/select';
+import { useConfirm } from '@/components/admin/ui/confirm-dialog';
 
 type State = 'open' | 'locked' | 'archived' | 'hidden' | 'deleted';
 type Thread = { id: string; title: string; authorLabel: string; authorId: string | null; body: Blocks; bodyText: string; tags: string[]; status: State; pinned: boolean; flagged: boolean; score: number; commentCount: number; reportCount: number; createdAt: string; eventId: string | null };
@@ -22,6 +24,7 @@ const states: State[] = ['open', 'locked', 'archived', 'hidden', 'deleted'];
 
 export function Moderation({ id }: { id?: string }) {
   const ability = useAbility();
+  const confirm = useConfirm();
   const allowed = ability.has('discussion.view') || ability.has('discussion.manage');
   const canManage = ability.has('discussion.manage');
   const [status, setStatus] = useState('all');
@@ -59,9 +62,23 @@ export function Moderation({ id }: { id?: string }) {
     catch (e) { notify.error(e); }
   };
   const suspend = async (identityId: string, value: 'active' | 'suspended') => {
-    if (!window.confirm(`Set this participant to ${value}?`)) return;
+    const approved = await confirm({
+      title: value === 'suspended' ? 'Suspend this participant?' : 'Restore this participant?',
+      description: value === 'suspended' ? 'They will lose access to the discussion immediately. Their existing questions and replies remain visible for review.' : 'They will be able to join the discussion again with their current identity.',
+      confirmLabel: value === 'suspended' ? 'Suspend participant' : 'Restore access',
+      destructive: value === 'suspended',
+    });
+    if (!approved) return;
     try { await api.patch(`/admin/discussion/identities/${identityId}`, { status: value }); notify.success('Participant updated'); void reload(); }
     catch (e) { notify.error(e); }
+  };
+  const changeState = async (value: State) => {
+    if (!detail) return;
+    if (value === 'hidden' || value === 'deleted') {
+      const approved = await confirm({ title: value === 'hidden' ? 'Hide this discussion?' : 'Remove this discussion?', description: value === 'hidden' ? 'It will disappear from the public room until a moderator restores it.' : 'It will disappear from the public room. Moderators can restore it later.', confirmLabel: value === 'hidden' ? 'Hide discussion' : 'Remove discussion', destructive: true });
+      if (!approved) return;
+    }
+    await changeThread({ status: value });
   };
 
   if (!allowed) return <div className="rounded-3xl border border-line bg-white p-10"><h1 className="text-3xl font-bold">Discussion is not in your access.</h1><p className="mt-3 text-ink-3">Ask the superadmin for discussion access.</p></div>;
@@ -91,19 +108,19 @@ export function Moderation({ id }: { id?: string }) {
           <button onClick={() => changeThread({ pinned: !detail.thread.pinned })} className="flex w-full items-center gap-2 rounded-xl border border-line p-3 text-left text-sm font-bold hover:bg-surface-muted"><Pin size={16} /> {detail.thread.pinned ? 'Unpin' : 'Pin to top'}</button>
           <button onClick={() => changeThread({ flagged: !detail.thread.flagged })} className="flex w-full items-center gap-2 rounded-xl border border-line p-3 text-left text-sm font-bold hover:bg-surface-muted"><Flag size={16} /> {detail.thread.flagged ? 'Clear review flag' : 'Flag for review'}</button>
           <label className="block text-sm font-bold" htmlFor="moderation-status">Conversation state</label>
-          <select id="moderation-status" value={detail.thread.status} onChange={e => changeThread({ status: e.target.value as State })} className="w-full rounded-xl border border-line p-3 text-sm">{states.map(s => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</select>
+          <Select id="moderation-status" value={detail.thread.status} onValueChange={value => { if (value) void changeState(value as State); }} options={states.map(state => ({ value: state, label: state[0].toUpperCase() + state.slice(1) }))} aria-label="Conversation state" />
           <p className="text-xs leading-relaxed text-ink-3">Locked stays readable but stops replies. Archived is read only. Hidden and deleted disappear from the public room.</p>
           <TagEditor key={detail.thread.id + detail.thread.tags.join(',')} tags={detail.thread.tags} onSave={tags => changeThread({ tags })} />
           {detail.thread.authorId && <button onClick={() => suspend(detail.thread.authorId!, 'suspended')} className="flex w-full items-center gap-2 rounded-xl border border-red-200 p-3 text-left text-sm font-bold text-red-600 hover:bg-red-50"><UserX size={16} /> Suspend author</button>}
         </> : <p className="text-sm text-ink-3">You have read access. Moderation requires the manage permission.</p>}</aside>
       </div>
     </> : <div className="rounded-2xl border border-line p-8">{loading ? 'Loading conversation...' : 'Conversation not found.'}</div> : mode === 'participants' ? <>
-      <div className="flex flex-wrap gap-3 rounded-2xl border border-line bg-white p-3"><label className="flex min-w-52 flex-1 items-center gap-2 rounded-xl bg-surface-muted px-3"><Search size={17} /><input aria-label="Search participants" className="w-full bg-transparent py-3 outline-none" placeholder="Search participants by name" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label><select aria-label="Filter participants" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="rounded-xl border border-line px-3"><option value="all">All participants</option><option value="active">Active</option><option value="suspended">Suspended</option></select></div>
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-line bg-white p-3"><label className="flex min-w-52 flex-1 items-center gap-2 rounded-xl bg-surface-muted px-3"><Search size={17} /><input aria-label="Search participants" className="w-full bg-transparent py-3 outline-none" placeholder="Search participants by name" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label><Select value={status} onValueChange={value => { setStatus(value ?? 'all'); setPage(1); }} options={[{ value: 'all', label: 'All participants' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} aria-label="Filter participants" /></div>
       <p className="text-sm text-ink-3">{people ? `${people.total} participants` : 'Loading participants...'}</p>
       <div className="grid gap-3">{people?.items.map(person => <div key={person.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-5"><div><strong>{person.name} <span className="font-mono text-sm text-ink-3">#{person.tag}</span></strong><p className="mt-1 text-xs text-ink-3">Joined {date(person.createdAt)} · <span className={person.status === 'suspended' ? 'text-red-600' : 'text-green'}>{person.status}</span></p></div><button onClick={() => suspend(person.id, person.status === 'active' ? 'suspended' : 'active')} className={`rounded-full border px-4 py-2 text-sm font-bold ${person.status === 'active' ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green/30 text-green hover:bg-green-50'}`}>{person.status === 'active' ? 'Suspend' : 'Restore access'}</button></div>)}{people && !people.items.length && <div className="rounded-2xl border border-line bg-white p-10 text-center text-ink-3">No participants match.</div>}</div>
       {people && people.total > people.pageSize && <div className="flex items-center justify-center gap-4"><button disabled={page === 1} onClick={() => setPage(page - 1)} className="rounded-full border border-line px-4 py-2 disabled:opacity-40">Previous</button><span className="text-sm">{page} / {Math.ceil(people.total / people.pageSize)}</span><button disabled={page * people.pageSize >= people.total} onClick={() => setPage(page + 1)} className="rounded-full border border-line px-4 py-2 disabled:opacity-40">Next</button></div>}
     </> : <>
-      <div className="flex flex-wrap gap-3 rounded-2xl border border-line bg-white p-3"><label className="flex min-w-52 flex-1 items-center gap-2 rounded-xl bg-surface-muted px-3"><Search size={17} /><input aria-label="Search discussions" className="w-full bg-transparent py-3 outline-none" placeholder="Search title or author" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label><select aria-label="Filter by status" className="rounded-xl border border-line px-3" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="all">All states</option>{states.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+      <div className="flex flex-wrap gap-3 rounded-2xl border border-line bg-white p-3"><label className="flex min-w-52 flex-1 items-center gap-2 rounded-xl bg-surface-muted px-3"><Search size={17} /><input aria-label="Search discussions" className="w-full bg-transparent py-3 outline-none" placeholder="Search title or author" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></label><Select value={status} onValueChange={value => { setStatus(value ?? 'all'); setPage(1); }} options={[{ value: 'all', label: 'All states' }, ...states.map(state => ({ value: state, label: state[0].toUpperCase() + state.slice(1) }))]} aria-label="Filter by status" /></div>
       <p className="text-sm text-ink-3">{list ? `${list.total} discussions` : 'Loading discussions...'}</p>
       <div className="grid gap-3">{list?.items.map(thread => <Link key={thread.id} href={`/admin/discussion/${thread.id}`} className="group rounded-2xl border border-line bg-white p-5 transition hover:-translate-y-0.5 hover:border-blue hover:shadow-lg"><div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-ink-3"><span className={thread.reportCount ? 'text-red-600' : ''}>{thread.reportCount} reports</span><span>·</span><span>{thread.status}</span><span>·</span><span>{date(thread.createdAt)}</span>{thread.pinned && <span className="text-blue">· Pinned</span>}{thread.flagged && <span className="text-red-600">· Flagged</span>}</div><div className="mt-2 flex items-start justify-between gap-4"><h2 className="font-display text-xl font-black tracking-tight group-hover:text-blue">{thread.title}</h2><ArrowRight size={18} className="shrink-0 text-blue transition group-hover:translate-x-1" /></div><p className="mt-2 line-clamp-2 text-sm text-ink-3">{thread.bodyText}</p><p className="mt-3 text-xs text-ink-3">by {thread.authorLabel} · {thread.commentCount} replies · {thread.score} votes</p></Link>)}{list && !list.items.length && <div className="rounded-2xl border border-line bg-white p-10 text-center text-ink-3">Nothing needs attention here.</div>}</div>
       {list && list.total > list.pageSize && <div className="flex items-center justify-center gap-4"><button disabled={page === 1} onClick={() => setPage(page - 1)} className="rounded-full border border-line px-4 py-2 disabled:opacity-40">Previous</button><span className="text-sm">{page} / {Math.ceil(list.total / list.pageSize)}</span><button disabled={page * list.pageSize >= list.total} onClick={() => setPage(page + 1)} className="rounded-full border border-line px-4 py-2 disabled:opacity-40">Next</button></div>}

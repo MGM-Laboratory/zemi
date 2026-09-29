@@ -15,7 +15,7 @@ The product has two halves:
 
 1. **Public site**: an Awwwards-level, story-driven, playful, 3D and animation-heavy experience.
    Pages: `/` (home), `/about`, `/events`, `/events/[slug]`, `/speakers`, `/speakers/[slug]`,
-   `/publications`, `/publications/[slug]`, `/discussion`, `/discussion/[id]`, `/contact`, `/tickets/[token]`. `/home` redirects to `/`.
+   `/publications`, `/publications/[slug]`, `/discussion`, `/discussion/create`, `/discussion/[id]`, `/contact`, `/tickets/[token]`. `/home` redirects to `/`; `/q` redirects to `/discussion`.
    `/speaker/[slug]` redirects to `/speakers/[slug]`. `/live` redirects to the event that is live now
    (or `/events`).
 2. **Admin dashboard** at `/admin`: passphrase login, RBAC, a full CMS for every public piece of

@@ -1,6 +1,7 @@
 # Discussion
 
-Public routes: `/discussion`, `/discussion/[id]`. Studio route: `/admin/discussion`.
+Public routes: `/discussion`, `/discussion/create`, `/discussion/[id]`. `/q` permanently redirects
+to `/discussion`. Studio route: `/admin/discussion`.
 The discussion is a place for seminar questions. A thread belongs to a published event or to
 General. The currently running or next scheduled event leads the feed, then General, then other
 events. Moderators can pin a thread above those automatic groups.

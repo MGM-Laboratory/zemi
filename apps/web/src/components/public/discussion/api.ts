@@ -1,7 +1,7 @@
 import type { Blocks } from '@zemi/shared';
 
 export interface Identity { id: string; name: string; tag: string; label: string }
-export interface EventOption { id: string; slug: string; title: string; number: number | null; startsAt: string; endsAt: string; summary?: string | null; accent?: string; featured?: boolean; cover?: { src: string; alt: string | null; width: number; height: number } | null }
+export interface EventOption { id: string; slug: string; title: string; number: number | null; startsAt: string; endsAt: string; summary?: string | null; speakers?: string[]; accent?: string; featured?: boolean; current?: boolean; cover?: { src: string; alt: string | null; width: number; height: number } | null }
 export interface Thread {
   id: string; author: string; authorId: string | null; mine: boolean; title: string; body: Blocks; excerpt: string;
   tags: string[]; status: string; pinned: boolean; score: number; myVote: number; myReactions: string[];

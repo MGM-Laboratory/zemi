@@ -18,6 +18,13 @@ export function Turnstile({ action, onToken, resetKey = 0 }: { action: string; o
   const ref = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    let active = true;
+    const markReady = () => { if (active && window.turnstile) setReady(true); };
+    if (window.turnstile) queueMicrotask(markReady);
+    window.addEventListener('zemi:turnstile-ready', markReady);
+    return () => { active = false; window.removeEventListener('zemi:turnstile-ready', markReady); };
+  }, []);
+  useEffect(() => {
     if (!ready || !ref.current || !window.turnstile) return;
     const id = window.turnstile.render(ref.current, {
       sitekey: siteKey, action, theme: 'light', appearance: 'interaction-only',
@@ -28,7 +35,7 @@ export function Turnstile({ action, onToken, resetKey = 0 }: { action: string; o
     return () => { window.turnstile?.remove(id); };
   }, [action, onToken, ready, resetKey]);
   return <>
-    <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={() => setReady(true)} />
+    <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={() => { window.dispatchEvent(new Event('zemi:turnstile-ready')); }} />
     <div ref={ref} aria-label="Human verification" />
   </>;
 }

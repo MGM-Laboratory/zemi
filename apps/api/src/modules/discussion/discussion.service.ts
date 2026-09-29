@@ -4,12 +4,13 @@ import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import type { Blocks, Principal } from '@zemi/shared';
 import { AppConfig } from '../../config/app-config.js';
 import { DB, type Db } from '../../db/client.js';
-import { auditLogs, discussionComments as comments, discussionIdentities as identities, discussionReactions as reactions, discussionReports as reports, discussionThreads as threads, discussionVotes as votes, events } from '../../db/schema.js';
+import { auditLogs, discussionComments as comments, discussionIdentities as identities, discussionReactions as reactions, discussionReports as reports, discussionThreads as threads, discussionVotes as votes, events, eventSpeakers, speakers } from '../../db/schema.js';
 import { blocksToPlainText } from '../../common/blocks.js';
 import { badRequest, conflict, forbidden, notFound, unauthorized } from '../../common/errors.js';
 import { RateLimitService } from '../../common/rate-limit.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AssetRefsService } from '../../common/asset-refs.js';
+import { searchCondition } from '../events/events.sql.js';
 
 export const DISCUSSION_COOKIE = 'zemi_discussion';
 export const DISCUSSION_COOKIE_AGE = 365 * 24 * 60 * 60 * 1000;
@@ -100,9 +101,16 @@ export class DiscussionService {
   }
 
   async eventChoices(search = '') {
-    const rows = await this.db.select({ id: events.id, slug: events.slug, title: events.title, number: events.number, startsAt: events.startsAt, endsAt: events.endsAt, coverAssetId: events.coverAssetId }).from(events).where(and(eq(events.visibility, 'published'), search ? ilike(events.title, `%${search}%`) : undefined)).orderBy(sql`case when ${events.endsAt} > now() then 0 else 1 end`, sql`case when ${events.endsAt} > now() then ${events.startsAt} end asc nulls last`, desc(events.startsAt)).limit(60);
-    const covers = await this.refs.imageRefs(rows.map(r => r.coverAssetId));
-    return rows.map(r => ({ id: r.id, slug: r.slug, title: r.title, number: r.number, startsAt: r.startsAt.toISOString(), endsAt: r.endsAt.toISOString(), cover: covers.get(r.coverAssetId ?? '') ?? null }));
+    const rows = await this.db.select({ id: events.id, slug: events.slug, title: events.title, number: events.number, summary: events.summary, startsAt: events.startsAt, endsAt: events.endsAt, coverAssetId: events.coverAssetId }).from(events).where(and(eq(events.visibility, 'published'), sql`${events.cancelledAt} is null`, searchCondition(search, 'public'))).orderBy(sql`case when ${events.endsAt} > now() then 0 else 1 end`, sql`case when ${events.endsAt} > now() then ${events.startsAt} end asc nulls last`, desc(events.startsAt)).limit(60);
+    const [covers, speakerRows] = await Promise.all([
+      this.refs.imageRefs(rows.map(r => r.coverAssetId)),
+      rows.length ? this.db.select({ eventId: eventSpeakers.eventId, name: speakers.fullName }).from(eventSpeakers).innerJoin(speakers, eq(speakers.id, eventSpeakers.speakerId)).where(and(inArray(eventSpeakers.eventId, rows.map(r => r.id)), sql`${speakers.visibility} <> 'draft'`)).orderBy(asc(eventSpeakers.sortOrder)) : Promise.resolve([]),
+    ]);
+    const names = new Map<string, string[]>();
+    for (const row of speakerRows) names.set(row.eventId, [...(names.get(row.eventId) ?? []), row.name]);
+    const now = new Date();
+    const featuredId = rows.find(r => r.endsAt > now)?.id;
+    return rows.map(r => ({ id: r.id, slug: r.slug, title: r.title, number: r.number, summary: r.summary, startsAt: r.startsAt.toISOString(), endsAt: r.endsAt.toISOString(), cover: covers.get(r.coverAssetId ?? '') ?? null, speakers: (names.get(r.id) ?? []).slice(0, 2), featured: r.id === featuredId, current: r.startsAt <= now && r.endsAt > now }));
   }
   private async thread(id: string) {
     const [row] = await this.db.select().from(threads).where(and(eq(threads.id, id), inArray(threads.status, [...visible]))).limit(1);
