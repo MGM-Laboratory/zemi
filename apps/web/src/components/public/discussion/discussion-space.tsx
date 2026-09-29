@@ -87,32 +87,32 @@ export function DiscussionSpace({ id }: { id?: string }) {
   if (!me) return <IdentityGate onJoined={setMe} />;
 
   return <div className={styles.page}>
-    <header className={`${styles.hero} ${styles.discussionHero}`}>
-      <div className={styles.heroCopy}>
-        <p className={styles.kicker}><span className={styles.liveDot} /> A space for curious minds</p>
-        <h1>Good questions<br /><em>go further.</em></h1>
-        <p className={styles.heroText}>Ask before the seminar. Pick up a thread after. The best part of Friday may start here.</p>
-        <div className={styles.heroActions}>
-          <Link className={styles.primaryButton} href="/discussion/create"><Plus size={18} /> Start a discussion <ArrowRight size={17} /></Link>
+    <div className={`${styles.content} ${styles.discussionContent}`}>
+      <header className={styles.discussionHeader}>
+        <div>
+          <p className={styles.eyebrow}><span className={styles.liveDot} /> The room is open</p>
+          <h1>{id ? 'Discussion' : 'Questions in the room'}</h1>
+          <p className={styles.discussionHeaderDescription}>{id ? 'Follow the question, then add your voice.' : 'Every question gives the next idea somewhere to begin.'}</p>
+        </div>
+        <div className={styles.discussionHeaderActions}>
+          <Link className={styles.primaryButton} href="/discussion/create"><Plus size={18} /> Ask a question <ArrowRight size={17} /></Link>
           <button className={styles.identityButton} onClick={() => setSettings(true)}>Here as <strong>{me.name}</strong><small>#{me.tag}</small><ChevronDown size={14} /></button>
         </div>
-      </div>
-      <div className={styles.heroArt} aria-hidden="true"><div className={styles.orbitOne} /><div className={styles.orbitTwo} /><div className={styles.heroBubble}><span>?</span></div><div className={styles.heroSpark}>✳</div><div className={styles.heroCaption}>A question can change the room.</div></div>
-    </header>
-    <div className={styles.content}>
+      </header>
       {id ? <>
         <Link className={styles.backLink} href="/discussion"><ArrowLeft size={16} /> Back to all discussions</Link>
         {loading && !detail ? <div className={styles.centerState}>Finding this conversation...</div> : detail ? <>
           <ThreadView thread={detail} bookmark={() => bookmark(detail.id)} saved={bookmarks.includes(detail.id)} onVote={vote} onReact={react} onShare={share} onRefresh={reload} />
         </> : <div className={styles.empty}>This conversation is unavailable.</div>}
       </> : <>
-        <div className={styles.sectionHead}><div><p className={styles.eyebrow}>The room is open</p><h2>Questions in the room</h2></div><p>Every question gives the next idea somewhere to begin.</p></div>
-        <div className={styles.board}>
+        <div className={`${styles.board} ${styles.discussionBoard}`}>
           <aside className={styles.filters} aria-label="Discussion filters">
             <p className={styles.filterLabel}>FIND YOUR ROOM</p>
-            <button className={eventFilter === 'all' ? styles.activeFilter : ''} onClick={() => { setEventFilter('all'); setSelectedFilterEvent(null); setPage(1); }}>All conversations <span>↗</span></button>
-            <button className={eventFilter === 'general' ? styles.activeFilter : ''} onClick={() => { setEventFilter('general'); setSelectedFilterEvent(null); setPage(1); }}>General questions <span>↗</span></button>
-            <div className={styles.filterPicker}><EventPicker selected={selectedFilterEvent} filter onSelect={event => { if (event) { setSelectedFilterEvent(event); setEventFilter(event.id); setPage(1); } }} />{selectedFilterEvent && <button className={styles.clearEventFilter} onClick={() => { setSelectedFilterEvent(null); setEventFilter('all'); setPage(1); }}>Clear event filter <X size={14} /></button>}</div>
+            <div className={styles.filterControls}>
+              <button className={eventFilter === 'all' ? styles.activeFilter : ''} onClick={() => { setEventFilter('all'); setSelectedFilterEvent(null); setPage(1); }}>All conversations <span>↗</span></button>
+              <button className={eventFilter === 'general' ? styles.activeFilter : ''} onClick={() => { setEventFilter('general'); setSelectedFilterEvent(null); setPage(1); }}>General questions <span>↗</span></button>
+              <div className={styles.filterPicker}><EventPicker selected={selectedFilterEvent} filter onSelect={event => { if (event) { setSelectedFilterEvent(event); setEventFilter(event.id); setPage(1); } }} />{selectedFilterEvent && <button className={styles.clearEventFilter} onClick={() => { setSelectedFilterEvent(null); setEventFilter('all'); setPage(1); }}>Clear event filter <X size={14} /></button>}</div>
+            </div>
             <div className={styles.filterNote}><Sparkles size={17} /><p>Wondering about a paper, a talk, or something in between? There is room for it here.</p></div>
           </aside>
           <div className={styles.feed}>
