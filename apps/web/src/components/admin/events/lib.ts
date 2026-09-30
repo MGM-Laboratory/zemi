@@ -122,6 +122,7 @@ export type WorkspaceTabKey =
   | 'registrations'
   | 'attendance'
   | 'stream'
+  | 'bumpers'
   | 'media'
   | 'emails'
   | 'settings';
@@ -162,6 +163,7 @@ export const WORKSPACE_TABS: WorkspaceTab[] = [
     visible: (p) => has(p, 'attendance.scan'),
   },
   { key: 'stream', label: 'Stream', path: 'stream', visible: (p) => has(p, 'stream.view') },
+  { key: 'bumpers', label: 'Bumpers', path: 'bumpers', visible: (p) => has(p, 'bumpers.run') },
   // Documentation is managed here; people who can only look see it on the public event page.
   { key: 'media', label: 'Media', path: 'media', visible: (p) => has(p, 'media.manage') },
   { key: 'emails', label: 'Emails', path: 'emails', visible: (p) => has(p, 'emails.send') },

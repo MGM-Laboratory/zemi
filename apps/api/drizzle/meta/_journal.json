@@ -36,6 +36,13 @@
       "when": 1790630500000,
       "tag": "0004_discussion_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790740000000,
+      "tag": "0005_bumpers",
+      "breakpoints": true
     }
   ]
 }

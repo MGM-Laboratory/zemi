@@ -19,6 +19,8 @@ export function canUpload(ability: Ability): boolean {
     ability.canAny('event', 'edit') ||
     ability.canAny('event', 'media.manage') ||
     ability.canAny('event', 'stream.control') ||
+    ability.canAny('event', 'bumpers.edit') ||
+    ability.has('bumpers.manage') ||
     ability.canAny('speaker', 'edit') ||
     ability.canAny('publication', 'edit')
   );

@@ -4,6 +4,8 @@ import { eq, inArray } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { DB, type Db, type Tx } from '../../db/client.js';
 import {
+  bumperRevisions,
+  bumperShows,
   admins,
   assets,
   checkins,
@@ -44,6 +46,8 @@ import { SiteService } from './site.service.js';
  * admins, sessions, audit_logs and site_settings (their references to deleted rows are nulled).
  */
 const WIPE: Array<[string, PgTable]> = [
+  ['bumper_revisions', bumperRevisions],
+  ['bumper_shows', bumperShows],
   ['discussion_votes', discussionVotes],
   ['discussion_reactions', discussionReactions],
   ['discussion_reports', discussionReports],

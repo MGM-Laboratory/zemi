@@ -19,6 +19,7 @@ export function auditTone(action: string): AuditTone {
 
 export const RESOURCE_TYPE_LABELS: Record<string, string> = {
   event: 'Events',
+  bumper: 'Bumpers',
   registration: 'Registrations',
   speaker: 'Speakers',
   publication: 'Publications',
@@ -39,6 +40,7 @@ export const ACTION_FAMILIES: Array<{ value: string; label: string }> = [
   { value: 'event', label: 'Events' },
   { value: 'stream', label: 'Streams' },
   { value: 'recording', label: 'Recordings' },
+  { value: 'bumper', label: 'Bumpers' },
   { value: 'registration', label: 'Registrations' },
   { value: 'attendance', label: 'Attendance' },
   { value: 'speaker', label: 'Speakers' },
@@ -67,6 +69,8 @@ export function auditResourceHref(e: Pick<AuditEntry, 'resourceType' | 'resource
       if (e.action.startsWith('stream.') || e.action.startsWith('recording.')) return adminRoutes.event(id, 'stream');
       if (e.action.startsWith('event.media')) return adminRoutes.event(id, 'media');
       return adminRoutes.event(id);
+    case 'bumper':
+      return id && e.action !== 'bumper.delete' ? adminRoutes.bumper(id) : adminRoutes.bumpers;
     case 'registration': {
       const ev = str(meta.eventId);
       return ev ? adminRoutes.event(ev, 'registrations') : null;

@@ -1,9 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { EVENT_STATUS_LABEL, formatJakarta, type EventAdminRow, type Paginated, type SpeakerRef } from '@zemi/shared';
+import { EVENT_STATUS_LABEL, canUseBumpers, formatJakarta, type EventAdminRow, type Paginated, type SpeakerRef } from '@zemi/shared';
 import { Command } from 'cmdk';
-import { ArrowRight, BookOpen, CalendarPlus, ExternalLink, Keyboard, LogOut, PanelLeft, Search, UserPlus } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarPlus, Clapperboard, ExternalLink, Keyboard, LogOut, PanelLeft, Search, UserPlus } from 'lucide-react';
 import { Dialog as RDialog } from 'radix-ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -94,6 +94,7 @@ export function CommandPalette({ open, onOpenChange, onToggleSidebar, onShowShor
     ability.has('events.create') && { key: 'new-event', label: 'New event', keywords: ['create', 'add', 'friday'] },
     ability.has('speakers.create') && { key: 'new-speaker', label: 'New speaker', keywords: ['create', 'add', 'person'] },
     ability.has('publications.create') && { key: 'new-publication', label: 'New publication', keywords: ['create', 'add', 'paper'] },
+    canUseBumpers(ability) && { key: 'new-bumpers', label: 'New bumper show', keywords: ['create', 'slides', 'obs', 'generate'] },
     { key: 'view-site', label: 'View the public site', keywords: ['public', 'open'] },
     onToggleSidebar && { key: 'toggle-sidebar', label: 'Toggle sidebar', keywords: ['collapse', 'expand'] },
     onShowShortcuts && { key: 'shortcuts', label: 'Keyboard shortcuts', keywords: ['help', 'keys', 'hotkeys'] },
@@ -252,6 +253,11 @@ export function CommandPalette({ open, onOpenChange, onToggleSidebar, onShowShor
                 {show('new-event') ? (
                   <Item value="new event" keywords={['create', 'add', 'friday']} icon={<CalendarPlus />} onSelect={() => go(adminRoutes.newEvent)}>
                     New event
+                  </Item>
+                ) : null}
+                {show('new-bumpers') ? (
+                  <Item value="new bumper show" keywords={['create', 'slides', 'obs', 'generate']} icon={<Clapperboard />} onSelect={() => go(`${adminRoutes.bumpers}?new=1`)}>
+                    New bumper show
                   </Item>
                 ) : null}
                 {show('new-speaker') ? (

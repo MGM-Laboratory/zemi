@@ -16,6 +16,8 @@ import {
 import type {
   Adjust,
   Blocks,
+  BumperSlide,
+  BumperTheme,
   Crop,
   LinkItem,
   Policy,
@@ -641,3 +643,76 @@ export const discussionReports = pgTable('discussion_reports', {
   resolvedAt: ts('resolved_at'),
   resolvedBy: text('resolved_by'),
 }, (t) => [index('discussion_reports_status_idx').on(t.status, t.createdAt)]);
+
+/* ------------------------------------------------------------------ bumpers */
+
+/**
+ * A bumper show: an ordered list of animated full-screen slides for the venue screen and OBS.
+ * Slides live in one jsonb array (validated by the shared zod schema) so reorders and edits are
+ * atomic and versioned. The live_* columns are the authoritative playback state; SSE only fans it out.
+ */
+export const bumperShows = pgTable(
+  'bumper_shows',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
+    status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
+    origin: text('origin', { enum: ['blank', 'generated', 'duplicate', 'starter', 'restored'] }).notNull().default('blank'),
+    theme: jsonb('theme').$type<BumperTheme>().notNull(),
+    slides: jsonb('slides').$type<BumperSlide[]>().notNull().default([]),
+    version: integer('version').notNull().default(1),
+    /** Read-only capability id in the OBS output URL (plain, like a ticket token). */
+    outputKey: text('output_key').notNull().unique(),
+    /** Control key for the OBS dock / Companion: sha256 for lookup, AES-GCM (AAD = show id) to show it again. */
+    controlKeyHash: text('control_key_hash').notNull().unique(),
+    controlKeyEnc: text('control_key_enc').notNull(),
+    keysRotatedAt: ts('keys_rotated_at').notNull().defaultNow(),
+    liveSlideId: text('live_slide_id'),
+    liveFromSlideId: text('live_from_slide_id'),
+    liveTransition: text('live_transition'),
+    liveDir: integer('live_dir').notNull().default(1),
+    liveMode: text('live_mode', { enum: ['show', 'black', 'clear'] }).notNull().default('show'),
+    liveAutoplay: boolean('live_autoplay').notNull().default(true),
+    liveAdvanceAt: ts('live_advance_at'),
+    liveStartedAt: ts('live_started_at'),
+    liveUpdatedAt: ts('live_updated_at').notNull().defaultNow(),
+    liveSeq: integer('live_seq').notNull().default(0),
+    liveCue: integer('live_cue').notNull().default(0),
+    liveVia: text('live_via'),
+    liveBy: text('live_by'),
+    lastPlayedAt: ts('last_played_at'),
+    archivedAt: ts('archived_at'),
+    createdBy: text('created_by'),
+    createdByName: text('created_by_name'),
+    updatedBy: text('updated_by'),
+    updatedByName: text('updated_by_name'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('bumper_shows_event_idx').on(t.eventId),
+    index('bumper_shows_status_updated_idx').on(t.status, t.updatedAt),
+    index('bumper_shows_advance_idx').on(t.liveAdvanceAt),
+  ],
+);
+
+/** Saved versions of a show (coalesced autosaves, generations, restores). */
+export const bumperRevisions = pgTable(
+  'bumper_revisions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    showId: uuid('show_id')
+      .notNull()
+      .references(() => bumperShows.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    theme: jsonb('theme').$type<BumperTheme>().notNull(),
+    slides: jsonb('slides').$type<BumperSlide[]>().notNull(),
+    reason: text('reason').notNull().default('save'),
+    createdBy: text('created_by'),
+    createdByName: text('created_by_name'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('bumper_revisions_show_idx').on(t.showId, t.createdAt)],
+);

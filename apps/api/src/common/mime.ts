@@ -114,6 +114,7 @@ export const PURPOSE_KINDS: Record<AssetPurpose, AssetKind[]> = {
   recording: ['video', 'audio'],
   editor: ['image', 'video', 'audio', 'document'],
   site: ['image', 'video'],
+  bumper: ['image'],
 };
 
 const KIND_LABEL: Record<AssetKind, string> = {

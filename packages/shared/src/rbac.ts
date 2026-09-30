@@ -17,6 +17,7 @@ export const CAPABILITIES = [
   'audit.view',
   'discussion.view',
   'discussion.manage',
+  'bumpers.manage',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -34,6 +35,8 @@ export const EVENT_ACTIONS = [
   'stream.control',
   'media.manage',
   'emails.send',
+  'bumpers.run',
+  'bumpers.edit',
 ] as const;
 export type EventAction = (typeof EVENT_ACTIONS)[number];
 
@@ -65,6 +68,7 @@ export const CAPABILITY_META: Record<Capability, { label: string; hint: string }
   'audit.view': { label: 'Read the audit log', hint: 'Who changed what, and when.' },
   'discussion.view': { label: 'Read discussions', hint: 'See all questions, replies and reports in Studio.' },
   'discussion.manage': { label: 'Moderate discussions', hint: 'Pin, lock, archive or hide questions, manage replies, reports and participants.' },
+  'bumpers.manage': { label: 'Manage all bumpers', hint: 'Build, run, archive and delete every bumper show, including ones not tied to an event.' },
 };
 
 export const EVENT_ACTION_META: Record<EventAction, { label: string; group: string; hint: string }> = {
@@ -81,6 +85,8 @@ export const EVENT_ACTION_META: Record<EventAction, { label: string; group: stri
   'stream.control': { label: 'Control stream', group: 'Stream', hint: 'OBS keys, go live, end, rotate keys, recordings.' },
   'media.manage': { label: 'Documentation', group: 'Media', hint: 'Upload and arrange photos and videos.' },
   'emails.send': { label: 'Email registrants', group: 'People', hint: 'Send updates to everyone who registered.' },
+  'bumpers.run': { label: 'Run bumpers', group: 'Stream', hint: 'Play bumper shows on the venue screen and in OBS, step through them, get the OBS links.' },
+  'bumpers.edit': { label: 'Build bumpers', group: 'Stream', hint: 'Create, generate, edit, archive and delete this event\'s bumper shows.' },
 };
 
 export const CONTENT_ACTION_META: Record<ContentAction, { label: string; hint: string }> = {
@@ -107,6 +113,17 @@ export const EMPTY_POLICY: Policy = { capabilities: [], grants: [] };
 
 /** Normalize an untrusted policy: drop unknown actions, dedupe, merge grants for the same target. */
 export function normalizePolicy(input: unknown): Policy {
+  // Drop capabilities this build doesn't know (a newer or older build may have saved them),
+  // instead of failing the whole parse and wiping every power the admin has.
+  if (input && typeof input === 'object' && Array.isArray((input as { capabilities?: unknown }).capabilities)) {
+    const known = CAPABILITIES as readonly string[];
+    input = {
+      ...(input as object),
+      capabilities: (input as { capabilities: unknown[] }).capabilities.filter(
+        (c): c is string => typeof c === 'string' && known.includes(c),
+      ),
+    };
+  }
   const parsed = policySchema.safeParse(input);
   if (!parsed.success) return { capabilities: [], grants: [] };
   const caps = Array.from(new Set(parsed.data.capabilities));
@@ -136,9 +153,12 @@ const IMPLIES: Partial<Record<AnyAction, AnyAction[]>> = {
   'attendance.scan': ['view'],
   'attendance.manage': ['attendance.scan', 'view'],
   'stream.view': ['view'],
-  'stream.control': ['stream.view', 'view'],
+  // Whoever runs the stream also runs and builds the bumpers on it.
+  'stream.control': ['stream.view', 'view', 'bumpers.edit', 'bumpers.run'],
   'media.manage': ['view'],
   'emails.send': ['view'],
+  'bumpers.run': ['view'],
+  'bumpers.edit': ['bumpers.run', 'view'],
 };
 
 export function expandActions(actions: readonly AnyAction[]): Set<AnyAction> {
@@ -275,7 +295,7 @@ export const POLICY_PRESETS: Array<{ key: string; label: string; description: st
   {
     key: 'stream-operator',
     label: 'Stream operator',
-    description: 'Runs OBS, goes live, manages recordings for the events you pick.',
+    description: 'Runs OBS, goes live, builds and plays bumpers, manages recordings for the events you pick.',
     policy: { capabilities: [], grants: [] },
   },
   {
@@ -311,6 +331,7 @@ export const EVENT_ACTION_BUNDLES: Record<string, EventAction[]> = {
   'read-only': ['view'],
   'event-editor': ['view', 'edit', 'media.manage'],
   'door-crew': ['attendance.scan', 'attendance.manage'],
-  'stream-operator': ['stream.view', 'stream.control'],
-  'read-write': ['view', 'edit', 'publish', 'registrations.view', 'registrations.manage', 'attendance.scan', 'attendance.manage', 'stream.view', 'stream.control', 'media.manage', 'emails.send', 'registrations.export'],
+  'stream-operator': ['stream.view', 'stream.control', 'bumpers.run', 'bumpers.edit'],
+  'show-runner': ['bumpers.run'],
+  'read-write': ['view', 'edit', 'publish', 'registrations.view', 'registrations.manage', 'attendance.scan', 'attendance.manage', 'stream.view', 'stream.control', 'media.manage', 'emails.send', 'registrations.export', 'bumpers.run', 'bumpers.edit'],
 };

@@ -19,3 +19,4 @@ export * from './schemas/stream.js';
 export * from './schemas/site.js';
 export * from './site-defaults.js';
 export * from './schemas/overview.js';
+export * from './schemas/bumpers.js';

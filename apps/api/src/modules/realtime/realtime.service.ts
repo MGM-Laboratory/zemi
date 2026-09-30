@@ -7,6 +7,7 @@ import { Observable, Subject } from 'rxjs';
  *   event:<eventId>:live        public   stream state, viewers, reactions  (LiveEvent from @zemi/shared)
  *   event:<eventId>:attendance  admin    check-ins for the door and dashboard
  *   event:<eventId>:stream      admin    ingest health, preview, go-live changes
+ *   bumper:<showId>             admin + token outputs/docks   bumper playback (BumperStreamMessage)
  *
  * Payloads are JSON objects with a `type` field. Pings are `{ type: 'ping', t: <iso> }` every 20s.
  */
@@ -14,6 +15,8 @@ export const channels = {
   live: (eventId: string) => `event:${eventId}:live`,
   attendance: (eventId: string) => `event:${eventId}:attendance`,
   stream: (eventId: string) => `event:${eventId}:stream`,
+  /** Bumper show playback (admin controllers, OBS outputs and docks all listen here). */
+  bumper: (showId: string) => `bumper:${showId}`,
 } as const;
 
 export interface SseOptions {

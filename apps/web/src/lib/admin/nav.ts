@@ -1,4 +1,4 @@
-import type { Ability } from '@zemi/shared';
+import { canUseBumpers, type Ability } from '@zemi/shared';
 
 /**
  * Canonical admin routes. Feature pages live at these paths so the sidebar, command palette
@@ -10,6 +10,11 @@ export const adminRoutes = {
   kit: '/admin/kit',
   events: '/admin/events',
   discussion: '/admin/discussion',
+  /** Bumper library, builder, full-window player and controller. */
+  bumpers: '/admin/bumpers',
+  bumper: (id: string) => `/admin/bumpers/${id}`,
+  bumperPlay: (id: string) => `/admin/stage/bumpers/${id}/play`,
+  bumperControl: (id: string) => `/admin/stage/bumpers/${id}/control`,
   newEvent: '/admin/events/new',
   /** Event workspace. `tab` is a sub-route like 'registrations', 'attendance', 'stream', 'media'. */
   event: (id: string, tab?: string) => `/admin/events/${id}${tab ? `/${tab}` : ''}`,
@@ -35,6 +40,7 @@ export type NavIconName =
   | 'overview'
   | 'events'
   | 'discussion'
+  | 'bumpers'
   | 'speakers'
   | 'publications'
   | 'venues'
@@ -85,6 +91,15 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         shortcut: 'g e',
         keywords: ['fridays', 'sessions', 'seminar'],
         visible: (a) => a.canAny('event', 'view') || a.has('events.create'),
+      },
+      {
+        key: 'bumpers',
+        label: 'Bumpers',
+        href: adminRoutes.bumpers,
+        icon: 'bumpers',
+        shortcut: 'g b',
+        keywords: ['slides', 'obs', 'screen', 'stage', 'agenda', 'show', 'intro', 'transition', 'overlay', 'lower third'],
+        visible: (a) => canUseBumpers(a),
       },
       {
         key: 'discussion', label: 'Discussion', href: adminRoutes.discussion, icon: 'discussion',

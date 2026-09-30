@@ -8,6 +8,7 @@ import { HealthController } from './health.controller.js';
 import { AdminsModule } from './modules/admins/admins.module.js';
 import { AssetsModule } from './modules/assets/assets.module.js';
 import { AttendanceModule } from './modules/attendance/attendance.module.js';
+import { BumpersModule } from './modules/bumpers/bumpers.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { EventsModule } from './modules/events/events.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
@@ -52,6 +53,7 @@ import { VenuesModule } from './modules/venues/venues.module.js';
     SiteModule,
     OverviewModule,
     DiscussionModule,
+    BumpersModule,
   ],
   controllers: [HealthController],
 })

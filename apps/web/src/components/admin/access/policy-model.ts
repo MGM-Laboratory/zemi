@@ -106,7 +106,8 @@ const EVENT_BUNDLE_COPY: Record<string, { label: string; hint: string }> = {
   'read-only': { label: 'Read-only', hint: 'Look, do not touch.' },
   'event-editor': { label: 'Editor', hint: 'Content, speakers, rundown and documentation.' },
   'door-crew': { label: 'Door crew', hint: 'Scan tickets and check people in. No emails or phones.' },
-  'stream-operator': { label: 'Stream operator', hint: 'OBS keys, go live, recordings.' },
+  'stream-operator': { label: 'Stream operator', hint: 'OBS keys, go live, recordings, bumpers.' },
+  'show-runner': { label: 'Show runner', hint: 'Plays the bumpers on the screen. No stream keys.' },
   'read-write': { label: 'Read and write', hint: 'Everything except deleting the event.' },
 };
 

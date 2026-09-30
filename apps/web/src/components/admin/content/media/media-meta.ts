@@ -11,6 +11,7 @@ export const PURPOSE_LABELS: Record<AssetPurpose, string> = {
   recording: 'Recording',
   editor: 'In a text block',
   site: 'Site pages',
+  bumper: 'Bumpers',
 };
 
 export const KIND_LABELS: Record<AssetKind, { one: string; many: string; shape: ShapeName }> = {

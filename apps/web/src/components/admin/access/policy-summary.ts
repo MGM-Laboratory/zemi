@@ -63,8 +63,12 @@ function eventPhrases(actions: Set<AnyAction>): Phrase[] {
   if (people.length) out.push({ key: `people:${people.length}:${people.join('|')}`, text: listSentence(people), object: false, order: 2 });
   if (actions.has('attendance.manage')) out.push({ key: 'door:manage', text: 'scan tickets and check people in', object: false, order: 3 });
   else if (actions.has('attendance.scan')) out.push({ key: 'door:scan', text: 'scan tickets at the door', object: false, order: 3 });
-  if (actions.has('stream.control')) out.push({ key: 'stream:control', text: 'run the livestream and its recordings', object: false, order: 4 });
-  else if (actions.has('stream.view')) out.push({ key: 'stream:view', text: 'see the stream setup and preview', object: false, order: 4 });
+  if (actions.has('stream.control')) out.push({ key: 'stream:control', text: 'run the livestream, its recordings and the bumpers', object: false, order: 4 });
+  else {
+    if (actions.has('stream.view')) out.push({ key: 'stream:view', text: 'see the stream setup and preview', object: false, order: 4 });
+    if (actions.has('bumpers.edit')) out.push({ key: 'bumpers:edit', text: 'build and play the bumpers', object: false, order: 4.5 });
+    else if (actions.has('bumpers.run')) out.push({ key: 'bumpers:run', text: 'play the bumpers on screen and in OBS', object: false, order: 4.5 });
+  }
   if (actions.has('media.manage')) out.push({ key: 'media', text: 'upload and arrange documentation', object: false, order: 5 });
   if (!out.length && actions.has('view')) out.push({ key: 'view', text: 'look at', object: true, order: 0 });
   return out;
@@ -89,6 +93,7 @@ const CAP_SENTENCE: Record<Capability, string> = {
   'audit.view': 'Can read the audit log.',
   'discussion.view': 'Can read questions, replies and reports in discussion.',
   'discussion.manage': 'Can moderate discussion threads, replies, reports and participants.',
+  'bumpers.manage': 'Can build, run and delete every bumper show, including ones not tied to an event.',
 };
 
 /* ------------------------------------------------------------------ summary */

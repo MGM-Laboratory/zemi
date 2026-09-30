@@ -131,6 +131,7 @@ export const ASSET_PURPOSES = [
   'recording',
   'editor',
   'site',
+  'bumper',
 ] as const;
 export type AssetPurpose = (typeof ASSET_PURPOSES)[number];
 
@@ -146,4 +147,5 @@ export const PURPOSE_ASPECT: Record<AssetPurpose, number | null> = {
   recording: null,
   editor: null,
   site: null,
+  bumper: null,
 };

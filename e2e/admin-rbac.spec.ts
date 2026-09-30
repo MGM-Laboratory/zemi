@@ -11,7 +11,7 @@ import { expect, gotoStable, isolateRateLimits, loginThroughForm, skipSiteLoader
  * `view` (Overview, Details, Speakers, Rundown, Publications, Settings); Media needs `media.manage`.
  */
 const DOOR_TABS = ['Overview', 'Details', 'Speakers', 'Rundown', 'Publications', 'Attendance', 'Settings'];
-const HIDDEN_TABS = ['Registrations', 'Stream', 'Media', 'Emails'];
+const HIDDEN_TABS = ['Registrations', 'Stream', 'Bumpers', 'Media', 'Emails'];
 
 interface DoorCrew {
   ev: EventAdmin;
@@ -51,7 +51,7 @@ test('door crew sees only the door', async ({ browser, admin, data, clientIp }) 
     const sidebar = page.locator('nav[aria-label="Admin"]');
     await expect(sidebar).toBeVisible();
     await expect(sidebar.getByRole('link', { name: /^Events/ })).toBeVisible();
-    for (const hidden of [/^Speakers/, /^Publications/, /^Admins and access/, /^Audit log/, /^System/, /^Inbox/, /^Audience/, /^Media library/, /^Site/]) {
+    for (const hidden of [/^Bumpers/, /^Speakers/, /^Publications/, /^Admins and access/, /^Audit log/, /^System/, /^Inbox/, /^Audience/, /^Media library/, /^Site/]) {
       await expect(sidebar.getByRole('link', { name: hidden })).toHaveCount(0);
     }
 
@@ -71,7 +71,7 @@ test('door crew sees only the door', async ({ browser, admin, data, clientIp }) 
     await snap(page, 'attendance');
 
     // Typing a hidden tab's URL gets the friendly locked door, not the tab.
-    for (const tab of ['registrations', 'stream', 'media', 'emails']) {
+    for (const tab of ['registrations', 'stream', 'bumpers', 'media', 'emails']) {
       await gotoStable(page, `/admin/events/${ev.id}/${tab}`);
       await expect(page.getByText(new RegExp(`You can see this event, but not its ${tab}`))).toBeVisible();
     }

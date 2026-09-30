@@ -27,6 +27,13 @@ const ICONS: Record<NavIconName, (p: IconProps) => React.ReactNode> = {
       <path d="M8 9h8M8 12h5" />
     </IconBase>
   ),
+  bumpers: (p) => (
+    <IconBase {...p}>
+      <rect x="2.5" y="5" width="19" height="12.5" rx="3" />
+      <path d="M9 20.5h6M12 17.5v3" />
+      <path d="M10.2 8.6q-.7-.4-.7.4v4.9q0 .8.7.4l4-2.4q.7-.4 0-.9Z" fill="currentColor" stroke="none" />
+    </IconBase>
+  ),
   speakers: (p) => (
     <IconBase {...p}>
       <circle cx="12" cy="7.5" r="4" />
@@ -116,6 +123,7 @@ export const NAV_ACCENT: Partial<Record<NavIconName, { shape: 'circle' | 'triang
   overview: { shape: 'circle', color: 'var(--color-blue)' },
   events: { shape: 'circle', color: 'var(--color-blue)' },
   discussion: { shape: 'arch', color: 'var(--color-green)' },
+  bumpers: { shape: 'triangle', color: 'var(--color-red)' },
   speakers: { shape: 'arch', color: 'var(--color-green)' },
   publications: { shape: 'square', color: 'var(--color-yellow)' },
   venues: { shape: 'arch', color: 'var(--color-green)' },
