@@ -1,6 +1,7 @@
 'use client';
 
 import type { BumperMotionLevel } from '@zemi/shared';
+import { primeCharacters } from '../parts/character';
 import { BE, gsap, SplitText } from './gsap';
 import type { EnterFn, IdleFn } from './context';
 import type { EnterKind, IdleKind } from './types';
@@ -50,7 +51,9 @@ export function settle(root: HTMLElement | null) {
       t.textContent = orig;
       scrambleText.delete(t);
     }
-    gsap.set(el, { clearProps: 'opacity,transform,clipPath,visibility,filter,rotate,scale,translate' });
+    // Only what entrances set. The builder's own rotation (CSS rotate) and edit-mode hiding
+    // (visibility) live on the same elements and must survive.
+    gsap.set(el, { clearProps: 'opacity,transform,clipPath,filter' });
   }
   root.querySelectorAll<SVGElement>('[data-draw]').forEach((p) => gsap.set(p, { clearProps: 'strokeDasharray,strokeDashoffset' }));
 }
@@ -122,6 +125,7 @@ export function buildEntrance(root: HTMLElement, opts: ChoreoOpts, extra: Iterab
   const calm = opts.motion !== 'full';
   const still = opts.motion === 'still';
   const tl = gsap.timeline({ paused: true });
+  primeCharacters(root);
   const list = targets(root)
     .map((el, i) => ({ el, i, order: Number(el.dataset.order ?? 0) || 0, delay: Number(el.dataset.delay ?? 0) || 0 }))
     .sort((a, b) => a.order - b.order || a.i - b.i);
@@ -144,13 +148,16 @@ export function buildEntrance(root: HTMLElement, opts: ChoreoOpts, extra: Iterab
       const split = SplitText.create(t, { type, mask: kind === 'split-chars' ? undefined : 'lines', linesClass: 'b-line', wordsClass: 'b-word', charsClass: 'b-char', aria: 'hidden' });
       splits.set(t, split);
       const parts = kind === 'split-chars' ? split.chars : kind === 'split-words' ? split.words : split.lines;
-      tl.from(
+      const tween = gsap.from(
         parts,
         kind === 'split-chars'
-          ? { yPercent: 90, rotate: 10, opacity: 0, duration: at(0.7), ease: BE.back, stagger: at(calm ? 0.012 : 0.022) }
-          : { yPercent: 115, rotate: kind === 'split-words' ? 4 : 0, duration: at(0.95), ease: BE.out, stagger: at(kind === 'split-words' ? 0.045 : 0.08) },
-        start,
+          ? { yPercent: 90, rotation: 10, opacity: 0, duration: at(0.7), ease: BE.back, stagger: at(calm ? 0.012 : 0.022) }
+          : { yPercent: 115, rotation: kind === 'split-words' ? 4 : 0, duration: at(0.95), ease: BE.out, stagger: at(kind === 'split-words' ? 0.045 : 0.08) },
       );
+      tl.add(tween, start);
+      // Put the real text back once it has landed: split lines keep masks that clip descenders
+      // and split words lose kerning, which can push a fitted line into wrapping.
+      tl.call(() => revertSplit(t), [], start + tween.totalDuration() + 0.02);
       continue;
     }
     if (kind === 'scramble') {
@@ -194,6 +201,7 @@ export function buildEntrance(root: HTMLElement, opts: ChoreoOpts, extra: Iterab
 /** Generic idle loops from data-idle plus the template's useIdle contributions. Returns a stop function. */
 export function startIdle(root: HTMLElement, opts: ChoreoOpts, extra: Iterable<{ current: IdleFn }> = []): () => void {
   if (opts.motion === 'still') return () => {};
+  primeCharacters(root);
   const calm = opts.motion === 'calm';
   const anims: gsap.core.Animation[] = [];
   const cleanups: Array<() => void> = [];

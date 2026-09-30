@@ -72,6 +72,23 @@ export function FitText({ children, max, min, font = 'display', weight, casl, tr
   const text = typeof children === 'string' || typeof children === 'number' ? String(children) : null;
   const [size, setSize] = useState(hi);
   const [fontsTick, setFontsTick] = useState(0);
+  const [boxTick, setBoxTick] = useState(0);
+
+  // Refit when the element box changes size (the builder resizes it, a variant swap, a reset).
+  useLayoutEffect(() => {
+    const outer = outerRef.current;
+    if (!outer || typeof ResizeObserver === 'undefined') return;
+    let last = `${outer.clientWidth}x${outer.clientHeight}`;
+    const ro = new ResizeObserver(() => {
+      const now = `${outer.clientWidth}x${outer.clientHeight}`;
+      if (now !== last) {
+        last = now;
+        setBoxTick((n) => n + 1);
+      }
+    });
+    ro.observe(outer);
+    return () => ro.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     const fontsApi = typeof document !== 'undefined' ? document.fonts : undefined;
@@ -111,7 +128,7 @@ export function FitText({ children, max, min, font = 'display', weight, casl, tr
     inner.style.fontSize = `${best}px`;
     setSize(best);
     if (key && loaded) remember(key, best);
-  }, [text, children, hi, lo, font, weight, casl, tracking, lh, uppercase, fontsTick]);
+  }, [text, children, hi, lo, font, weight, casl, tracking, lh, uppercase, fontsTick, boxTick]);
 
   return (
     <div

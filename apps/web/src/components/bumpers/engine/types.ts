@@ -94,6 +94,11 @@ export interface ResolveCtx {
   fill(s: string): string;
   /** Server-corrected Date.now(). */
   now(): number;
+  /**
+   * When this slide came on screen (server clock ms), the same on every screen, or null outside
+   * live playback (builder, thumbnails). Countdowns in minutes count from here.
+   */
+  liveSince(): number | null;
 }
 
 export type FieldType =

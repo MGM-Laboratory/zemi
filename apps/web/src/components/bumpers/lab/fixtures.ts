@@ -16,6 +16,8 @@ const SP = {
 };
 const PUB = { p1: '5a3b0000-0000-4000-8000-00000000b001', p2: '5a3b0000-0000-4000-8000-00000000b002' };
 const TEAM = { dimas: '5a3b0000-0000-4000-8000-00000000c001', ayu: '5a3b0000-0000-4000-8000-00000000c002', fajar: '5a3b0000-0000-4000-8000-00000000c003' };
+/** A landscape sample photo (the site's share image), for photo slides and photo backgrounds. */
+export const SAMPLE_PHOTO_ID = '5a3b0000-0000-4000-8000-00000000e001';
 const TH = { t1: '5a3b0000-0000-4000-8000-00000000d001', t2: '5a3b0000-0000-4000-8000-00000000d002', t3: '5a3b0000-0000-4000-8000-00000000d003' };
 
 const speaker = (id: string, slug: string, fullName: string, headline: string, organization: string, position: string, nickname: string | null = null) => ({
@@ -147,7 +149,19 @@ export const SAMPLE_DATA: BumperData = {
     [TH.t2]: { id: TH.t2, title: 'Do clouds ruin the rice counts in rainy season?', excerpt: 'Sentinel-2 in January over Java is mostly clouds.', authorLabel: 'Maya #0412', score: 9, commentCount: 1, eventId: SAMPLE_EVENT_ID, createdAt: '2026-10-02T07:10:00.000Z' },
     [TH.t3]: { id: TH.t3, title: 'Can undergrads join the reading group?', excerpt: '', authorLabel: 'Rafi #7780', score: 6, commentCount: 2, eventId: SAMPLE_EVENT_ID, createdAt: '2026-10-02T07:12:00.000Z' },
   },
-  images: {},
+  images: {
+    [SAMPLE_PHOTO_ID]: {
+      id: SAMPLE_PHOTO_ID,
+      width: 1200,
+      height: 630,
+      alt: 'Zemi',
+      lqip: null,
+      color: '#3a6dc5',
+      avif: [],
+      webp: [],
+      src: '/brand/og-default.png',
+    },
+  },
   site: {
     name: 'Zemi',
     tagline: 'Research is lonely. Fridays aren\'t.',

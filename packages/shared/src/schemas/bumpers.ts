@@ -392,7 +392,8 @@ export type BumperShowStatus = (typeof BUMPER_SHOW_STATUSES)[number];
 export const BUMPER_ORIGINS = ['blank', 'generated', 'duplicate', 'starter', 'restored'] as const;
 export type BumperOrigin = (typeof BUMPER_ORIGINS)[number];
 
-const slidesArray = z
+/** A show's slide list: at most BUMPER_MAX_SLIDES, unique ids. */
+export const bumperSlidesArray = z
   .array(bumperSlideSchema)
   .max(BUMPER_MAX_SLIDES, `A show can hold up to ${BUMPER_MAX_SLIDES} bumpers.`)
   .refine((list) => new Set(list.map((s) => s.id)).size === list.length, { message: 'Two bumpers share an id.' });
@@ -402,7 +403,7 @@ export const bumperShowCreateInput = z.object({
   title: z.string().trim().min(1, 'Give the show a name.').max(120),
   eventId: z.uuid().nullable().optional(),
   theme: bumperThemeSchema.partial().optional(),
-  slides: slidesArray.optional(),
+  slides: bumperSlidesArray.optional(),
   origin: z.enum(BUMPER_ORIGINS).default('blank'),
 });
 export type BumperShowCreateInput = z.infer<typeof bumperShowCreateInput>;
@@ -414,12 +415,27 @@ export const bumperShowUpdateInput = z.object({
   title: z.string().trim().min(1, 'Give the show a name.').max(120).optional(),
   eventId: z.uuid().nullable().optional(),
   theme: bumperThemeSchema.optional(),
-  slides: slidesArray.optional(),
+  slides: bumperSlidesArray.optional(),
   status: z.enum(BUMPER_SHOW_STATUSES).optional(),
   /** Save a named revision now (otherwise revisions are coalesced every few minutes). */
   checkpoint: z.string().trim().max(80).optional(),
 });
 export type BumperShowUpdateInput = z.infer<typeof bumperShowUpdateInput>;
+
+/** POST /admin/bumpers/:id/duplicate */
+export const bumperDuplicateInput = z.object({
+  title: z.string().trim().min(1).max(120).optional(),
+  eventId: z.uuid().nullable().optional(),
+});
+export type BumperDuplicateInput = z.infer<typeof bumperDuplicateInput>;
+
+/** POST /admin/bumpers/:id/output/rotate */
+export const bumperRotateInput = z.object({ which: z.enum(['output', 'control', 'both']).default('both') });
+export type BumperRotateInput = z.infer<typeof bumperRotateInput>;
+
+/** POST /admin/bumpers/:id/revisions/:revId/restore */
+export const bumperRestoreInput = z.object({ baseVersion: z.number().int().min(0) });
+export type BumperRestoreInput = z.infer<typeof bumperRestoreInput>;
 
 /** GET /admin/bumpers */
 export const bumperListQuery = z.object({
@@ -531,6 +547,8 @@ export interface BumperLiveState {
   showId: string;
   /** Current slide (by id, so reordering during a show never jumps). Null when the show has no playable slide. */
   slideId: string | null;
+  /** When the current slide came on screen (ISO, server clock; reset by replay). Countdowns in minutes count from here on every screen. */
+  slideSince: string | null;
   /** 0-based position of `slideId` in playback order (hidden slides skipped), -1 when none. */
   position: number;
   /** Playable slide count. */

@@ -47,6 +47,8 @@ export interface SlideViewProps {
   mode: SlideMode;
   /** Live mode only: play the entrance on mount (gallery hover, lab). */
   autoplay?: boolean;
+  /** Live mode: when this slide came on screen (server clock ms), so countdowns agree across screens. */
+  liveSince?: number | null;
   className?: string;
   style?: CSSProperties;
   ref?: Ref<SlideHandle>;
@@ -77,16 +79,20 @@ async function waitImages(root: HTMLElement, capMs: number) {
  * content; this adds the backdrop, free elements, the corner bug and clock, and exposes the
  * choreography through an imperative handle (the director and the player drive it).
  */
-export function SlideView({ slide, theme, data, showEventId, mode, autoplay, className, style, ref }: SlideViewProps) {
+export function SlideView({ slide, theme, data, showEventId, mode, autoplay, liveSince = null, className, style, ref }: SlideViewProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [registry] = useState(createRegistry);
   const idleStop = useRef<(() => void) | null>(null);
   const entrance = useRef<gsap.core.Timeline | null>(null);
   const nowFn = useNowFn();
   const template = getTemplate(slide.kind);
-  const ctx = useMemo(() => buildResolveCtx({ slide, theme, data, mode, showEventId, template, now: nowFn }), [slide, theme, data, mode, showEventId, template, nowFn]);
+  const ctx = useMemo(() => buildResolveCtx({ slide, theme, data, mode, showEventId, template, now: nowFn, liveSince }), [slide, theme, data, mode, showEventId, template, nowFn, liveSince]);
   const ctxRef = useRef(ctx);
-  ctxRef.current = ctx;
+  // The handle reads the latest context from effects and callbacks, never during render.
+  useLayoutEffect(() => {
+    ctxRef.current = ctx;
+  }, [ctx]);
+  const prepared = useRef(false);
 
   const handle = useMemo<SlideHandle>(() => {
     const h: SlideHandle = {
@@ -160,10 +166,13 @@ export function SlideView({ slide, theme, data, showEventId, mode, autoplay, cla
 
   useImperativeHandle(ref, () => handle, [handle]);
 
-  // Live slides start hidden-for-entrance; static modes always show their final state.
+  // Live slides start hidden-for-entrance (once per mount, so a Fast Refresh or StrictMode re-run
+  // never blanks a slide that already played); static modes always show their final state.
   useLayoutEffect(() => {
-    if (mode === 'live') handle.prepare();
-    else handle.settle();
+    if (mode === 'live') {
+      if (!prepared.current) handle.prepare();
+      prepared.current = true;
+    } else handle.settle();
   }, [mode, handle]);
 
   useEffect(() => {
@@ -190,6 +199,8 @@ export function SlideView({ slide, theme, data, showEventId, mode, autoplay, cla
   const overlay = template.overlay || bg === 'transparent';
   const showBug = theme.bug && !template.noBug && !overlay;
   const shrink = theme.safeArea && !overlay;
+  // The corner bug always names today's Friday, even on a slide about another event (next Friday).
+  const bugEvent = (showEventId ? data.events[showEventId] : undefined) ?? ctx.event;
   return (
     <SlideProvider value={{ ctx, registry }}>
       <div
@@ -218,8 +229,8 @@ export function SlideView({ slide, theme, data, showEventId, mode, autoplay, cla
           <Render />
           <Extras />
         </div>
-        {showBug ? <Bug colors={ctx.colors} number={ctx.event?.number ?? null} corner={template.kind === 'welcome' || template.kind === 'closing' ? 'bottom-left' : 'top-left'} /> : null}
-        {theme.clock && !overlay ? <CornerClock colors={ctx.colors} /> : null}
+        {showBug ? <Bug colors={ctx.colors} number={bugEvent?.number ?? null} corner={template.kind === 'welcome' || template.kind === 'closing' ? 'bottom-left' : 'top-left'} /> : null}
+        {theme.clock && !overlay && template.kind !== 'blank' ? <CornerClock colors={ctx.colors} /> : null}
       </div>
     </SlideProvider>
   );

@@ -22,6 +22,7 @@ CREATE TABLE "bumper_shows" (
   "live_updated_at" timestamptz DEFAULT now() NOT NULL,
   "live_seq" integer DEFAULT 0 NOT NULL,
   "live_cue" integer DEFAULT 0 NOT NULL,
+  "live_slide_since" timestamptz,
   "live_via" text,
   "live_by" text,
   "last_played_at" timestamptz,

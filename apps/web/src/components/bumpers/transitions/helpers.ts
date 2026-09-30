@@ -1,7 +1,7 @@
 'use client';
 
 import { SHAPE_COLORS, SHAPE_ORDER, SHAPE_PATHS_46, type ShapeName } from '@zemi/shared';
-import { characterMarkup, type CharacterOpts } from '../parts/character';
+import { characterMarkup, primeCharacters, type CharacterOpts } from '../parts/character';
 import { gsap } from '../engine/gsap';
 import { INK, PAPER } from '../engine/palette';
 import type { TransitionContext } from './types';
@@ -62,6 +62,7 @@ export function character(parent: HTMLElement, shape: ShapeName, size: number, o
   const wrap = div(parent, { left: opts.x ?? 0, top: opts.y ?? 0, width: size, height: size });
   wrap.innerHTML = characterMarkup(shape, size, opts);
   wrap.dataset.char = shape;
+  primeCharacters(wrap);
   return wrap;
 }
 

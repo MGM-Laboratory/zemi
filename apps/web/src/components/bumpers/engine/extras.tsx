@@ -1,7 +1,7 @@
 'use client';
 
 import { BUMPER_ELEMENT_TYPES, jakartaTimeInput, type BumperElement, type ShapeName } from '@zemi/shared';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { BumperCharacter, type CharMood } from '../parts/character';
 import { Countdown, countdownTarget } from '../parts/countdown';
 import { BrandQr, QR_TONES } from '../parts/qr';
@@ -26,7 +26,8 @@ export function defaultExtraProps(type: BumperElement['type']): BumperElement['p
     case 'image':
       return { assetId: null, fit: 'cover', radius: 24 };
     case 'qr':
-      return { url: '', style: 'rounded', tone: 'ink', logo: true, label: '' };
+      // style null = follow the show theme's QR style.
+      return { url: '', style: null, tone: 'ink', logo: true, label: '' };
     case 'shape':
       return { shape: 'circle', tone: 'blue', eyes: false };
     case 'character':
@@ -142,10 +143,8 @@ function ExtraBody({ el }: { el: BumperElement }) {
       return <Sticker name={str(p.sticker, 'spark')} />;
     case 'clock':
       return <LiveClock size={num(p.size, 96)} color={color} />;
-    case 'countdown': {
-      const target = countdownTarget(str(p.to), ctx.event?.startsAt) ?? null;
-      return <Countdown to={target ?? (ctx.mode === 'live' ? null : null)} done={ctx.fill(str(p.done, 'Now'))} variant={(str(p.variant, 'big') as 'big') || 'big'} size={num(p.size, 160)} color={color} accent={ctx.colors.accentHex} />;
-    }
+    case 'countdown':
+      return <ExtraCountdown el={el} color={color} />;
     case 'logo':
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: el.box.h * 0.2, height: '100%' }}>
@@ -173,6 +172,27 @@ function ExtraBody({ el }: { el: BumperElement }) {
     default:
       return null;
   }
+}
+
+/**
+ * A countdown to a time of day (`to`, HH:mm or ISO), or `minutes` from when the slide came on
+ * screen (the server's slideSince, so every screen agrees). Outside playback it shows the full time.
+ */
+function ExtraCountdown({ el, color }: { el: BumperElement; color: string }) {
+  const ctx = useSlide();
+  const p = el.props;
+  const [mountedAt] = useState(() => Date.now());
+  const fixed = countdownTarget(str(p.to), ctx.event?.startsAt);
+  const minutes = num(p.minutes, 0);
+  const since = ctx.liveSince() ?? (ctx.mode === 'live' ? mountedAt : null);
+  const target = fixed ?? (minutes > 0 ? (since !== null ? since + minutes * 60_000 : null) : null);
+  const variant = (['big', 'cells', 'inline'].includes(str(p.variant)) ? str(p.variant) : 'big') as 'big' | 'cells' | 'inline';
+  if (target === null && minutes > 0) {
+    // Static preview: the full duration, not a "Now".
+    const m = Math.floor(minutes);
+    return <span style={{ ...fontStyle('mono', { weight: 700 }), fontSize: num(p.size, 160), color, lineHeight: 0.9 }}>{`${String(m).padStart(2, '0')}:00`}</span>;
+  }
+  return <Countdown to={target} done={ctx.fill(str(p.done, 'Now'))} variant={variant} size={num(p.size, 160)} color={color} accent={ctx.colors.accentHex} />;
 }
 
 const ENTER_FOR: Record<BumperElement['type'], EnterKind> = {

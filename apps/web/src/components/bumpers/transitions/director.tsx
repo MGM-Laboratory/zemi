@@ -15,6 +15,8 @@ export interface DirectorTarget {
   /** Server-chosen transition. Null/undefined: pick locally with the pair rules. */
   transition?: BumperTransitionKey | null;
   dir?: 1 | -1;
+  /** When the slide came on screen (server clock ms, from BumperLiveState.slideSince). Local playback leaves it out. */
+  since?: number | null;
 }
 
 export interface TransitionEvent {
@@ -41,6 +43,7 @@ export interface BumperDirectorProps {
 interface Layer {
   key: string;
   slideId: string;
+  since: number | null;
 }
 
 /**
@@ -51,9 +54,8 @@ interface Layer {
  */
 export function BumperDirector({ slides, theme, data, showEventId, target, mode = 'show', replay, initial = 'enter', onTransition }: BumperDirectorProps) {
   const slideMap = useMemo(() => new Map(slides.map((s) => [s.id, s])), [slides]);
-  const [layers, setLayers] = useState<Layer[]>(() => (target.slideId ? [{ key: `${target.slideId}#0`, slideId: target.slideId }] : []));
+  const [layers, setLayers] = useState<Layer[]>(() => (target.slideId ? [{ key: `${target.slideId}#0`, slideId: target.slideId, since: target.since ?? null }] : []));
   const handles = useRef(new Map<string, SlideHandle>());
-  const refFns = useRef(new Map<string, (h: SlideHandle | null) => void>());
   const rootRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const layersRef = useRef<HTMLDivElement>(null);
@@ -68,22 +70,12 @@ export function BumperDirector({ slides, theme, data, showEventId, target, mode 
   const firstShown = useRef(false);
   const alive = useRef(true);
   const props = useRef({ slideMap, theme, data, onTransition });
-  props.current = { slideMap, theme, data, onTransition };
+  useLayoutEffect(() => {
+    props.current = { slideMap, theme, data, onTransition };
+  });
 
-  const refFor = useCallback((key: string) => {
-    let fn = refFns.current.get(key);
-    if (!fn) {
-      fn = (h) => {
-        if (h) handles.current.set(key, h);
-        else {
-          handles.current.delete(key);
-          refFns.current.delete(key);
-        }
-      };
-      refFns.current.set(key, fn);
-    }
-    return fn;
-  }, []);
+  // finish and start hand control back to pump (defined below); they reach it through this ref.
+  const pumpRef = useRef<() => void>(() => {});
 
   const finish = useCallback((toKey: string, fromKey: string | null, info: TransitionEvent) => {
     running.current = null;
@@ -187,10 +179,12 @@ export function BumperDirector({ slides, theme, data, showEventId, target, mode 
     busy.current = true;
     const key = `${t.slideId}#${counter.current++}`;
     awaiting.current = { key, target: t };
-    setLayers((ls) => [...ls.filter((l) => l.key === currentKey.current), { key, slideId: t.slideId! }]);
+    const since = t.since ?? Date.now();
+    setLayers((ls) => [...ls.filter((l) => l.key === currentKey.current), { key, slideId: t.slideId!, since }]);
   }, []);
-  const pumpRef = useRef(pump);
-  pumpRef.current = pump;
+  useLayoutEffect(() => {
+    pumpRef.current = pump;
+  }, [pump]);
 
   // A new target (seq) arrives.
   useEffect(() => {
@@ -243,12 +237,15 @@ export function BumperDirector({ slides, theme, data, showEventId, target, mode 
     if (h && !busy.current) h.enter(theme.motion === 'calm' ? 0.8 : 1);
   }, [replay, theme.motion]);
 
-  // Black / clear / show.
+  // Black / clear / show. The first run sets the mode instantly, so an output reloaded while
+  // clear never flashes the slide over the camera.
+  const modeReady = useRef(false);
   useEffect(() => {
     const m = modeRef.current;
     const l = layersRef.current;
     if (!m || !l) return;
-    const d = theme.motion === 'still' ? 0.2 : 0.5;
+    const d = !modeReady.current ? 0 : theme.motion === 'still' ? 0.2 : 0.5;
+    modeReady.current = true;
     if (mode === 'black') {
       gsap.to(m, { opacity: 1, duration: d, ease: 'power2.inOut', overwrite: true });
       gsap.to(l, { opacity: 1, duration: d, overwrite: true });
@@ -272,12 +269,30 @@ export function BumperDirector({ slides, theme, data, showEventId, target, mode 
   }, []);
 
   return (
-    <div ref={rootRef} data-director="" style={{ position: 'absolute', inset: 0 }}>
+    <div ref={rootRef} data-director="" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       <div ref={layersRef} style={{ position: 'absolute', inset: 0 }}>
         {layers.map((l) => {
           const slide = slideMap.get(l.slideId);
           if (!slide) return null;
-          return <SlideView key={l.key} ref={refFor(l.key)} slide={slide} theme={theme} data={data} showEventId={showEventId} mode="live" />;
+          const key = l.key;
+          return (
+            <SlideView
+              key={key}
+              ref={(h: SlideHandle | null) => {
+                if (h) handles.current.set(key, h);
+                return () => {
+                  if (handles.current.get(key) === h) handles.current.delete(key);
+                };
+              }}
+              slide={slide}
+              theme={theme}
+              data={data}
+              showEventId={showEventId}
+              mode="live"
+              // The target's start wins for its slide (a replay restarts the clock on the server).
+              liveSince={l.slideId === target.slideId && target.since != null ? target.since : l.since}
+            />
+          );
         })}
       </div>
       <div ref={overlayRef} data-transition-overlay="" aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 50, pointerEvents: 'none', overflow: 'hidden' }} />

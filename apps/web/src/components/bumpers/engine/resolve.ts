@@ -204,9 +204,11 @@ export interface BuildCtxInput {
   showEventId: string | null;
   template: TemplateDefinition | null;
   now: () => number;
+  /** When the slide came on screen (server clock ms), live playback only. */
+  liveSince?: number | null;
 }
 
-export function buildResolveCtx({ slide, theme, data, mode, showEventId, template, now }: BuildCtxInput): ResolveCtx {
+export function buildResolveCtx({ slide, theme, data, mode, showEventId, template, now, liveSince = null }: BuildCtxInput): ResolveCtx {
   const eventId = slide.refs.eventId ?? showEventId;
   const event = (eventId ? data.events[eventId] : undefined) ?? null;
   const refs = slide.refs;
@@ -250,6 +252,7 @@ export function buildResolveCtx({ slide, theme, data, mode, showEventId, templat
     colors,
     items: [] as BumperItem[],
     now,
+    liveSince: () => (mode === 'live' ? liveSince : null),
   };
   let values: Record<string, string> | null = null;
   const tokens = () => (values ??= tokenValues(base));

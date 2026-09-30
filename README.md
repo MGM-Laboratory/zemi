@@ -49,6 +49,17 @@ stream control room (preview, go live, end, recordings), documentation media. Pl
 publications (DOI autofill from Crossref), rooms, media library, site CMS (home, about, contact, SEO,
 FAQ, team, emails), discussion moderation, inbox, audience, and system status.
 
+**Bumpers:** animated agenda cards for the room screen and the livestream: welcome, the host,
+opening remarks, each speaker, their paper, the thank-you, Q and A (zemi.ac/q plus a branded QR),
+the break, the group photo, next Friday and goodbye, 39 templates in all, each bound to the
+database (pick a speaker and the card fills itself). Generate a whole show from an event's lineup
+and rundown, or build one in the drag-and-drop builder (canvas editing, data pickers, variants,
+loops, revisions). Every pair of bumpers gets its own transition from a library of 26 (the
+characters closing a curtain, Q's iris, a paper plane, coffee pouring, a rainbow bridge...). Play
+it full-window in the browser (click, arrows, presenter clickers), follow along in the controller,
+or add it to OBS as a browser source that tracks the controller, with an OBS dock for the buttons.
+Stream operators get it automatically. See `docs/features/bumpers.md`.
+
 **Discussion:** visitors enter with a name only. A long-lived, httpOnly cookie holds one identity
 per browser; duplicate names get different four-digit suffixes. Participants can ask with BlockNote
 (including processed image uploads), pick a published event or General, tag, search, vote, react,
@@ -117,6 +128,10 @@ Run data-changing e2e checks against preview:
    4500 kbps at 1080p30, keyframe interval 2 s). Start streaming in OBS: the dashboard shows the preview.
    Press **Go live** when ready and **End stream** when done. The recording is stitched automatically and
    appears on the event page with chapters from the rundown.
+   **Bumpers:** in Admin > Bumpers (or the event's Bumpers tab), Generate from the event, tweak
+   the cards in the builder, then open OBS setup: add the output URL as a Browser source
+   (1920x1080) and the dock URL as a Custom Browser Dock. Run the show from the controller, the
+   dock or the full-window player (arrow keys or a presenter clicker); the room screen and OBS follow.
 4. **After:** upload photos and videos in the Media tab. Thank-you emails go out automatically.
 
 ## Deploy (Railway)

@@ -679,6 +679,7 @@ export const bumperShows = pgTable(
     liveUpdatedAt: ts('live_updated_at').notNull().defaultNow(),
     liveSeq: integer('live_seq').notNull().default(0),
     liveCue: integer('live_cue').notNull().default(0),
+    liveSlideSince: ts('live_slide_since'),
     liveVia: text('live_via'),
     liveBy: text('live_by'),
     lastPlayedAt: ts('last_played_at'),

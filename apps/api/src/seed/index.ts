@@ -35,6 +35,7 @@ import { DB, type Db } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import * as schema from '../db/schema.js';
 import { AssetsService } from '../modules/assets/assets.service.js';
+import { BumpersDataService } from '../modules/bumpers/data.service.js';
 import { JobsService } from '../modules/jobs/jobs.service.js';
 import { backfillCitationKeys } from '../modules/publications/citation-keys.js';
 import { ContentResetService } from '../modules/site/content-reset.service.js';
@@ -56,6 +57,7 @@ import { TEAM } from './data/site.js';
 import { SPEAKERS } from './data/speakers.js';
 import { seedAdmins, seedAudit, seedFaqTeamInbox, seedSiteSettings } from './extras.js';
 import { seedDiscussions } from './discussions.js';
+import { seedBumpers } from './bumpers.js';
 import { Rng } from './lib/rng.js';
 import { SeedMedia, readManifest, type Manifest, type ManifestItem } from './media.js';
 import { seedRegistrations } from './people.js';
@@ -356,6 +358,8 @@ async function summary(db: Db, app: INestApplicationContext): Promise<void> {
     ['discussion_votes', schema.discussionVotes],
     ['discussion_reactions', schema.discussionReactions],
     ['discussion_reports', schema.discussionReports],
+    ['bumper_shows', schema.bumperShows],
+    ['bumper_revisions', schema.bumperRevisions],
     ['admins', schema.admins],
   ];
   log('\nRows:');
@@ -518,6 +522,10 @@ async function main(): Promise<void> {
       log('Discussion participants, questions, replies, votes...');
       const discussion = await seedDiscussions(ctx, seeded);
       log(`  ${discussion.identities} identities, ${discussion.threads} threads, ${discussion.comments} comments, ${discussion.votes} votes, ${discussion.reactions} reactions, ${discussion.reports} reports`);
+
+      log('Bumper shows for the next Fridays and the tech trouble kit...');
+      const bumpers = await seedBumpers(ctx, seeded, app.get(BumpersDataService));
+      log(`  ${bumpers.shows} shows, ${bumpers.slides} bumpers, ${bumpers.revisions} revisions`);
 
       log('Site settings, FAQ, team, inbox, admins, audit...');
       await seedSiteSettings(ctx, seeded, venueMap);

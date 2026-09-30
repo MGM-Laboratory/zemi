@@ -55,17 +55,18 @@ export function characterInner(shape: ShapeName, { mood: rawMood = 'idle', color
   const fill = color && (/^#[0-9a-f]{3,8}$/i.test(color) || color === 'currentColor') ? color : SHAPE_COLORS[shape] ?? SHAPE_COLORS.circle;
   const dx = (Number.isFinite(lookX) ? Math.max(-1, Math.min(1, lookX)) : 0) * 2.4;
   const dy = (Number.isFinite(lookY) ? Math.max(-1, Math.min(1, lookY)) : 0) * 1.8;
-  const box = 'transform-box:fill-box;transform-origin:50% 50%';
+  // No CSS transform-origin here: GSAP owns the pivots (primeCharacters), because it bakes the
+  // origin into the SVG transform and a fill-box origin on top would pivot every scale twice.
   return (
-    (shadow ? `<ellipse class="bc-shadow" cx="23" cy="49" rx="17" ry="2.6" fill="${INK}" opacity="0.14" style="${box}"/>` : '') +
-    `<g class="bc-sway" style="transform-box:fill-box;transform-origin:50% 100%">` +
-    `<g class="bc-jump" style="${box}">` +
-    `<g class="bc-body" style="transform-box:fill-box;transform-origin:50% 100%">` +
+    (shadow ? `<ellipse class="bc-shadow" cx="23" cy="49" rx="17" ry="2.6" fill="${INK}" opacity="0.14"/>` : '') +
+    `<g class="bc-sway">` +
+    `<g class="bc-jump">` +
+    `<g class="bc-body">` +
     `<path class="bc-shape" d="${SHAPE_PATHS_46[shape]}" fill="${fill}"/>` +
     `<g class="bc-look" style="transform:translate(${dx}px,${dy}px)">` +
     `<g class="bc-eyes" data-mood="${mood}">` +
-    `<g class="bc-eye" style="${box}">${eyeMarkup(e.l[0], e.l[1], e.s, mood, 'l')}</g>` +
-    `<g class="bc-eye" style="${box}">${eyeMarkup(e.r[0], e.r[1], e.s, mood, 'r')}</g>` +
+    `<g class="bc-eye">${eyeMarkup(e.l[0], e.l[1], e.s, mood, 'l')}</g>` +
+    `<g class="bc-eye">${eyeMarkup(e.r[0], e.r[1], e.s, mood, 'r')}</g>` +
     `</g></g></g></g></g>`
   );
 }
@@ -105,12 +106,49 @@ export function BumperCharacter({ shape, size = '100%', className, style, name, 
 }
 
 type Target = Element | null | undefined;
-const q = (root: Target, sel: string) => (root ? root.querySelector(sel) : null);
+
+/** Pivot of each group (sway and body squash from the feet, jumps and blinks from the middle). */
+const ORIGINS: Array<[string, string]> = [
+  ['.bc-jump', '50% 50%'],
+  ['.bc-body', '50% 100%'],
+  ['.bc-eye', '50% 50%'],
+];
+
+/**
+ * Give every character under `root` its GSAP pivots, once. The choreographer calls this before
+ * any entrance or idle loop and every charAnim move calls it, so templates that tween .bc-* groups
+ * directly get correct pivots too. Needs the svg in the document (it measures bounding boxes).
+ */
+export function primeCharacters(root: ParentNode | null | undefined) {
+  if (!root) return;
+  const sways: SVGGElement[] = [];
+  if (root instanceof SVGGElement && root.classList.contains('bc-sway')) sways.push(root);
+  root.querySelectorAll<SVGGElement>('svg.bc .bc-sway:not([data-primed])').forEach((g) => sways.push(g));
+  for (const sway of sways) {
+    if (sway.hasAttribute('data-primed')) continue;
+    sway.setAttribute('data-primed', '');
+    try {
+      gsap.set(sway, { transformOrigin: '50% 100%' });
+      for (const [sel, origin] of ORIGINS) sway.querySelectorAll<SVGGElement>(sel).forEach((g) => gsap.set(g, { transformOrigin: origin }));
+      const svgEl = sway.ownerSVGElement;
+      svgEl?.querySelectorAll<SVGElement>('.bc-shadow').forEach((g) => gsap.set(g, { transformOrigin: '50% 50%' }));
+    } catch {
+      sway.removeAttribute('data-primed');
+    }
+  }
+}
+
+const q = (root: Target, sel: string) => {
+  if (!root) return null;
+  primeCharacters(root);
+  return root.querySelector(sel);
+};
 
 /** GSAP moves for a `.bc` svg (or any element containing one). All return animations you can place on a timeline. */
 export const charAnim = {
   /** Random blinking forever. Returns a stop function. */
   blinkLoop(root: Target, { min = 2.4, max = 5.6 }: { min?: number; max?: number } = {}): () => void {
+    primeCharacters(root);
     const eyes = root ? Array.from(root.querySelectorAll('.bc-eye')) : [];
     if (!eyes.length) return () => {};
     let call: gsap.core.Tween | null = null;
@@ -125,9 +163,12 @@ export const charAnim = {
       alive = false;
       call?.kill();
       gsap.killTweensOf(eyes);
+      // Never leave the eyes shut when a loop stops mid-blink.
+      gsap.set(eyes, { scaleY: 1 });
     };
   },
   blink(root: Target) {
+    primeCharacters(root);
     const eyes = root ? root.querySelectorAll('.bc-eye') : [];
     return gsap.to(eyes, { scaleY: 0.08, duration: 0.08, yoyo: true, repeat: 1, ease: 'power1.inOut' });
   },
@@ -182,6 +223,7 @@ export const charAnim = {
     const jump = q(root, '.bc-jump');
     const tl = gsap.timeline();
     if (!root) return tl;
+    primeCharacters(root);
     const turns = shape === 'circle' ? fromX / 150 : Math.round(fromX / 300) * 0.25;
     tl.from(root, { x: fromX, duration, ease: 'power3.out' }, 0);
     if (jump) tl.from(jump, { rotation: -turns * 360, duration, ease: 'power3.out' }, 0);

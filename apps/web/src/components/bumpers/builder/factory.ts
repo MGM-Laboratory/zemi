@@ -54,12 +54,12 @@ export const SLIDE_BLOCKS: SlideBlock[] = [
     label: 'Speaker block',
     description: 'Intro, their paper (if they have one) and a thank-you.',
     needs: 'speaker',
-    build: ({ speakerId, publicationId }) =>
-      [
-        newSlide('speaker', { overrides: { refs: { speakerId } } }),
-        publicationId ? newSlide('paper', { overrides: { refs: { publicationId } } }) : newSlide('talk-title', { overrides: { refs: { speakerId } } }),
-        newSlide('thanks-speaker', { overrides: { refs: { speakerId } } }),
-      ].filter(Boolean),
+    build: ({ speakerId, publicationId }) => [
+      newSlide('speaker', { overrides: { refs: { speakerId } } }),
+      // The paper card highlights the speaker among its authors.
+      publicationId ? newSlide('paper', { overrides: { refs: { publicationId, speakerId } } }) : newSlide('talk-title', { overrides: { refs: { speakerId } } }),
+      newSlide('thanks-speaker', { overrides: { refs: { speakerId } } }),
+    ],
   },
   {
     key: 'preshow-loop',

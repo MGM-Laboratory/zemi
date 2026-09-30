@@ -25,7 +25,6 @@ export function useBumperNow(intervalMs = 1000, enabled = true): number {
   const [now, setNow] = useState(() => Date.now() + offset);
   useEffect(() => {
     if (!enabled) return;
-    setNow(Date.now() + offset);
     // Align ticks to the second so every screen flips digits together.
     let t: ReturnType<typeof setTimeout>;
     const tick = () => {

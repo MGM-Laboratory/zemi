@@ -125,7 +125,7 @@ function Render() {
       ) : null}
       {talk && !center ? (
         <El id="talk" label="Talk title" box={{ x: textX, y: 730, w: textW, h: 220 }} enter="none" order={5} morph={`person:${pid}:talk`}>
-          <div data-talk-card="" style={{ width: '100%', height: '100%', borderRadius: 28, padding: '26px 34px', background: ctx.colors.dark ? 'rgba(255,255,255,0.06)' : '#fff', backgroundImage: ctx.colors.dark ? undefined : `linear-gradient(to right, ${GRAPH} 2px, transparent 2px), linear-gradient(to bottom, ${GRAPH} 2px, transparent 2px)`, backgroundSize: '32px 32px', border: `3px solid ${ctx.colors.dark ? 'rgba(255,255,255,0.16)' : ctx.colors.fg}`, boxShadow: ctx.colors.dark ? undefined : `10px 10px 0 ${ctx.colors.accentHex}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div data-talk-card="" style={{ width: '100%', height: '100%', borderRadius: 28, padding: '26px 34px', backgroundColor: ctx.colors.dark ? 'rgba(255,255,255,0.06)' : '#fff', backgroundImage: ctx.colors.dark ? undefined : `linear-gradient(to right, ${GRAPH} 2px, transparent 2px), linear-gradient(to bottom, ${GRAPH} 2px, transparent 2px)`, backgroundSize: '32px 32px', border: `3px solid ${ctx.colors.dark ? 'rgba(255,255,255,0.16)' : ctx.colors.fg}`, boxShadow: ctx.colors.dark ? undefined : `10px 10px 0 ${ctx.colors.accentHex}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <span style={{ ...fontStyle('mono', { weight: 700, tracking: 0.12 }), fontSize: 22, textTransform: 'uppercase', color: ctx.colors.accentHex === '#f7bf33' ? ctx.colors.fg : ctx.colors.accentHex }}>The talk</span>
             <div style={{ flex: 1, minHeight: 0 }}>
               <FitText max={60} min={28} casl={0.3} weight={800} lineHeight={1.02}>

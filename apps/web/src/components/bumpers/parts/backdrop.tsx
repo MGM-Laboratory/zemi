@@ -31,11 +31,12 @@ export const DEFAULT_FLOATERS: Floater[] = [
 export function Backdrop({ kind, colors, image, dim = 0.4, floaters = DEFAULT_FLOATERS, floaterOpacity }: { kind: BackdropKind; colors: SlideColors; image?: ImageRef | null; dim?: number; floaters?: Floater[] | false; floaterOpacity?: number }) {
   useIdle((root, { calm }) => {
     const els = root.querySelectorAll<HTMLElement>('[data-floater]');
+    // Absolute targets (not +=), so restarting the loop after a replay never drifts further out.
     return Array.from(els).map((el, i) =>
       gsap.to(el, {
-        x: `+=${(i % 2 ? -1 : 1) * (calm ? 14 : 34)}`,
-        y: `+=${(i % 3 ? 1 : -1) * (calm ? 10 : 26)}`,
-        rotation: `+=${(i % 2 ? 1 : -1) * (calm ? 3 : 9)}`,
+        x: (i % 2 ? -1 : 1) * (calm ? 14 : 34),
+        y: (i % 3 ? 1 : -1) * (calm ? 10 : 26),
+        rotation: (i % 2 ? 1 : -1) * (calm ? 3 : 9),
         duration: 9 + i * 1.7,
         ease: 'sine.inOut',
         yoyo: true,

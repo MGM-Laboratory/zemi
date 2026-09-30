@@ -20,7 +20,11 @@ The product has two halves:
    (or `/events`).
 2. **Admin dashboard** at `/admin`: passphrase login, RBAC, a full CMS for every public piece of
    content, registrations with analytics, QR attendance scanning, OBS livestream control,
-   recordings and documentation media. Discussion moderation has its own workspace.
+   recordings and documentation media. Discussion moderation has its own workspace. **Bumpers**
+   (`/admin/bumpers`) build, generate and play the animated agenda cards for the room screen and
+   OBS; the full-window player and controller live under `/admin/stage/bumpers/[id]/play|control`,
+   the OBS browser source at `/bumpers/out/[key]` and the OBS dock at `/bumpers/dock/[key]`
+   (secret keys, no session). See `docs/features/bumpers.md`.
 
 ## 1. Repo layout and ownership
 
@@ -151,6 +155,8 @@ The schema file is the authority. Summary:
 | `discussion_comments` | threaded plain-text replies, moderation state and score |
 | `discussion_votes` / `discussion_reactions` | one vote and one reaction of each kind per participant and target |
 | `discussion_reports` | participant reports and moderator resolutions |
+| `bumper_shows` | bumper shows: title, eventId (cascade), status, theme jsonb, slides jsonb (validated by the shared schema), version, OBS output key, control key (hash + AES-GCM), the authoritative live playback state (`live_*`) |
+| `bumper_revisions` | saved versions of a show (coalesced autosaves, checkpoints, generations, restores) |
 
 Slugs: lowercase kebab `^[a-z0-9]+(?:-[a-z0-9]+)*$`, 1 to 96 chars, unique per type. Changing a slug
 writes the old one to `slug_redirects`. Public GET by slug checks redirects and responds
@@ -186,16 +192,17 @@ type Grant = { type: 'event' | 'speaker' | 'publication'; id: string | '*'; acti
 
 Capabilities: `events.create`, `speakers.create`, `publications.create`, `venues.manage`,
 `site.edit`, `inbox.view`, `media.library`, `audience.view`, `audit.view`,
-`discussion.view`, `discussion.manage`.
+`discussion.view`, `discussion.manage`, `bumpers.manage`.
 
 Event actions: `view`, `edit`, `publish`, `delete`, `registrations.view`, `registrations.manage`,
 `registrations.export`, `attendance.scan`, `attendance.manage`, `stream.view`, `stream.control`,
-`media.manage`, `emails.send`.
+`media.manage`, `emails.send`, `bumpers.run`, `bumpers.edit`.
 Speaker / publication actions: `view`, `edit`, `publish`, `delete`.
 
 Implications (resolver expands them): every action implies `view`; `registrations.manage` implies
-`registrations.view`; `stream.control` implies `stream.view`; `attendance.manage` implies
-`attendance.scan`; `registrations.export` implies `registrations.view`.
+`registrations.view`; `stream.control` implies `stream.view` and `bumpers.edit`; `bumpers.edit`
+implies `bumpers.run`; `attendance.manage` implies `attendance.scan`; `registrations.export`
+implies `registrations.view`.
 
 `attendance.scan` alone lets door crew scan tickets and see *only the scanned person's name*,
 not the list. `attendance.manage` shows the check-in list (names, masked email/phone) for manual
@@ -213,6 +220,11 @@ Rules:
   shared: `ability.can('event', eventId, 'stream.control')`, `ability.has('events.create')`,
   `ability.canAny('event', 'registrations.view')`.
 - Presets (UI templates): Viewer, Event editor, Door crew, Stream operator, Content manager, Full admin.
+- Bumpers: `bumpers.run` (play a show, drive the screen and OBS) implies `view`; `bumpers.edit`
+  (build, generate, archive, delete, rotate OBS links) implies `bumpers.run`; `stream.control` implies
+  `bumpers.edit`, so every stream operator runs and builds the bumpers of the events they stream.
+  `bumpers.manage` covers every show, including standalone shows with no event. Shared helpers:
+  `bumperPermissions(ability, eventId)`, `canUseBumpers`, `canCreateBumpers`.
 
 ## 7. API conventions
 
@@ -251,6 +263,9 @@ GET  /public/speakers?search&page                  GET /public/speakers/:slug
 GET  /public/publications?search&type&year&tag&page   GET /public/publications/:slug
 POST /public/contact                               ContactInput
 GET  /media/*                                      bucket proxy (Range, immutable cache)
+GET  /public/bumpers/out/:key[/stream]             OBS output: show + state, SSE (output key)
+GET  /public/bumpers/control/:key[/stream]         OBS dock: show + state + presence, SSE (control key)
+POST /public/bumpers/control/:key                  control input (dock, Companion, Stream Deck)
 ```
 
 Admin (cookie + csrf; permission checks):
@@ -292,6 +307,12 @@ GET  /admin/audit?actor&resourceType&resourceId&page   (audit.view or superadmin
 GET|POST /admin/admins   GET|PATCH|DELETE /admin/admins/:id   POST /admin/admins/:id/passphrase
 GET  /admin/admins/:id/sessions   DELETE /admin/sessions/:id   GET /admin/passphrase/generate
 GET  /admin/system                 integrations + health (superadmin)
+GET|POST /admin/bumpers   POST /admin/bumpers/generate {create}   POST /admin/bumpers/resolve
+GET  /admin/bumpers/sources/events|speakers|publications|team|threads|images
+GET|PATCH|DELETE /admin/bumpers/:id   POST /admin/bumpers/:id/duplicate
+GET  /admin/bumpers/:id/revisions[/:revId]   POST /admin/bumpers/:id/revisions/:revId/restore
+GET  /admin/bumpers/:id/output   POST /admin/bumpers/:id/output/rotate
+GET|POST /admin/bumpers/:id/live   GET /admin/bumpers/:id/live/stream (SSE)
 ```
 
 Internal (media server only, header `x-media-secret` or basic/bearer = MEDIA_INTERNAL_SECRET):

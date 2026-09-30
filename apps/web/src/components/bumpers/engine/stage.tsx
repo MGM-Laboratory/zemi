@@ -48,7 +48,9 @@ export function BumperStage({ children, className, style, letterbox = 'transpare
     return { scale, left: 0, top: 0, width: width ?? 0, height: width ? (width * 9) / 16 : 0 };
   });
   const cb = useRef(onMetrics);
-  cb.current = onMetrics;
+  useLayoutEffect(() => {
+    cb.current = onMetrics;
+  });
 
   useLayoutEffect(() => {
     const el = boxRef.current;

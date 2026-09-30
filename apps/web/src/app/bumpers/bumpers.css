@@ -1,0 +1,36 @@
+/*
+ * /bumpers/*: the OBS browser source, the OBS dock and their error cards.
+ *
+ * Unlayered on purpose, so it beats the base layer's body background. Every rule is scoped to
+ * html.zemi-bumpers (set by the layout's inline script before first paint) or to a page holding
+ * [data-zemi-bumpers] (:has applies from the very first style pass, and OBS 31 ships Chromium
+ * 127, which has it), so nothing leaks into the rest of the site.
+ */
+html.zemi-bumpers,
+html.zemi-bumpers body,
+html:has([data-zemi-bumpers]),
+html:has([data-zemi-bumpers]) body {
+  background: transparent !important;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Dev-only overlays (React Query devtools, the Next dev indicator) never belong in a stream. */
+html.zemi-bumpers .tsqd-parent-container,
+html.zemi-bumpers .tsqd-open-btn-container,
+html.zemi-bumpers nextjs-portal,
+html:has([data-zemi-bumpers]) .tsqd-parent-container,
+html:has([data-zemi-bumpers]) .tsqd-open-btn-container,
+html:has([data-zemi-bumpers]) nextjs-portal {
+  display: none !important;
+}
+
+/* The dock is a real UI inside OBS: dark, like OBS itself. */
+[data-bumper-dock] {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-bumper-dock] ::selection {
+  background: #3a6dc5;
+  color: #fff;
+}
