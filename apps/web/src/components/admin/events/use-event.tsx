@@ -29,12 +29,25 @@ export function fetchEventAdmin(id: string, signal?: AbortSignal) {
   return adminFetch<EventAdmin>(`/admin/events/${id}`, { signal });
 }
 
+/** While a new cover is still processing (an asset id but no image yet), check this often. */
+const COVER_POLL_MS = 3_000;
+/** Otherwise keep the open workspace current: registrations, check-ins, teammates' edits. */
+const EVENT_POLL_MS = 30_000;
+
 /** The event record. Tabs inside the workspace should prefer `useWorkspaceEvent()`. */
 export function useEventAdmin(id: string | null | undefined, opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: eventDetailKey(id ?? 'none'),
     queryFn: ({ signal }) => fetchEventAdmin(id!, signal),
     enabled: Boolean(id) && (opts.enabled ?? true),
+    // Polls only while the tab is visible (React Query pauses intervals in the background).
+    refetchInterval: (q) => {
+      const e = q.state.data;
+      if (!e) return false;
+      const processing =
+        e.coverAssetId && !e.cover && Date.now() - Date.parse(e.updatedAt) < 5 * 60_000;
+      return processing ? COVER_POLL_MS : EVENT_POLL_MS;
+    },
   });
 }
 
@@ -120,6 +133,8 @@ export function acceptEvent(qc: QueryClient, id: string, res: unknown) {
 /** Optimistically patch the cached event. Returns a rollback. */
 export function patchEventCache(qc: QueryClient, id: string, patch: (e: EventAdmin) => EventAdmin) {
   const key = eventDetailKey(id);
+  // A refetch already in flight (focus, polling) would land after this patch with the old value.
+  void qc.cancelQueries({ queryKey: key, exact: true });
   const prev = qc.getQueryData<EventAdmin>(key);
   if (prev) qc.setQueryData(key, patch(prev));
   return () => {

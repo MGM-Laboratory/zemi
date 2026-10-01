@@ -135,8 +135,9 @@ On `(pointer: fine)` only: a 12px white dot that lerps to the pointer with a dis
 follow (fast catch-up on long jumps, gentle glide on small moves). The dot blends with
 `mix-blend-mode: difference`, so it renders black on light backgrounds and white on dark ones,
 photos included. Over links/buttons it grows into a 56px shape (circle by default;
-`data-cursor="play|drag|open|register"` shows a label and picks a shape). Hidden on touch devices.
-Never hide the native cursor on inputs.
+`data-cursor="play|drag|open|register|question"` shows a label and picks a shape; `question` is Q
+saying "Open" on discussion posts). Hidden on touch devices. Never hide the native cursor on inputs
+or over video players (`data-native-cursor`).
 
 ## 9. 3D art direction
 

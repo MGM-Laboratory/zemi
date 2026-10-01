@@ -99,6 +99,28 @@ export function invalidateKeys(qc: QueryClient, keys: readonly QueryKey[]) {
   return Promise.all(keys.map((queryKey) => qc.invalidateQueries({ queryKey })));
 }
 
+/**
+ * Mark every admin query stale without refetching anything now. Queries refetch the next time
+ * they mount or the window regains focus, so related screens never show pre-mutation data.
+ */
+export function markAdminStale(qc: QueryClient) {
+  return qc.invalidateQueries({ queryKey: adminKeys.all, refetchType: 'none' });
+}
+
+/**
+ * An image changed in place (re-crop, alt text, delete). Events, speakers and publications embed
+ * their images with a revision in the URL, so refetch them along with the media library.
+ */
+export function refreshAssetUsers(qc: QueryClient) {
+  return invalidateKeys(qc, [
+    adminKeys.assets.all,
+    adminKeys.events.all,
+    adminKeys.speakers.all,
+    adminKeys.publications.all,
+    adminKeys.overview(),
+  ]);
+}
+
 /** Refresh everything admin. */
 export function invalidateAdmin(qc: QueryClient) {
   return qc.invalidateQueries({ queryKey: adminKeys.all });

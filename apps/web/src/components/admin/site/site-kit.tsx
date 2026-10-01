@@ -10,7 +10,7 @@ import { Button, ErrorState, FormError, FormSaveBar, Skeleton } from '@/componen
 import { api, errorMessage } from '@/lib/admin/api';
 import { cn } from '@/lib/admin/cn';
 import { applyApiErrorToForm } from '@/lib/admin/form';
-import { useAdminMutation } from '@/lib/admin/hooks';
+import { isRevalidatingOnMount, useAdminMutation } from '@/lib/admin/hooks';
 import { SITE_URL } from '@/lib/admin/paths';
 import { adminKeys } from '@/lib/admin/query-keys';
 
@@ -58,16 +58,19 @@ export function useSiteSetting<K extends SiteSettingKey>(key: K) {
   return useQuery({
     queryKey: settingKey(key),
     queryFn: ({ signal }) => api.get<SiteSettings[K]>(`/admin/site/settings/${key}`, undefined, signal),
-    staleTime: 30_000,
-    // A save elsewhere should not yank the form out from under someone typing.
+    // A save elsewhere should not yank the form out from under someone typing. Opening the page
+    // again always revalidates (see SiteSettingLoader).
     refetchOnWindowFocus: false,
   });
 }
 
-/** Loading and error states around a settings form. The form mounts once, with the loaded values. */
+/**
+ * Loading and error states around a settings form. The form mounts once, with freshly loaded
+ * values (a cached copy from an earlier visit is revalidated first, never used as the seed).
+ */
 export function SiteSettingLoader<K extends SiteSettingKey>({ settingKey: key, children, skeleton }: { settingKey: K; children: (data: SiteSettings[K]) => ReactNode; skeleton?: ReactNode }) {
   const q = useSiteSetting(key);
-  if (q.isPending) return <>{skeleton ?? <FormSkeleton />}</>;
+  if (q.isPending || isRevalidatingOnMount(q)) return <>{skeleton ?? <FormSkeleton />}</>;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} retrying={q.isFetching} />;
   return <>{children(q.data)}</>;
 }

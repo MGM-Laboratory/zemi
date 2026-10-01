@@ -32,7 +32,7 @@ import { cn } from '@/lib/admin/cn';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
 import { formatBytes, formatDuration } from '@/lib/admin/format';
 import { useAdminMutation, useAssetPoll } from '@/lib/admin/hooks';
-import { adminKeys } from '@/lib/admin/query-keys';
+import { adminKeys, refreshAssetUsers } from '@/lib/admin/query-keys';
 import { ReadOnlyScope } from '@/components/admin/fields/read-only';
 import { canEditAsset, recropAsset } from '@/lib/admin/upload';
 import { dimensions, KIND_LABELS, PURPOSE_LABELS } from './media-meta';
@@ -57,7 +57,8 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
       wasProcessing.current = false;
       if (asset.status === 'ready') notify.success('The new version is live everywhere it is used.', { celebrate: 'circle' });
       else notify.error(asset.error || "We couldn't process that one.");
-      void qc.invalidateQueries({ queryKey: adminKeys.assets.lists() });
+      // "Live everywhere it is used": covers and photos on open screens pick up the new crop.
+      void refreshAssetUsers(qc);
     }
   }, [asset, asset?.status, qc]);
 
@@ -189,7 +190,7 @@ export function AssetSheet({ asset: seed, assetId, onClose }: { asset: Asset | n
               throw err;
             }
             qc.removeQueries({ queryKey: adminKeys.assets.detail(asset.id) });
-            await qc.invalidateQueries({ queryKey: adminKeys.assets.lists() });
+            await refreshAssetUsers(qc);
             notify.success('Deleted. Poof.');
             onClose();
           }}
@@ -299,7 +300,7 @@ function MetaForm({ asset, readOnly }: { asset: Asset; readOnly: boolean }) {
     onError: (err) => void applyApiErrorToForm(form, err),
     onSuccess: (a) => {
       qc.setQueryData(adminKeys.assets.detail(a.id), a);
-      void qc.invalidateQueries({ queryKey: adminKeys.assets.lists() });
+      void refreshAssetUsers(qc);
       form.reset({ alt: a.alt ?? '', caption: a.caption ?? '', credit: a.credit ?? '' });
     },
   });

@@ -8,11 +8,12 @@ import { motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Character } from '@/components/admin/characters/character';
-import { useWorkspaceEvent } from '@/components/admin/events/use-event';
+import { eventDetailKey, useWorkspaceEvent } from '@/components/admin/events/use-event';
 import { Button } from '@/components/admin/ui/button';
 import { EmptyState } from '@/components/admin/ui/feedback';
 import { useNow } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
+import { markAdminStale } from '@/lib/admin/query-keys';
 import { cn } from '@/lib/admin/cn';
 import { AnimatedNumber } from '../animated-number';
 import { ArrivalsChart, ChartCard } from '../charts';
@@ -53,6 +54,9 @@ export function AttendanceBoard() {
     refreshTimer.current = setTimeout(() => {
       void qc.invalidateQueries({ queryKey: peopleKeys.attendance(id) });
       if (canManage) void qc.invalidateQueries({ queryKey: peopleKeys.roster(id) });
+      // The workspace header counts check-ins too; registrations, stats and lists refetch when shown.
+      void qc.invalidateQueries({ queryKey: eventDetailKey(id), exact: true });
+      void markAdminStale(qc);
     }, 1200);
   }, [qc, id, canManage]);
 

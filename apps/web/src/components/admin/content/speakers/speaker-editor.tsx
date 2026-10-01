@@ -34,7 +34,7 @@ import { useAbility, useRefetchMe } from '@/lib/admin/ability';
 import { api, errorMessage } from '@/lib/admin/api';
 import { useBreadcrumbs } from '@/lib/admin/breadcrumbs';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
-import { useAdminMutation } from '@/lib/admin/hooks';
+import { isRevalidatingOnMount, useAdminMutation } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
 import { publicPaths, SITE_URL } from '@/lib/admin/paths';
 import { adminKeys } from '@/lib/admin/query-keys';
@@ -60,7 +60,7 @@ export function SpeakerEditor({ id }: { id?: string }) {
     if (!ability.has('speakers.create')) return <NoCreateAccess what="speakers" />;
     return <SpeakerForm />;
   }
-  if (q.isPending) return <EditorSkeleton />;
+  if (q.isPending || isRevalidatingOnMount(q)) return <EditorSkeleton />;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} retrying={q.isFetching} action={<Button asChild variant="ghost"><Link href={adminRoutes.speakers}>Back to speakers</Link></Button>} />;
   return <SpeakerForm key={q.data.id} speaker={q.data} />;
 }

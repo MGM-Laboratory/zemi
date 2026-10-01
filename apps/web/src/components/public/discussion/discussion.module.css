@@ -32,8 +32,10 @@
 .search { min-width:0; flex:1; display:flex; align-items:center; gap:10px; background:#f7f7f5; padding:0 17px; border-radius:16px; color:#6b7280; }
 .search input { min-width:0; flex:1; border:0; outline:0; background:none; padding:14px 0; color:#0e1116; }
 .sort { display:flex; gap:8px; align-items:center; color:#6b7280; font-size:13px; }
-.threadList { display:grid; gap:14px; }
+.threadList { display:grid; gap:14px; transition:opacity .2s; }
+.threadList[data-busy] { opacity:.6; }
 .threadCard { display:grid; grid-template-columns:50px minmax(0,1fr); gap:20px; padding:27px; border:1px solid #ececea; border-radius:24px; background:#fff; box-shadow:0 4px 14px #0e111607; transition:border-color .25s,transform .25s,box-shadow .25s; animation:rise .5s both; }
+.threadCard { cursor:pointer; }
 .threadCard:hover { border-color:#a5bde8; transform:translateY(-3px); box-shadow:0 16px 34px #0e11160e; }
 .threadCard.featured { border-color:#aec7ef; background:linear-gradient(125deg,#ecf1fa 0%,#fff 56%); }
 .votes { width:44px; display:flex; flex-direction:column; align-items:center; gap:5px; padding:4px; border-radius:999px; background:#f7f7f5; height:max-content; }

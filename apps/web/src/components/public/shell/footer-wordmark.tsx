@@ -48,15 +48,18 @@ export function FooterWordmark() {
     io.observe(root);
     const unsub = pointer.subscribe((p) => {
       if (!visible || p.type === 'touch') return;
-      for (const el of letterRefs.current) {
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
+      // Measure every letter first, then write: interleaving reads and writes forced a full
+      // layout per letter on every pointer move (the weight change reflows the word).
+      const els = letterRefs.current.filter((el): el is HTMLSpanElement => !!el);
+      const rects = els.map((el) => el.getBoundingClientRect());
+      els.forEach((el, i) => {
+        const r = rects[i]!;
         const d = Math.hypot(p.x - (r.left + r.width / 2), p.y - (r.top + r.height / 2));
         const k = Math.max(0, 1 - d / Math.max(260, r.width * 1.4));
         el.style.setProperty('--casl', (0.35 + 0.65 * k).toFixed(3));
         el.style.setProperty('--w', String(Math.round(900 + 100 * k)));
         el.style.translate = `0 ${(-k * 3).toFixed(2)}%`;
-      }
+      });
     });
     const t = setInterval(() => {
       if (visible && document.visibilityState === 'visible') setDot((d) => (d + 1) % 4);

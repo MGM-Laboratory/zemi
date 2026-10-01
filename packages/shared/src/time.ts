@@ -1,4 +1,4 @@
-import { JAKARTA_OFFSET_MINUTES, TIMEZONE, DEFAULT_SESSION } from './constants.js';
+import { JAKARTA_OFFSET_MINUTES, DEFAULT_SESSION } from './constants.js';
 
 const OFFSET_MS = JAKARTA_OFFSET_MINUTES * 60_000;
 
@@ -50,29 +50,39 @@ export type JakartaFormat =
   | 'month-year' // October 2026
   | 'iso-date'; // 2026-10-03
 
+// British English names, spelled out here instead of asking Intl. Browsers and Node ship
+// different ICU data ("Friday, 2 October" in Node 24, "Friday 2 October" in Chrome 141), and a
+// server-rendered date that differs from the browser's by one comma is a hydration error that
+// makes React throw away the server HTML and render the page again on the client.
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+
+/** Jakarta wall-clock formatting, identical on the server and in every browser. */
 export function formatJakarta(d: DateLike, format: JakartaFormat = 'datetime'): string {
-  const date = toDate(d);
-  const base: Intl.DateTimeFormatOptions = { timeZone: TIMEZONE };
-  const fmt = (o: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('en-GB', { ...base, ...o }).format(date);
+  // Same contract as Intl: an invalid date is an error, never "NaN undefined" in an email.
+  if (Number.isNaN(toDate(d).getTime())) throw new RangeError('Invalid time value');
+  const p = jakartaParts(d);
+  const day = `${WEEKDAYS_SHORT[p.weekday]}, ${p.day} ${MONTHS_SHORT[p.month - 1]} ${p.year}`;
   switch (format) {
     case 'date':
-      return fmt({ weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      return day;
     case 'date-long':
-      return fmt({ weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      return `${WEEKDAYS[p.weekday]}, ${p.day} ${MONTHS[p.month - 1]} ${p.year}`;
     case 'date-short':
-      return fmt({ day: 'numeric', month: 'short' });
+      return `${p.day} ${MONTHS_SHORT[p.month - 1]}`;
     case 'time':
-      return jakartaTimeInput(date);
+      return `${pad(p.hour)}:${pad(p.minute)}`;
     case 'weekday':
-      return fmt({ weekday: 'long' });
+      return WEEKDAYS[p.weekday]!;
     case 'month-year':
-      return fmt({ month: 'long', year: 'numeric' });
+      return `${MONTHS[p.month - 1]} ${p.year}`;
     case 'iso-date':
-      return jakartaDateInput(date);
+      return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
     case 'datetime':
     default:
-      return `${fmt({ weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}, ${jakartaTimeInput(date)}`;
+      return `${day}, ${pad(p.hour)}:${pad(p.minute)}`;
   }
 }
 

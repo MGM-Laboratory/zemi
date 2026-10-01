@@ -11,8 +11,12 @@ import { adminKeys } from './query-keys';
 
 function applyAdminDefaults(client: QueryClient) {
   client.setQueryDefaults(adminKeys.all, {
-    staleTime: 15_000,
+    // Always revalidate: cached data paints instantly, then a background refetch brings in what
+    // other admins, the stream, the door scanner or the public site changed meanwhile. Admin
+    // payloads are small; a stale screen that needs a manual reload is the bigger cost.
+    staleTime: 0,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     // Never retry 4xx (403, 404, validation). Retry network/5xx twice.
     retry: (count, err) => {
       if (isApiError(err) && err.status >= 400 && err.status < 500) return false;
@@ -29,7 +33,7 @@ function applyAdminDefaults(client: QueryClient) {
 export function AdminProviders({ me, children }: { me: Me; children: ReactNode }) {
   const existing = useContext(QueryClientContext);
   const [client] = useState(() => {
-    const c = existing ?? new QueryClient({ defaultOptions: { queries: { staleTime: 15_000 } } });
+    const c = existing ?? new QueryClient({ defaultOptions: { queries: { staleTime: 0 } } });
     applyAdminDefaults(c);
     return c;
   });

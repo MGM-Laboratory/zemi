@@ -49,7 +49,7 @@ import { useAbility, useRefetchMe } from '@/lib/admin/ability';
 import { api, errorMessage } from '@/lib/admin/api';
 import { useBreadcrumbs } from '@/lib/admin/breadcrumbs';
 import { applyApiErrorToForm, useZodForm } from '@/lib/admin/form';
-import { useAdminMutation, useDebouncedValue } from '@/lib/admin/hooks';
+import { isRevalidatingOnMount, useAdminMutation, useDebouncedValue } from '@/lib/admin/hooks';
 import { adminRoutes } from '@/lib/admin/nav';
 import { publicPaths, SITE_URL } from '@/lib/admin/paths';
 import { adminKeys } from '@/lib/admin/query-keys';
@@ -104,7 +104,7 @@ export function PublicationEditor({ id }: { id?: string }) {
     if (!ability.has('publications.create')) return <NoCreateAccess what="publications" />;
     return <PublicationForm />;
   }
-  if (q.isPending) return <EditorSkeleton aside={false} />;
+  if (q.isPending || isRevalidatingOnMount(q)) return <EditorSkeleton aside={false} />;
   if (q.isError)
     return (
       <ErrorState

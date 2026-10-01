@@ -26,6 +26,7 @@ import {
   X,
   ZoomIn,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -39,6 +40,7 @@ import { Spinner } from '@/components/admin/ui/spinner';
 import { adminFetch, isApiError, formatWait } from '@/lib/admin/api';
 import { cn } from '@/lib/admin/cn';
 import { adminRoutes } from '@/lib/admin/nav';
+import { markAdminStale } from '@/lib/admin/query-keys';
 import { createQrDetector, type QrDetector } from './detector-client';
 import type { EnginePreference } from './detect-core';
 import { FeedbackCard, type FeedbackKind, type ScanFeedback } from './feedback-card';
@@ -181,6 +183,7 @@ export function ScannerApp({ eventId }: { eventId: string }) {
 /* ------------------------------------------------------------------ screen */
 
 function ScannerScreen({ event, canSeeBoard }: { event: EventAdmin; canSeeBoard: boolean }) {
+  const qc = useQueryClient();
   const params = useSearchParams();
   const pref = (['native', 'zxing'].includes(params?.get('detector') ?? '') ? params!.get('detector') : 'auto') as EnginePreference;
   const debug = params?.get('debug') === '1';
@@ -328,6 +331,8 @@ function ScannerScreen({ event, canSeeBoard }: { event: EventAdmin; canSeeBoard:
       try {
         const res = await adminFetch<ScanResult>(`/admin/events/${event.id}/attendance/scan`, { method: 'POST', body: { payload, device } });
         setScanCounts({ value: { checkedIn: res.counts.checkedIn, registered: res.counts.registered }, at: Date.now() });
+        // Back in the dashboard, registrations, attendance and counts refetch instead of showing pre-scan data.
+        void markAdminStale(qc);
         const reg = res.registration;
         updateRecent(id, { status: res.outcome, name: reg?.fullName ?? null, code: reg?.ticketCode ?? null });
         present(feedbackFor(res), payload);
@@ -390,7 +395,7 @@ function ScannerScreen({ event, canSeeBoard }: { event: EventAdmin; canSeeBoard:
         setPending((n) => Math.max(0, n - 1));
       }
     },
-    [device, dismiss, event.id, present, sound],
+    [device, dismiss, event.id, present, sound, qc],
   );
   useEffect(() => {
     submitRef.current = submit;

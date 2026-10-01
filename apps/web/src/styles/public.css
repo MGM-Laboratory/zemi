@@ -54,10 +54,20 @@
     font-kerning: normal;
   }
 
-  /* Native cursor is hidden only while the custom cursor is active, never on text inputs. */
+  /*
+   * Native cursor is hidden only while the custom cursor is active, never on text inputs and
+   * never inside media players ([data-native-cursor]). A small difference-blended dot vanishes
+   * over moving video (mid-tones blend to grey) and can't enter the fullscreen top layer, so
+   * players keep the real system cursor and their own cursor rules (pointer on controls).
+   */
   html[data-custom-cursor],
-  html[data-custom-cursor] * {
+  html[data-custom-cursor] *:not([data-native-cursor], [data-native-cursor] *) {
     cursor: none !important;
+  }
+
+  /* cursor inherits: the player root must reset it, or its children inherit `none` from above. */
+  html[data-custom-cursor] [data-native-cursor] {
+    cursor: auto;
   }
 
   html[data-custom-cursor]

@@ -214,6 +214,8 @@ export function EventsList() {
     queryKey: adminKeys.events.list(params),
     queryFn: ({ signal }) => listFetch(params, signal),
     placeholderData: keepPreviousData,
+    // Status, stream state, covers and counts change without this tab doing anything.
+    refetchInterval: 60_000,
   });
   // Tab counts: tiny pageSize=1 requests, refreshed with the list.
   const counts = useQueries({
@@ -222,7 +224,7 @@ export function EventsList() {
       return {
         queryKey: adminKeys.events.list({ ...p, count: true }),
         queryFn: ({ signal }: { signal: AbortSignal }) => listFetch(p, signal),
-        staleTime: 30_000,
+        refetchInterval: 60_000,
       };
     }),
   });
@@ -499,7 +501,8 @@ export function EventsList() {
           data={rows}
           getRowId={(r) => r.id}
           loading={list.isPending}
-          fetching={list.isFetching && !list.isPending}
+          // Only a filter or page change dims the list; the 60s/focus background refresh stays silent.
+          fetching={list.isPlaceholderData}
           total={total}
           pagination={{ page, pageSize }}
           onPaginationChange={(p) => void setState({ page: p.page, size: p.pageSize })}
@@ -517,7 +520,7 @@ export function EventsList() {
                   onValueChange={(v) => void setState({ q: v, page: 1 })}
                   placeholder="Search title, speaker, room"
                   slashToFocus
-                  loading={list.isFetching && !list.isPending}
+                  loading={list.isPlaceholderData}
                   aria-label="Search events"
                 />
               }
@@ -533,7 +536,7 @@ export function EventsList() {
                 onValueChange={(v) => void setState({ q: v, page: 1 })}
                 placeholder="Search title, speaker, room"
                 slashToFocus
-                loading={list.isFetching && !list.isPending}
+                loading={list.isPlaceholderData}
                 aria-label="Search events"
               />
             }
@@ -549,7 +552,7 @@ export function EventsList() {
               <ul
                 className={cn(
                   'grid gap-3 transition-opacity sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] sm:gap-4',
-                  list.isFetching && 'opacity-70',
+                  list.isPlaceholderData && 'opacity-70',
                 )}
                 aria-label="Events"
               >

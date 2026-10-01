@@ -74,24 +74,19 @@
   border-radius: 0;
 }
 
-/* The site's custom cursor lives outside the fullscreen top layer: give the native one back. */
-html[data-custom-cursor] .root:fullscreen,
-html[data-custom-cursor] .root:fullscreen * {
-  cursor: auto !important;
-}
-
-html[data-custom-cursor] .root:fullscreen .surface,
-html[data-custom-cursor] .root:fullscreen button {
-  cursor: pointer !important;
-}
-
-html[data-custom-cursor] .root:fullscreen[data-idle],
-html[data-custom-cursor] .root:fullscreen[data-idle] * {
+/*
+ * The player always shows the system cursor (the site's custom cursor steps aside here, see
+ * [data-native-cursor] in public.css). Only fullscreen hides it, and only while idle; any mouse
+ * move brings it straight back, like every desktop video player.
+ */
+.root:fullscreen[data-idle],
+.root:fullscreen[data-idle] * {
   cursor: none !important;
 }
 
-.root[data-idle] .surface {
-  cursor: none;
+.root:-webkit-full-screen[data-idle],
+.root:-webkit-full-screen[data-idle] * {
+  cursor: none !important;
 }
 
 /* ------------------------------------------------------------------ media */

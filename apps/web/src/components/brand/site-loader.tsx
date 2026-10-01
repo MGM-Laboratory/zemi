@@ -7,10 +7,18 @@ import loader from './site-loader.module.css';
 /** The curtain holds at most this long for the model preload (slow networks still get the site). */
 const PRELOAD_CAP_MS = 12_000;
 
-/** Warm the 3D model cache. The import is lazy so three.js stays out of the first bundle. */
+/**
+ * Warm the 3D model cache and the 3D runtime (three.js + R3F). The imports are lazy so three.js
+ * stays out of the first bundle.
+ */
 function preload(): Promise<void> {
-  return import('@/components/three/preload-models')
-    .then((m) => m.preloadModels())
+  // The home story pins its 3D scenes: there the curtain also waits for the runtime.
+  const home = typeof window !== 'undefined' && window.location.pathname === '/';
+  return Promise.all([
+    import('@/components/three/preload-models').then((m) => m.preloadModels()),
+    home ? import('@/components/three/scene-canvas').then((m) => m.preloadSceneRuntime()) : null,
+  ])
+    .then(() => undefined)
     .catch(() => {
       /* network failed: the scenes have 2D fallbacks */
     });

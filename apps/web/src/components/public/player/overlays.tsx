@@ -53,7 +53,6 @@ export function BigPlay({ show, playing, onPress, label }: { show: boolean; play
           type="button"
           className={styles.bigPlay}
           aria-label={label}
-          data-cursor="play"
           onClick={onPress}
           initial={{ opacity: 0, scale: reduced ? 1 : 0.6, rotate: reduced ? 0 : -12 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}

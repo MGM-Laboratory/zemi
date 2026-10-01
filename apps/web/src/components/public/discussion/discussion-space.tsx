@@ -4,17 +4,18 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bookmark, Check, ChevronDown
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 import { BlocksRenderer } from '@/components/public/media/blocks-renderer';
-import { discussionRequest, type EventOption, type Identity, type Page, type Reply, type Thread, type ThreadDetail } from './api';
+import { coverThumb, discussionRequest, type EventOption, type Identity, type Page, type Reply, type Thread, type ThreadDetail } from './api';
 import { DiscussionConfirm } from './discussion-confirm';
 import { DiscussionSelect } from './discussion-select';
 import { EventPicker } from './event-picker';
 import { Turnstile } from './turnstile';
 import styles from './discussion.module.css';
 
-const fmt = (date: string) => new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(date));
+const dateFormat = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
+const fmt = (date: string) => dateFormat.format(new Date(date));
 const ago = (date: string) => {
   const minutes = Math.max(1, Math.floor((Date.now() - new Date(date).getTime()) / 60000));
   if (minutes < 60) return `${minutes}m ago`;
@@ -23,6 +24,22 @@ const ago = (date: string) => {
 };
 const localBookmarkKey = 'zemi:discussion:bookmarks';
 
+/** Wait this long after the last keystroke before searching (one request per pause, not per letter). */
+const SEARCH_DEBOUNCE_MS = 250;
+type VoteValue = -1 | 0 | 1;
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [out, setOut] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setOut(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return out;
+}
+
+const statusOf = (e: unknown) => (e as { status?: number } | null)?.status;
+const isAbort = (e: unknown) => (e as { name?: string } | null)?.name === 'AbortError';
+
 export function DiscussionSpace({ id }: { id?: string }) {
   const router = useRouter();
   const [me, setMe] = useState<Identity | null | undefined>(undefined);
@@ -30,6 +47,7 @@ export function DiscussionSpace({ id }: { id?: string }) {
   const [threads, setThreads] = useState<Page<Thread> | null>(null);
   const [detail, setDetail] = useState<ThreadDetail | null>(null);
   const [search, setSearch] = useState('');
+  const query = useDebounced(search.trim(), SEARCH_DEBOUNCE_MS);
   const [eventFilter, setEventFilter] = useState('all');
   const [selectedFilterEvent, setSelectedFilterEvent] = useState<EventOption | null>(null);
   const [sort, setSort] = useState<'hot' | 'new' | 'top'>('hot');
@@ -45,43 +63,84 @@ export function DiscussionSpace({ id }: { id?: string }) {
     discussionRequest<Identity | null>('GET', '/me').then(setMe).catch(() => { setMe(null); toast.error('Could not check your discussion identity.'); });
   }, []);
 
-  const reload = useCallback(async () => {
-    if (!me) return;
-    setLoading(true);
+  // Only the newest request may write: a slow answer for "mod" must never overwrite "model".
+  const seq = useRef(0);
+  const inflight = useRef<AbortController | null>(null);
+  const meRef = useRef(me);
+  useEffect(() => { meRef.current = me; }, [me]);
+  /** Fetch the feed (or the open thread). `quiet` keeps what is on screen while it refreshes. */
+  const reload = useCallback(async (quiet = false) => {
+    const n = ++seq.current;
+    inflight.current?.abort();
+    const ctrl = new AbortController();
+    inflight.current = ctrl;
+    if (!quiet) setLoading(true);
     try {
-      if (id) setDetail(await discussionRequest<ThreadDetail>('GET', `/threads/${id}`));
-      else {
-        const query = new URLSearchParams({ page: String(page), pageSize: '15', sort });
-        if (search.trim()) query.set('search', search.trim());
-        if (eventFilter !== 'all') query.set('eventId', eventFilter);
-        setThreads(await discussionRequest<Page<Thread>>('GET', `/threads?${query}`));
+      if (id) {
+        const data = await discussionRequest<ThreadDetail>('GET', `/threads/${id}`, undefined, ctrl.signal);
+        if (n === seq.current) setDetail(data);
+      } else {
+        const params = new URLSearchParams({ page: String(page), pageSize: '15', sort });
+        if (query) params.set('search', query);
+        if (eventFilter !== 'all') params.set('eventId', eventFilter);
+        const data = await discussionRequest<Page<Thread>>('GET', `/threads?${params}`, undefined, ctrl.signal);
+        if (n === seq.current) setThreads(data);
       }
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setLoading(false); }
-  }, [me, id, page, sort, search, eventFilter]);
-  useEffect(() => { if (me) { const timer = setTimeout(() => { void reload(); }, 0); return () => clearTimeout(timer); } }, [me, reload]);
+    } catch (e) {
+      // Not joined yet (the first load races the identity check) or superseded: stay quiet.
+      if (n === seq.current && !isAbort(e) && !(statusOf(e) === 401 && !meRef.current)) toast.error((e as Error).message);
+    } finally {
+      if (n === seq.current) setLoading(false);
+    }
+  }, [id, page, sort, query, eventFilter]);
 
-  const bookmark = (threadId: string) => {
-    const next = bookmarks.includes(threadId) ? bookmarks.filter(x => x !== threadId) : [...bookmarks, threadId];
+  // The feed loads in parallel with the identity check (no waterfall); it reloads after joining.
+  const joined = me === null ? 'out' : 'in';
+  useEffect(() => {
+    if (joined === 'out') return;
+    const timer = setTimeout(() => { void reload(); }, 0);
+    return () => clearTimeout(timer);
+  }, [reload, joined]);
+  useEffect(() => () => inflight.current?.abort(), []);
+
+  const bookmarksRef = useRef(bookmarks);
+  useEffect(() => { bookmarksRef.current = bookmarks; }, [bookmarks]);
+  const bookmark = useCallback((threadId: string) => {
+    const prev = bookmarksRef.current;
+    const next = prev.includes(threadId) ? prev.filter(x => x !== threadId) : [...prev, threadId];
+    bookmarksRef.current = next;
     setBookmarks(next);
-    localStorage.setItem(localBookmarkKey, JSON.stringify(next));
+    try { localStorage.setItem(localBookmarkKey, JSON.stringify(next)); } catch { /* storage blocked */ }
     toast.success(next.includes(threadId) ? 'Saved for later' : 'Removed from saved');
-  };
-  const vote = async (threadId: string, value: -1 | 0 | 1, type: 'thread' | 'comment' = 'thread') => {
+  }, []);
+
+  /** Votes and reactions show up instantly; the server only has to agree (a failure reloads). */
+  const vote = useCallback(async (targetId: string, value: VoteValue, type: 'thread' | 'comment' = 'thread') => {
+    const bump = <T extends { score: number; myVote: number }>(t: T): T => ({ ...t, score: t.score + (value - t.myVote), myVote: value });
+    if (type === 'thread') {
+      setThreads(p => p && { ...p, items: p.items.map(t => t.id === targetId ? bump(t) : t) });
+      setDetail(d => d && d.id === targetId ? bump(d) : d);
+    } else {
+      setDetail(d => d && { ...d, comments: d.comments.map(c => c.id === targetId ? bump(c) : c) });
+    }
     try {
-      await discussionRequest('POST', '/vote', { type, id: threadId, value });
-      void reload();
-    } catch (e) { toast.error((e as Error).message); }
-  };
-  const react = async (threadId: string, kind: string) => {
-    try { await discussionRequest('POST', '/react', { type: 'thread', id: threadId, kind }); void reload(); }
-    catch (e) { toast.error((e as Error).message); }
-  };
-  const share = async (threadId: string) => {
+      await discussionRequest('POST', '/vote', { type, id: targetId, value });
+    } catch (e) {
+      toast.error((e as Error).message);
+      void reload(true);
+    }
+  }, [reload]);
+  const react = useCallback(async (threadId: string, kind: string) => {
+    setDetail(d => d && d.id === threadId ? { ...d, myReactions: d.myReactions.includes(kind) ? d.myReactions.filter(k => k !== kind) : [...d.myReactions, kind] } : d);
+    try { await discussionRequest('POST', '/react', { type: 'thread', id: threadId, kind }); }
+    catch (e) { toast.error((e as Error).message); void reload(true); }
+  }, [reload]);
+  const share = useCallback(async (threadId: string) => {
     const url = `${window.location.origin}/discussion/${threadId}`;
     try { await navigator.clipboard.writeText(url); toast.success('Discussion link copied'); }
     catch { toast.error('Could not copy the link.'); }
-  };
+  }, []);
+  const refresh = useCallback(() => reload(true), [reload]);
 
   if (me === undefined) return <div className={styles.centerState}>Opening the conversation<span className={styles.waitDots}>...</span></div>;
   if (!me) return <IdentityGate onJoined={setMe} />;
@@ -102,7 +161,7 @@ export function DiscussionSpace({ id }: { id?: string }) {
       {id ? <>
         <Link className={styles.backLink} href="/discussion"><ArrowLeft size={16} /> Back to all discussions</Link>
         {loading && !detail ? <div className={styles.centerState}>Finding this conversation...</div> : detail ? <>
-          <ThreadView thread={detail} bookmark={() => bookmark(detail.id)} saved={bookmarks.includes(detail.id)} onVote={vote} onReact={react} onShare={share} onRefresh={reload} />
+          <ThreadView thread={detail} bookmark={() => bookmark(detail.id)} saved={bookmarks.includes(detail.id)} onVote={vote} onReact={react} onShare={share} onRefresh={refresh} />
         </> : <div className={styles.empty}>This conversation is unavailable.</div>}
       </> : <>
         <div className={`${styles.board} ${styles.discussionBoard}`}>
@@ -121,7 +180,7 @@ export function DiscussionSpace({ id }: { id?: string }) {
               <div className={styles.sort}><span>Sort</span><DiscussionSelect value={sort} onChange={value => { setSort(value); setPage(1); }} label="Sort discussions" options={[{ value: 'hot', label: 'Most active', description: 'Conversation and votes' }, { value: 'new', label: 'Newest', description: 'Fresh questions first' }, { value: 'top', label: 'Top voted', description: 'Community favorites' }]} /></div>
             </div>
             {loading && !threads ? <div className={styles.centerState}>Listening for questions...</div> : threads?.items.length ? <>
-              <div className={styles.threadList}>{threads.items.map((thread, index) => <ThreadCard key={thread.id} thread={thread} index={index} saved={bookmarks.includes(thread.id)} onVote={vote} onBookmark={() => bookmark(thread.id)} onShare={() => share(thread.id)} />)}</div>
+              <div className={styles.threadList} data-busy={loading ? '' : undefined} aria-busy={loading || undefined}>{threads.items.map((thread, index) => <ThreadCard key={thread.id} thread={thread} index={index} saved={bookmarks.includes(thread.id)} onVote={vote} onBookmark={bookmark} onShare={share} />)}</div>
               {threads.total > threads.pageSize && <div className={styles.pagination}><button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page} of {Math.ceil(threads.total / threads.pageSize)}</span><button disabled={page * threads.pageSize >= threads.total} onClick={() => setPage(page + 1)}>Next</button></div>}
             </> : <div className={styles.empty}><div className={styles.emptyMark}>?</div><h3>No questions here yet.</h3><p>Be the first to start a conversation.</p><Link className={styles.primaryButton} href="/discussion/create"><Plus size={17} /> Ask a question</Link></div>}
           </div>
@@ -173,38 +232,44 @@ function VoteControl({ score, mine, onVote }: { score: number; mine: number; onV
   return <div className={styles.votes} aria-label="Votes"><button aria-label="Upvote" aria-pressed={mine === 1} onClick={e => { e.preventDefault(); onVote(mine === 1 ? 0 : 1); }}><ArrowUp size={17} fill={mine === 1 ? 'currentColor' : 'none'} /></button><strong>{score}</strong><button aria-label="Downvote" aria-pressed={mine === -1} onClick={e => { e.preventDefault(); onVote(mine === -1 ? 0 : -1); }}><ArrowDown size={17} fill={mine === -1 ? 'currentColor' : 'none'} /></button></div>;
 }
 
-function ThreadCard({ thread, index, saved, onVote, onBookmark, onShare }: { thread: Thread; index: number; saved: boolean; onVote: (id: string, value: -1 | 0 | 1) => void; onBookmark: () => void; onShare: () => void }) {
-  return <article className={`${styles.threadCard} ${thread.featured ? styles.featured : ''}`} style={{ animationDelay: `${Math.min(index * 45, 360)}ms` }}>
+/** Clicks on the card open the question, except clicks on its own buttons and links. */
+const fromControl = (e: MouseEvent) => !!(e.target as Element).closest('a, button, input, textarea, select, [role="button"], [aria-label="Votes"]');
+
+const ThreadCard = memo(function ThreadCard({ thread, index, saved, onVote, onBookmark, onShare }: { thread: Thread; index: number; saved: boolean; onVote: (id: string, value: VoteValue) => void; onBookmark: (id: string) => void; onShare: (id: string) => void }) {
+  const router = useRouter();
+  const href = `/discussion/${thread.id}`;
+  return <article
+    className={`${styles.threadCard} ${thread.featured ? styles.featured : ''}`}
+    style={{ animationDelay: `${Math.min(index * 45, 360)}ms` }}
+    // The "Open" badge cursor over the whole card (inner buttons keep their own cursor).
+    data-cursor="question"
+    data-cursor-yield=""
+    onClick={e => {
+      if (e.defaultPrevented || e.button !== 0 || fromControl(e) || window.getSelection()?.toString()) return;
+      // Cmd/Ctrl/Shift-click opens a new tab, like on the title link.
+      if (e.metaKey || e.ctrlKey || e.shiftKey) window.open(href, '_blank', 'noopener');
+      else router.push(href);
+    }}
+    onPointerEnter={() => router.prefetch(href)}
+  >
     <VoteControl score={thread.score} mine={thread.myVote} onVote={value => onVote(thread.id, value)} />
     <div className={styles.cardBody}>
       <div className={styles.cardMeta}>{thread.featured && <span className={styles.featuredLabel}><span className={styles.liveDot} /> Next Friday</span>}{thread.pinned && <span className={styles.pinLabel}>Pinned by Zemi</span>}<span>{thread.event ? `Zemi #${thread.event.number ?? '•'}` : 'General'}</span><span className={styles.dotSep}>·</span><span>{ago(thread.createdAt)}</span></div>
-      <Link href={`/discussion/${thread.id}`} className={styles.cardTitle}>{thread.title}<ArrowRight size={19} /></Link>
+      <Link href={href} className={styles.cardTitle} data-cursor="question">{thread.title}<ArrowRight size={19} /></Link>
       <p className={styles.excerpt}>{thread.excerpt}</p>
-      {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.eventMini} onClick={e => e.stopPropagation()}>{thread.event.cover ? <Image className={styles.eventCover} src={thread.event.cover.src} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>THE EVENT</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)}</em></span><ArrowRight size={17} /></Link>}
+      {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.eventMini} data-cursor="open">{thread.event.cover ? <Image className={styles.eventCover} src={coverThumb(thread.event.cover, 39)} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>THE EVENT</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)}</em></span><ArrowRight size={17} /></Link>}
       <div className={styles.cardTags}>{thread.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
-      <div className={styles.cardBottom}><Link href={`/discussion/${thread.id}`}><MessageCircle size={16} /> {thread.commentCount} replies</Link><span>by {thread.author}</span><div className={styles.cardUtilities}><button onClick={onBookmark} aria-label={saved ? 'Remove bookmark' : 'Save discussion'} aria-pressed={saved}><Bookmark size={16} fill={saved ? 'currentColor' : 'none'} /></button><button onClick={onShare} aria-label="Copy discussion link"><Share2 size={16} /></button></div></div>
+      <div className={styles.cardBottom}><Link href={href} data-cursor="question"><MessageCircle size={16} /> {thread.commentCount} replies</Link><span>by {thread.author}</span><div className={styles.cardUtilities}><button onClick={() => onBookmark(thread.id)} aria-label={saved ? 'Remove bookmark' : 'Save discussion'} aria-pressed={saved}><Bookmark size={16} fill={saved ? 'currentColor' : 'none'} /></button><button onClick={() => onShare(thread.id)} aria-label="Copy discussion link"><Share2 size={16} /></button></div></div>
     </div>
   </article>;
-}
+});
 
-function ThreadView({ thread, saved, bookmark, onVote, onReact, onShare, onRefresh }: { thread: ThreadDetail; saved: boolean; bookmark: () => void; onVote: (id: string, value: -1 | 0 | 1, type?: 'thread' | 'comment') => void; onReact: (id: string, kind: string) => void; onShare: (id: string) => void; onRefresh: () => Promise<void> }) {
+function ThreadView({ thread, saved, bookmark, onVote, onReact, onShare, onRefresh }: { thread: ThreadDetail; saved: boolean; bookmark: () => void; onVote: (id: string, value: VoteValue, type?: 'thread' | 'comment') => void; onReact: (id: string, kind: string) => void; onShare: (id: string) => void; onRefresh: () => Promise<void> }) {
   const router = useRouter();
-  const [reply, setReply] = useState('');
   const [replyTo, setReplyTo] = useState<Reply | null>(null);
-  const [token, setToken] = useState('');
   const [reporting, setReporting] = useState<{ type: 'thread' | 'comment'; id: string } | null>(null);
   const [confirmDeleteThread, setConfirmDeleteThread] = useState(false);
   const [confirmDeleteReply, setConfirmDeleteReply] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [challengeVersion, setChallengeVersion] = useState(0);
-  const onToken = useCallback((value: string) => setToken(value), []);
-  const post = async (e: FormEvent) => {
-    e.preventDefault(); if (!token) return toast.error('Complete the human check first.');
-    setBusy(true);
-    try { await discussionRequest('POST', `/threads/${thread.id}/comments`, { body: reply, parentId: replyTo?.id, challenge: token }); setReply(''); setReplyTo(null); setToken(''); setChallengeVersion(v => v + 1); toast.success('Your reply is in the conversation'); void onRefresh(); }
-    catch (error) { toast.error((error as Error).message); setToken(''); setChallengeVersion(v => v + 1); }
-    finally { setBusy(false); }
-  };
   const removeThread = async () => {
     try { await discussionRequest('DELETE', `/threads/${thread.id}`); router.push('/discussion'); toast.success('Discussion deleted'); }
     catch (e) { toast.error((e as Error).message); throw e; }
@@ -220,20 +285,40 @@ function ThreadView({ thread, saved, bookmark, onVote, onReact, onShare, onRefre
   return <div className={styles.detailLayout}><article className={styles.detail}>
     <div className={styles.detailMeta}>{thread.featured && <span className={styles.featuredLabel}>NEXT FRIDAY</span>}<span>{thread.event ? `Zemi #${thread.event.number ?? '•'}` : 'GENERAL QUESTION'}</span><span>·</span><span>{ago(thread.createdAt)}</span></div>
     <h2>{thread.title}</h2><p className={styles.byline}>Asked by <strong>{thread.author}</strong></p>
-    {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.detailEvent}>{thread.event.cover ? <Image className={styles.eventCover} src={thread.event.cover.src} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>PART OF THIS FRIDAY</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)} · Explore the event</em></span><ArrowRight size={21} /></Link>}
+    {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.detailEvent}>{thread.event.cover ? <Image className={styles.eventCover} src={coverThumb(thread.event.cover, 55)} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>PART OF THIS FRIDAY</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)} · Explore the event</em></span><ArrowRight size={21} /></Link>}
     <div className={styles.richBody}><BlocksRenderer blocks={thread.body} /></div>
     <div className={styles.cardTags}>{thread.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
     <div className={styles.detailActions}><VoteControl score={thread.score} mine={thread.myVote} onVote={value => onVote(thread.id, value)} /><button onClick={bookmark} aria-pressed={saved}><Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />{saved ? 'Saved' : 'Save'}</button><button onClick={() => onShare(thread.id)}><Share2 size={17} />Share</button><button onClick={() => setReporting({ type: 'thread', id: thread.id })}><Flag size={16} />Report</button>{thread.mine && thread.status === 'open' && <Link href={`/discussion/create?edit=${thread.id}`}><Pencil size={16} />Edit</Link>}{thread.mine && <button className={styles.dangerLink} onClick={() => setConfirmDeleteThread(true)}><Trash2 size={16} />Delete</button>}</div>
     <div className={styles.reactions}><span>How did this land?</span>{(['curious', 'insightful', 'thanks'] as const).map(kind => <button key={kind} aria-pressed={thread.myReactions.includes(kind)} onClick={() => onReact(thread.id, kind)}>{kind === 'curious' ? '✳' : kind === 'insightful' ? '✦' : '♡'} {kind}</button>)}</div>
     <section className={styles.replies}><div className={styles.repliesHead}><h3>{thread.commentCount} {thread.commentCount === 1 ? 'reply' : 'replies'}</h3><span>Keep the conversation generous.</span></div>
       {thread.comments.length ? <div className={styles.replyList}>{thread.comments.map(comment => <div key={comment.id} className={`${styles.reply} ${comment.parentId ? styles.nestedReply : ''} ${thread.acceptedCommentId === comment.id ? styles.accepted : ''}`}><div className={styles.replyVote}><VoteControl score={comment.score} mine={comment.myVote} onVote={value => onVote(comment.id, value, 'comment')} /></div><div className={styles.replyContent}>{thread.acceptedCommentId === comment.id && <span className={styles.acceptedMark}><Check size={15} /> Helpful answer</span>}<p className={styles.replyByline}><strong>{comment.author}</strong><span>{ago(comment.createdAt)}</span></p><p className={styles.replyBody}>{comment.status === 'deleted' ? 'This reply was deleted.' : comment.body}</p>{comment.status !== 'deleted' && <div className={styles.replyActions}><button onClick={() => { setReplyTo(comment); document.getElementById('reply-box')?.focus(); }}><CornerDownRight size={15} /> Reply</button>{thread.mine && <button onClick={() => accept(thread.acceptedCommentId === comment.id ? null : comment.id)}><Check size={15} />{thread.acceptedCommentId === comment.id ? 'Unmark' : 'Mark helpful'}</button>}{comment.mine && <button onClick={() => setConfirmDeleteReply(comment.id)}>Delete</button>}<button onClick={() => setReporting({ type: 'comment', id: comment.id })}>Report</button></div>}</div></div>)}</div> : <p className={styles.noReplies}>No replies yet. Yours could open the conversation.</p>}
-      {thread.status === 'open' ? <form className={styles.replyForm} onSubmit={post}><label htmlFor="reply-box">Add to the conversation</label>{replyTo && <p className={styles.replyingTo}>Replying to {replyTo.author}<button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X size={15} /></button></p>}<textarea id="reply-box" minLength={2} maxLength={5000} required rows={5} value={reply} onChange={e => setReply(e.target.value)} placeholder="A thought, a follow-up, a useful link..." /><div className={styles.replySubmit}><Turnstile action="discussion_comment" onToken={onToken} resetKey={challengeVersion} /><button className={styles.primaryButton} disabled={!token || busy}><Send size={17} /> Post reply</button></div></form> : <p className={styles.closedNotice}>This conversation is {thread.status}. You can still read it.</p>}
+      {thread.status === 'open' ? <ReplyForm threadId={thread.id} replyTo={replyTo} onCancelReplyTo={() => setReplyTo(null)} onPosted={() => { setReplyTo(null); void onRefresh(); }} /> : <p className={styles.closedNotice}>This conversation is {thread.status}. You can still read it.</p>}
     </section>
   </article><aside className={styles.detailAside}><p className={styles.filterLabel}>A GOOD CONVERSATION</p><p>Ask with curiosity. Disagree with care. Keep it useful for the people who come after you.</p><Link href="/discussion">Discover more questions <ArrowRight size={16} /></Link></aside>
   {reporting && <ReportDialog target={reporting} onClose={() => setReporting(null)} />}
   <DiscussionConfirm open={confirmDeleteThread} onOpenChange={setConfirmDeleteThread} title="Delete this question?" description="This question will leave the public discussion. A moderator can still review it." action="Delete question" onConfirm={removeThread} />
   <DiscussionConfirm open={!!confirmDeleteReply} onOpenChange={open => { if (!open) setConfirmDeleteReply(null); }} title="Delete your reply?" description="Your reply will be removed from the conversation." action="Delete reply" onConfirm={() => removeReply(confirmDeleteReply!)} />
   </div>;
+}
+
+/**
+ * The reply box owns its text, so typing re-renders only the form, not the question body and
+ * every reply above it (long threads used to lag on each keystroke).
+ */
+function ReplyForm({ threadId, replyTo, onCancelReplyTo, onPosted }: { threadId: string; replyTo: Reply | null; onCancelReplyTo: () => void; onPosted: () => void }) {
+  const [reply, setReply] = useState('');
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [challengeVersion, setChallengeVersion] = useState(0);
+  const onToken = useCallback((value: string) => setToken(value), []);
+  const post = async (e: FormEvent) => {
+    e.preventDefault(); if (!token) return toast.error('Complete the human check first.');
+    setBusy(true);
+    try { await discussionRequest('POST', `/threads/${threadId}/comments`, { body: reply, parentId: replyTo?.id, challenge: token }); setReply(''); setToken(''); setChallengeVersion(v => v + 1); toast.success('Your reply is in the conversation'); onPosted(); }
+    catch (error) { toast.error((error as Error).message); setToken(''); setChallengeVersion(v => v + 1); }
+    finally { setBusy(false); }
+  };
+  return <form className={styles.replyForm} onSubmit={post}><label htmlFor="reply-box">Add to the conversation</label>{replyTo && <p className={styles.replyingTo}>Replying to {replyTo.author}<button type="button" onClick={onCancelReplyTo} aria-label="Cancel reply"><X size={15} /></button></p>}<textarea id="reply-box" minLength={2} maxLength={5000} required rows={5} value={reply} onChange={e => setReply(e.target.value)} placeholder="A thought, a follow-up, a useful link..." /><div className={styles.replySubmit}><Turnstile action="discussion_comment" onToken={onToken} resetKey={challengeVersion} /><button className={styles.primaryButton} disabled={!token || busy}><Send size={17} /> Post reply</button></div></form>;
 }
 
 function ReportDialog({ target, onClose }: { target: { type: 'thread' | 'comment'; id: string }; onClose: () => void }) {

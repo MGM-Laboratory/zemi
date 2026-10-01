@@ -32,7 +32,22 @@ function rebalance() {
   }
 }
 
-const SceneCanvasImpl = dynamic(() => import('./scene-canvas-impl'), { ssr: false, loading: () => null });
+const loadImpl = () => import('./scene-canvas-impl');
+const SceneCanvasImpl = dynamic(loadImpl, { ssr: false, loading: () => null });
+
+/**
+ * Start downloading the 3D runtime (three.js + R3F) without mounting anything. Call it early on
+ * pages with a pinned scene (idle time after load, or behind the first-visit loader) so the
+ * scene is ready by the time someone scrolls to it. Safe to call repeatedly.
+ */
+export function preloadSceneRuntime(): Promise<unknown> {
+  return loadImpl().catch(() => undefined);
+}
+
+/** No first frame after this long (slow phone, slow network): show the 2D fallback meanwhile. */
+const SLOW_MS = 9000;
+/** WebGL context losses we recover from by remounting before settling on the 2D fallback. */
+const MAX_RESTARTS = 3;
 
 export interface SceneCanvasProps {
   /** R3F content. Load heavy scene modules lazily (see components/three/index.ts). */
@@ -45,7 +60,11 @@ export interface SceneCanvasProps {
   studio?: boolean | StudioLightsProps;
   /** Shown when WebGL is missing or the scene crashes. Also the placeholder until mounted. */
   fallback?: ReactNode;
-  /** Shown until the scene is ready. Defaults to `fallback`; pass null for nothing. */
+  /**
+   * Shown until the scene is ready. Defaults to `fallback`; pass null for nothing. Use
+   * <SceneLoading /> for a visible loading state. If the scene still isn't ready after a few
+   * seconds, `fallback` takes over until it is, so the stage never sits empty.
+   */
   placeholder?: ReactNode;
   /** Mount when this close to the viewport. Default '50% 0px'. */
   rootMargin?: string;
@@ -141,14 +160,32 @@ export function SceneCanvas({
 
   const [ready, setReady] = useState(false);
   const [gone, setGone] = useState(false);
+  const [slow, setSlow] = useState(false);
+  // Bumped when the GPU drops the WebGL context (tab in the background on a phone, a driver
+  // reset, too many canvases): R3F can't recover a lost context, so the canvas is remounted.
+  const [epoch, setEpoch] = useState(0);
+  const [dead, setDead] = useState(false);
   const onReady = useCallback(() => setReady(true), []);
+  const restarts = useRef(0);
+  const onContextLost = useCallback(() => {
+    restarts.current += 1;
+    setReady(false);
+    setGone(false);
+    if (restarts.current > MAX_RESTARTS) setDead(true);
+    else setEpoch(restarts.current);
+  }, []);
   useEffect(() => {
     if (!ready) return;
     const t = setTimeout(() => setGone(true), 600);
     return () => clearTimeout(t);
   }, [ready]);
-  const showCanvas = near && supported === true;
-  const hold = placeholder === undefined ? fallback : placeholder;
+  const showCanvas = near && supported === true && !dead;
+  useEffect(() => {
+    if (!showCanvas || ready) return;
+    const t = setTimeout(() => setSlow(true), SLOW_MS);
+    return () => clearTimeout(t);
+  }, [showCanvas, ready, epoch]);
+  const hold = slow && fallback ? fallback : placeholder === undefined ? fallback : placeholder;
 
   return (
     <div
@@ -158,7 +195,7 @@ export function SceneCanvas({
       data-scene=""
       data-scene-running={showCanvas && visible && !reduced ? 'true' : 'false'}
     >
-      {supported === false ? (
+      {supported === false || dead ? (
         <div className="absolute inset-0 grid place-items-center">{fallback}</div>
       ) : (
         <>
@@ -174,6 +211,8 @@ export function SceneCanvas({
             <SceneBoundary fallback={<div className="absolute inset-0 grid place-items-center">{fallback}</div>}>
               <div className={cn('absolute inset-0 transition-opacity duration-700', ready ? 'opacity-100' : 'opacity-0')}>
               <SceneCanvasImpl
+                key={epoch}
+                onContextLost={onContextLost}
                 visible={visible}
                 reduced={reduced}
                 camera={camera}

@@ -191,10 +191,12 @@ function Topbar({ groups, pathname, onMenu, onPalette, right }: { groups: AdminN
           type="button"
           onClick={onPalette}
           aria-label="Search and jump (Cmd or Ctrl K)"
-          className="group flex h-10 items-center gap-2 rounded-full border border-line-strong bg-white px-3 text-sm text-ink-3 transition hover:border-ink-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:w-56 md:w-64"
+          className="group flex h-10 items-center gap-2 rounded-full border border-line-strong bg-white px-3 text-sm text-ink-3 transition hover:border-ink-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-focus sm:w-48 xl:w-64"
         >
           <Search className="size-4 shrink-0" />
-          <span className="hidden flex-1 text-left sm:inline">Search or jump</span>
+          <span className="hidden min-w-0 flex-1 truncate text-left whitespace-nowrap sm:inline">
+            Search<span className="hidden xl:inline"> or jump</span>
+          </span>
           <span className="hidden sm:inline-flex">
             <Kbd keys={['mod', 'k']} />
           </span>
@@ -204,10 +206,11 @@ function Topbar({ groups, pathname, onMenu, onPalette, right }: { groups: AdminN
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-ink-2 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus md:flex"
+            aria-label="View the public site"
+            className="hidden h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium whitespace-nowrap text-ink-2 transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus md:flex"
           >
-            View site
-            <ExternalLink className="size-3.5" aria-hidden="true" />
+            <span className="hidden xl:inline">View site</span>
+            <ExternalLink className="size-4 xl:size-3.5" aria-hidden="true" />
           </a>
         </Tooltip>
         {right}
@@ -229,19 +232,32 @@ function deriveCrumbs(groups: AdminNavGroup[], pathname: string): Crumb[] {
 
 function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   if (!crumbs.length) return <div className="min-w-0 flex-1" />;
+  // Long labels (an event title as a middle crumb) truncate instead of running under the search
+  // box: the first crumb keeps its size, middle crumbs give way first, the current page last.
   return (
-    <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
-      <ol className="flex min-w-0 items-center gap-1 text-sm">
+    <nav aria-label="Breadcrumb" className="min-w-0 flex-1 overflow-hidden">
+      <ol className="flex min-w-0 items-center gap-1 text-sm whitespace-nowrap">
         {crumbs.map((c, i) => {
           const last = i === crumbs.length - 1;
+          const first = i === 0;
           return (
-            <li key={`${c.label}-${i}`} className={cn('flex min-w-0 items-center gap-1', !last && 'hidden shrink-0 sm:flex')}>
+            <li
+              key={`${c.label}-${i}`}
+              title={c.label}
+              className={cn(
+                'flex min-w-0 items-center gap-1',
+                // With a middle crumb the current page is a short tab label: keep it whole.
+                last ? (crumbs.length > 2 ? 'max-w-[12rem] shrink-0' : 'shrink') : 'hidden sm:flex',
+                !last && first && 'shrink-0',
+                !last && !first && 'min-w-[2.5rem] max-w-[22rem] [flex-shrink:20] sm:hidden lg:flex',
+              )}
+            >
               {c.href && !last ? (
-                <Link href={c.href} className="truncate rounded-md px-1 py-0.5 text-ink-3 transition-colors hover:text-ink">
+                <Link href={c.href} className="min-w-0 truncate rounded-md px-1 py-0.5 text-ink-3 transition-colors hover:text-ink">
                   {c.label}
                 </Link>
               ) : (
-                <span aria-current={last ? 'page' : undefined} className={cn('truncate px-1 py-0.5', last ? 'font-semibold text-ink' : 'text-ink-3')}>
+                <span aria-current={last ? 'page' : undefined} className={cn('min-w-0 truncate px-1 py-0.5', last ? 'font-semibold text-ink' : 'text-ink-3')}>
                   {c.label}
                 </span>
               )}

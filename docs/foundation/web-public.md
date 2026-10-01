@@ -44,8 +44,10 @@ Every folder has an `index.ts` barrel (`@/components/brand`, `@/components/motio
   `.text-body-l`, `.mono`, `.label`, `.graph-paper`.
 - **Dark sections**: add `data-nav-theme="dark"` to any inverse (`bg-surface-inverse`) section.
   The nav flips to paper tone while that section is under it. The footer already does this.
-- **Cursor labels**: `data-cursor="play|drag|open|register"` on any element shows a labelled
-  brand shape instead of the dot (fine pointers only). `Button` and `Card` take a `cursor` prop.
+- **Cursor labels**: `data-cursor="play|drag|open|register|question"` on any element shows a
+  labelled brand shape instead of the dot (fine pointers only). `question` is Q (the blue circle)
+  saying "Open", used on discussion cards. Add `data-cursor-yield` to a card-wide badge so the
+  buttons and links inside it keep their own cursor. `Button` and `Card` take a `cursor` prop.
 - **Opt out of the route curtain**: `data-transition="off"` on a link, or `data-no-transition`
   on a container. Use it for links that only swap a tab or use `replace`.
 - **Scrollable areas inside the page** (carousels, code, tables, dialogs) need
@@ -251,7 +253,11 @@ import { Character3D, Fit, ModelProp, SceneCanvas } from '@/components/three';
 
 - `SceneCanvas`: lazy mount (`rootMargin` 50%), frameloop paused offscreen, dpr [1, 1.75],
   PerformanceMonitor drops to low quality (no contact shadows), reduced motion = still frame,
-  no WebGL or a crash = `fallback`. Placeholder crossfades out once the scene is ready.
+  no WebGL or a crash = `fallback`. Placeholder crossfades out once the scene is ready (shaders are
+  compiled with `compileAsync` first). Use `placeholder={<SceneLoading label="..." />}` for a visible
+  loading state; after 9s without a first frame the `fallback` takes over until the scene is
+  ready. A lost WebGL context remounts the canvas (3 times, then `fallback`).
+  `preloadSceneRuntime()` fetches three.js + R3F early (the home page does it on idle).
   `studio` (default true) adds `StudioLights` (Lightformer environment, no HDR download, contact
   shadows at y -1.2). **One canvas per section**; put several characters in one canvas.
 - `Character3D shape mood="idle|happy|sleepy|surprised" position rotation scale color track bob interactive cheer={n} seed ref`:
@@ -280,7 +286,9 @@ import { Character3D, Fit, ModelProp, SceneCanvas } from '@/components/three';
   line that references all of them. Keep it if you edit globals, and give `var()` a fallback in
   your own CSS.
 - The custom cursor hides the native one (`html[data-custom-cursor]`) except on text inputs,
-  selects and iframes. Nothing to do on your side.
+  selects, iframes and anything under `[data-native-cursor]` (the Zemi player and native
+  `<video controls>`): a blended dot vanishes over moving video and can't follow into fullscreen,
+  so media keep the system cursor. Nothing to do on your side.
 - `BlocksRenderer` code blocks: Tailwind preflight resets `font-variation-settings` on bare
   `<code>`, which turns Recursive back into a proportional face. `.code code` inherits it again. If
   you render your own `<pre><code>`, put the `.mono` class on the `<code>` too.

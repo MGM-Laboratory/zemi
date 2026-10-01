@@ -1153,6 +1153,7 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
         aria-label={`${title}${isLive ? ', live' : ''}`}
         tabIndex={0}
         data-mode={mode}
+        data-native-cursor=""
         data-accent={accent}
         data-theater={theater ? 'true' : undefined}
         data-fullscreen={fullscreen ? 'true' : undefined}
@@ -1196,7 +1197,6 @@ export function ZemiPlayer(props: ZemiPlayerProps) {
         {/* Gesture surface: click to play, double click fullscreen, taps on touch. */}
         <div
           className={styles.surface}
-          data-cursor={media.paused || !media.started ? 'play' : undefined}
           onPointerUp={onSurfacePointerUp}
           onClick={onSurfaceClick}
           onDoubleClick={() => {

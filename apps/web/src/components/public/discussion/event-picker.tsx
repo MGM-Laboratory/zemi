@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Dialog, Popover } from 'radix-ui';
 import { useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
-import { discussionRequest, type EventOption } from './api';
+import { coverThumb, discussionRequest, type EventOption } from './api';
 import styles from './discussion.module.css';
 
 const date = (value: string) => new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(value));
@@ -72,7 +72,7 @@ export function EventPicker({ selected, onSelect, general = false, filter = fals
 
 function EventChoice({ event, active, onClick, featured = false }: { event: EventOption; active: boolean; onClick: () => void; featured?: boolean }) {
   return <button type="button" className={`${styles.pickerEvent} ${featured ? styles.pickerFeatured : ''} ${active ? styles.pickerActive : ''}`} onClick={onClick} aria-pressed={active}>
-    {event.cover ? <Image className={styles.pickerCover} src={event.cover.src} alt="" width={72} height={72} unoptimized /> : <span className={styles.pickerCoverFallback}>#{event.number ?? '•'}</span>}
+    {event.cover ? <Image className={styles.pickerCover} src={coverThumb(event.cover, 72)} alt="" width={72} height={72} unoptimized /> : <span className={styles.pickerCoverFallback}>#{event.number ?? '•'}</span>}
     <span className={styles.pickerEventCopy}><small>ZEMI #{event.number ?? '•'} · {date(event.startsAt)}</small><strong>{event.title}</strong><em>{event.speakers?.length ? `With ${event.speakers.join(' & ')}` : event.summary || 'A Friday seminar'}</em></span>
     {active ? <Check size={18} className={styles.pickerEventArrow} /> : <ArrowRight size={17} className={styles.pickerEventArrow} />}
   </button>;

@@ -1,10 +1,11 @@
 'use client';
 
-import { lazy, useRef } from 'react';
+import { lazy, useEffect, useRef } from 'react';
 import { Character } from '@/components/brand/character';
 import { CaslHeading } from '@/components/motion/casl-heading';
 import { gsap, useGSAP } from '@/components/motion/gsap';
-import { SceneCanvas } from '@/components/three/scene-canvas';
+import { preloadSceneRuntime, SceneCanvas } from '@/components/three/scene-canvas';
+import { SceneLoading } from '@/components/three/scene-loading';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 import { BeatStamp } from '../beat-stamp';
@@ -12,17 +13,37 @@ import { MQ, pinEnd } from '../motion-config';
 import type { StoryScene } from '../types';
 import styles from './beats.module.css';
 
-const TableScene = lazy(() => import('./table-scene'));
+const loadTableScene = () => import('./table-scene');
+const TableScene = lazy(loadTableScene);
 
 /**
  * 13:30, we say it out loud. Pinned 3D scene: the characters roll in and gather around the
  * seminar table while the camera dollies in. The models were preloaded and cached by the
- * first-visit loader, so the scene never waits for a download mid-scroll.
+ * first-visit loader (and warmed again on idle), so the scene rarely waits mid-scroll; when it
+ * does, the stage shows a loading state, then the 2D cast if it takes too long.
  */
 export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: string[] }) {
   const root = useRef<HTMLElement>(null);
   const progress = useRef(0);
   const narrow = useMediaQuery('(max-width: 1023.98px)', false);
+
+  // Fetch three.js, this scene and the models as soon as the page is idle, not when the scene
+  // nears the viewport: on a slow connection a reader can reach 13:30 before they arrive.
+  useEffect(() => {
+    const warm = () => {
+      void preloadSceneRuntime();
+      void loadTableScene().catch(() => undefined);
+      void import('@/components/three/preload-models')
+        .then((m) => m.preloadModels())
+        .catch(() => undefined);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(warm, 1200);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useGSAP(
     () => {
@@ -92,7 +113,7 @@ export function OutLoudBeat({ scene, models }: { scene: StoryScene; models: stri
             studio={{ floor: 0.001, shadowScale: 22, shadowOpacity: 0.34 }}
             rootMargin="120% 0px"
             label="Q, Hunch, Block and Bridge roll in and sit on stools around a round seminar table. Hunch talks into a microphone."
-            placeholder={null}
+            placeholder={<SceneLoading label="Pulling up the stools" />}
             fallback={
               <div className="flex items-end gap-3" aria-hidden="true">
                 <Character shape="circle" size={88} seed={0} />

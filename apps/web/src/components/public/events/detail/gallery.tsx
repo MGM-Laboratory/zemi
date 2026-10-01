@@ -163,6 +163,7 @@ function Lightbox({
                 >
                   {m.kind === 'video' && m.video ? (
                     <video
+                      data-native-cursor=""
                       className="max-h-[calc(100dvh-170px)] w-auto max-w-full rounded-[16px] bg-black"
                       poster={m.video.poster ?? undefined}
                       controls

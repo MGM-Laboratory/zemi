@@ -406,7 +406,7 @@ function renderBlock(b: RawBlock, ctx: Ctx): ReactNode {
       if (!src) return null;
       return (
         <figure className={styles.figure} style={mediaWidth(p)}>
-          <video src={src} controls preload="metadata" playsInline />
+          <video src={src} controls preload="metadata" playsInline data-native-cursor="" />
           <Caption text={p.caption} />
         </figure>
       );

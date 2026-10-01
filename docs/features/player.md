@@ -147,7 +147,9 @@ Volume and mute are remembered globally (`zemi:player:prefs`).
   by the player (brand type, lifts above the controls, works in fullscreen), glassy control bar that
   springs in with a stagger and auto-hides after 2.6s idle, loading mark after 280ms of waiting,
   error card with **Try again** (and a download link when the browser can't play the file at all),
-  autoplay that falls back to muted with an "Unmute" chip, `data-cursor="play"` on the video surface.
+  autoplay that falls back to muted with an "Unmute" chip. The player root carries
+  `data-native-cursor`: the site's custom cursor steps aside and the system cursor stays visible
+  over the video (live, VOD and recordings). Only fullscreen hides it, while idle.
 - **Touch**: tap toggles controls, double tap left or right seeks 10s (repeated taps add up, with a
   ripple), double tap center toggles fullscreen.
 - **Keyboard** (focus anywhere in the player): Space/K play, J/L 10s (L = back to live in live

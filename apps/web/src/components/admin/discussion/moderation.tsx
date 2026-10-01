@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Flag, MessageCircle, Pin, Search, UserX } from 'lucide-react';
 import Link from 'next/link';
 import type { Blocks } from '@zemi/shared';
@@ -10,6 +11,8 @@ import { useAbility } from '@/lib/admin/ability';
 import { notify } from '@/components/admin/ui/toast';
 import { Select } from '@/components/admin/ui/select';
 import { useConfirm } from '@/components/admin/ui/confirm-dialog';
+import { useDebouncedValue } from '@/lib/admin/hooks';
+import { markAdminStale } from '@/lib/admin/query-keys';
 
 type State = 'open' | 'locked' | 'archived' | 'hidden' | 'deleted';
 type Thread = { id: string; title: string; authorLabel: string; authorId: string | null; body: Blocks; bodyText: string; tags: string[]; status: State; pinned: boolean; flagged: boolean; score: number; commentCount: number; reportCount: number; createdAt: string; eventId: string | null };
@@ -36,29 +39,43 @@ export function Moderation({ id }: { id?: string }) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const reload = useCallback(async () => {
+  const qc = useQueryClient();
+  // One request per pause in typing, and only the newest answer may land (no out-of-order lists).
+  const query = useDebouncedValue(search, 250);
+  const seq = useRef(0);
+  const reload = useCallback(async (quiet = false) => {
     if (!allowed) return;
-    setLoading(true);
+    const n = ++seq.current;
+    if (!quiet) setLoading(true);
     try {
-      if (id) setDetail(await api.get<Detail>(`/admin/discussion/${id}`));
-      else if (mode === 'participants') setPeople(await api.get<PeoplePage>('/admin/discussion/identities', { status, search, page, pageSize: 20 }));
-      else setList(await api.get<Page>('/admin/discussion', { status, search, page, pageSize: 20 }));
-    } catch (e) { notify.error(e); }
-    finally { setLoading(false); }
-  }, [allowed, id, status, search, page, mode]);
+      if (id) { const d = await api.get<Detail>(`/admin/discussion/${id}`); if (n === seq.current) setDetail(d); }
+      else if (mode === 'participants') { const d = await api.get<PeoplePage>('/admin/discussion/identities', { status, search: query, page, pageSize: 20 }); if (n === seq.current) setPeople(d); }
+      else { const d = await api.get<Page>('/admin/discussion', { status, search: query, page, pageSize: 20 }); if (n === seq.current) setList(d); }
+    } catch (e) { if (n === seq.current && !quiet) notify.error(e); }
+    finally { if (n === seq.current) setLoading(false); }
+  }, [allowed, id, status, query, page, mode]);
   useEffect(() => { const timer = setTimeout(() => { void reload(); }, 0); return () => clearTimeout(timer); }, [reload]);
+  // New questions and reports show up without a reload: on focus, and every 30s while visible.
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible') void reload(true); };
+    const t = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.clearInterval(t); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [reload]);
+  const changed = useCallback(() => { void markAdminStale(qc); void reload(true); }, [qc, reload]);
 
   const changeThread = async (patch: Partial<Pick<Thread, 'status' | 'pinned' | 'flagged' | 'tags'>>) => {
     if (!detail) return;
-    try { await api.patch(`/admin/discussion/${detail.thread.id}`, patch); notify.success('Discussion updated'); void reload(); }
+    try { await api.patch(`/admin/discussion/${detail.thread.id}`, patch); notify.success('Discussion updated'); changed(); }
     catch (e) { notify.error(e); }
   };
   const changeComment = async (commentId: string, value: Comment['status']) => {
-    try { await api.patch(`/admin/discussion/comments/${commentId}`, { status: value }); notify.success('Reply updated'); void reload(); }
+    try { await api.patch(`/admin/discussion/comments/${commentId}`, { status: value }); notify.success('Reply updated'); changed(); }
     catch (e) { notify.error(e); }
   };
   const resolve = async (reportId: string, value: 'resolved' | 'dismissed') => {
-    try { await api.patch(`/admin/discussion/reports/${reportId}`, { status: value }); notify.success('Report reviewed'); void reload(); }
+    try { await api.patch(`/admin/discussion/reports/${reportId}`, { status: value }); notify.success('Report reviewed'); changed(); }
     catch (e) { notify.error(e); }
   };
   const suspend = async (identityId: string, value: 'active' | 'suspended') => {
@@ -69,7 +86,7 @@ export function Moderation({ id }: { id?: string }) {
       destructive: value === 'suspended',
     });
     if (!approved) return;
-    try { await api.patch(`/admin/discussion/identities/${identityId}`, { status: value }); notify.success('Participant updated'); void reload(); }
+    try { await api.patch(`/admin/discussion/identities/${identityId}`, { status: value }); notify.success('Participant updated'); changed(); }
     catch (e) { notify.error(e); }
   };
   const changeState = async (value: State) => {

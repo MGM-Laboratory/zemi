@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { PURPOSE_ASPECT, type Asset, type AssetPurpose, type ImageRef } from '@zemi/shared';
 import { Crop as CropIcon, RefreshCw, Trash2, TriangleAlert } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -9,6 +10,7 @@ import { errorMessage, isAbortError } from '@/lib/admin/api';
 import { cn } from '@/lib/admin/cn';
 import { formatBytes } from '@/lib/admin/format';
 import { useAssetPoll } from '@/lib/admin/hooks';
+import { refreshAssetUsers } from '@/lib/admin/query-keys';
 import { canEditAsset, recropAsset, uploadAsset } from '@/lib/admin/upload';
 import { Character } from '../characters/character';
 import { Button, IconButton } from '../ui/button';
@@ -63,6 +65,7 @@ const ACCEPT = { 'image/jpeg': [], 'image/png': [], 'image/webp': [], 'image/avi
  * <ImageUploadCrop purpose="event-cover" value={field.value} initialImage={event?.cover} onChange={(id) => field.onChange(id)} />
  */
 export function ImageUploadCrop({ value, onChange, purpose, initialImage, alt, maxSize = 40 * 1024 * 1024, readOnly: ro, round: roundProp, className, hint, id, aspect: aspectProp }: ImageUploadCropProps) {
+  const qc = useQueryClient();
   const readOnly = useReadOnly(ro);
   const aria = useFieldControlProps({ id });
   const aspect = aspectProp !== undefined ? aspectProp : PURPOSE_ASPECT[purpose];
@@ -188,6 +191,9 @@ export function ImageUploadCrop({ value, onChange, purpose, initialImage, alt, m
       setLocalPreview(null);
       setPhase({ k: 'idle' });
       onChange(done.id, done);
+      // Same asset id, new pixels: the form isn't dirty, so nothing else would refetch. Headers,
+      // lists and the overview still hold the old image revision until told.
+      void refreshAssetUsers(qc);
     } catch (err) {
       setPhase({ k: 'failed', message: errorMessage(err) });
     }

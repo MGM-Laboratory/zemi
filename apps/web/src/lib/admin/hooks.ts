@@ -10,7 +10,7 @@ import {
 import type { Asset } from '@zemi/shared';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { adminFetch, errorMessage, isAbortError, type ApiError } from './api';
-import { adminKeys, invalidateKeys } from './query-keys';
+import { adminKeys, invalidateKeys, markAdminStale } from './query-keys';
 
 /* ------------------------------------------------------------------ timing */
 
@@ -227,6 +227,15 @@ export function registerAdminNotifier(n: Notifier | null) {
 }
 
 /**
+ * True while cached data is being revalidated right after mount. Editors that seed a form once
+ * (speakers, publications, site settings) wait for this to settle, so they never open with the
+ * values from an earlier visit while the real ones are one request away.
+ */
+export function isRevalidatingOnMount(q: { data: unknown; isFetching: boolean; isFetchedAfterMount: boolean }): boolean {
+  return q.data !== undefined && q.isFetching && !q.isFetchedAfterMount;
+}
+
+/**
  * `useMutation` with admin conventions: typed ApiError, invalidation, success/error toasts.
  *
  * @example
@@ -246,6 +255,10 @@ export function useAdminMutation<TData = unknown, TVars = void, TContext = unkno
     onSuccess: async (data, vars, onMutateResult, ctx) => {
       const keys = typeof invalidate === 'function' ? invalidate(data, vars) : invalidate;
       if (keys?.length) void invalidateKeys(qc, keys);
+      // Entities embed each other (an event shows its speakers, venue and papers; a speaker its
+      // talks). The keys above refetch what is on screen now; everything else in the admin cache
+      // is marked stale so it refetches the moment it is shown again, instead of after a reload.
+      void markAdminStale(qc);
       if (successMessage) {
         const msg = typeof successMessage === 'function' ? successMessage(data, vars) : successMessage;
         notifier?.success(msg, { celebrate });

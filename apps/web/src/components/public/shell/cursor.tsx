@@ -5,16 +5,22 @@ import { SHAPE_COLORS, SHAPE_PATHS_46, type ShapeName } from '@zemi/shared';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import styles from './shell.module.css';
 
-type CursorKind = 'play' | 'drag' | 'open' | 'register';
+type CursorKind = 'play' | 'drag' | 'open' | 'register' | 'question';
 
 const BADGE: Record<CursorKind, { shape: ShapeName; label: string; ink: boolean }> = {
   play: { shape: 'circle', label: 'Play', ink: false },
   drag: { shape: 'square', label: 'Drag', ink: true },
   open: { shape: 'arch', label: 'Open', ink: false },
   register: { shape: 'triangle', label: 'Join', ink: false },
+  // Discussion posts: Q (the blue question) says "Open".
+  question: { shape: 'circle', label: 'Open', ink: false },
 };
 
 const INTERACTIVE = 'a[href], button:not(:disabled), [role="button"], [role="link"], label[for], summary, [data-cursor]';
+/** Controls that, inside a `data-cursor-yield` area, keep their own cursor instead of the area's badge. */
+const CONTROL = 'a[href], button:not(:disabled), [role="button"], [role="link"], label[for], summary, input, select, textarea';
+/** Media players keep the system cursor: the dot blends away over moving video and can't follow into fullscreen. */
+const NATIVE = '[data-native-cursor]';
 const TEXTY = 'input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]), textarea, select, [contenteditable]:not([contenteditable="false"])';
 
 /**
@@ -26,8 +32,9 @@ const TEXTY = 'input:not([type="checkbox"]):not([type="radio"]):not([type="range
  * the blend, which is how the dot used to stay white everywhere.
  *
  * The follow is distance-adaptive: long jumps catch up fast, small moves glide, so the cursor
- * feels light instead of dragging a weight. Elements with `data-cursor="play|drag|open|register"`
- * show a labelled brand shape instead. Text inputs keep the native cursor.
+ * feels light instead of dragging a weight. Elements with `data-cursor="play|drag|open|register|question"`
+ * show a labelled brand shape instead (add `data-cursor-yield` to let inner buttons keep theirs).
+ * Text inputs and media players (`data-native-cursor`) keep the native cursor.
  */
 export function Cursor() {
   const fine = useMediaQuery('(hover: hover) and (pointer: fine)');
@@ -80,14 +87,30 @@ function CursorImpl() {
       if (!raf) raf = requestAnimationFrame(loop);
     };
 
+    let native = false;
+    const setNative = (on: boolean) => {
+      if (on === native) return;
+      native = on;
+      // Inside a media player the system cursor takes over (see [data-native-cursor] in public.css).
+      const v = on ? 'false' : shown ? 'true' : 'false';
+      root.dataset.visible = v;
+      dot.dataset.visible = v;
+    };
+
     const setState = (target: Element | null) => {
+      setNative(!!target?.closest(NATIVE));
       const texty = target?.closest(TEXTY);
       if (texty) {
         root.dataset.state = 'text';
         dot.dataset.state = 'text';
         return;
       }
-      const labelled = target?.closest<HTMLElement>('[data-cursor]');
+      let labelled = target?.closest<HTMLElement>('[data-cursor]');
+      // A card-wide badge (data-cursor-yield) steps aside for the buttons inside the card.
+      if (labelled?.hasAttribute('data-cursor-yield')) {
+        const control = target?.closest(CONTROL);
+        if (control && control !== labelled && labelled.contains(control)) labelled = null;
+      }
       const k = labelled?.dataset.cursor as CursorKind | undefined;
       if (k && k in BADGE) {
         setKind(k);
@@ -108,8 +131,10 @@ function CursorImpl() {
         shown = true;
         x = tx;
         y = ty;
-        root.dataset.visible = 'true';
-        dot.dataset.visible = 'true';
+        if (!native) {
+          root.dataset.visible = 'true';
+          dot.dataset.visible = 'true';
+        }
         place();
       }
       kick();

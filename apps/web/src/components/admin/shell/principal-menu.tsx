@@ -31,13 +31,13 @@ export function PrincipalMenu({ onLogout, loggingOut, onShowShortcuts }: Princip
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="group relative flex items-center gap-2 rounded-full p-0.5 transition hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus sm:pr-3"
+          className="group relative flex shrink-0 items-center gap-2 rounded-full p-0.5 transition hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-focus sm:pr-3"
           aria-label={`Account: ${p.name}`}
         >
           <Avatar name={p.name} size={34} variant="shape" shape={p.kind === 'superadmin' ? 'triangle' : undefined} />
           <span className="hidden min-w-0 text-left leading-tight sm:block">
             <span className="block max-w-[10rem] truncate text-sm font-semibold text-ink">{p.name}</span>
-            <span className={cn('block text-xs', soon ? 'font-medium text-red-600' : 'text-ink-3')}>
+            <span className={cn('block max-w-[10rem] truncate text-xs whitespace-nowrap', soon ? 'font-medium text-red-600' : 'text-ink-3')}>
               {p.kind === 'superadmin' ? 'Every key' : `Admin${adminLeft ? ` · ${adminLeft} left` : ''}`}
             </span>
           </span>
