@@ -15,6 +15,7 @@ import { StatusChip } from '@/components/admin/ui/status-chip';
 import { SegmentedControl } from '@/components/admin/ui/toggles';
 import { EMAIL_STATUS_LABEL, formatPhone, MODE_LABEL, shortName, SOURCE_LABEL, whatsappUrl } from '../lib';
 import { useRegistrationActions } from '../queries';
+import { RegistrationTicket } from './registration-ticket';
 
 const REGISTERED_HOW: Record<RegistrationRow['source'], string> = {
   web: 'Signed up on the website',
@@ -50,7 +51,7 @@ export function RegistrationSheet({
     <Sheet
       open={open}
       onOpenChange={(o) => !o && onClose()}
-      width="md"
+      width="lg"
       title={r ? r.fullName : 'Registration'}
       description={r ? `${r.ticketCode} · ${MODE_LABEL[r.attendanceMode]}` : undefined}
     >
@@ -277,6 +278,8 @@ function SheetBody({ r, eventId, perms, stale, onDeleted }: { r: RegistrationRow
           />
         )}
       </section>
+
+      <RegistrationTicket eventId={eventId} registration={r} />
 
       {/* History */}
       <section aria-labelledby="reg-history" className="space-y-3">

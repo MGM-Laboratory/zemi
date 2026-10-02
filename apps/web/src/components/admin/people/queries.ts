@@ -11,6 +11,7 @@ import type {
   RegistrationStats,
   ResendResult,
   RosterRow,
+  Ticket,
 } from '@zemi/shared';
 import { adminFetch, api } from '@/lib/admin/api';
 import { notify } from '@/components/admin/ui/toast';
@@ -44,6 +45,14 @@ export function useRegistrationList(eventId: string, params: RegistrationListPar
     queryFn: ({ signal }) =>
       api.get<Paginated<RegistrationRow>>(`/admin/events/${eventId}/registrations`, { ...params, search: params.search || undefined }, signal),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useRegistrationTicket(eventId: string, registrationId: string, enabled = true) {
+  return useQuery({
+    queryKey: peopleKeys.ticket(eventId, registrationId),
+    queryFn: ({ signal }) => api.get<Ticket>(`/admin/registrations/${registrationId}/ticket`, undefined, signal),
+    enabled: enabled && Boolean(registrationId),
   });
 }
 

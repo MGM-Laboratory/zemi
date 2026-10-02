@@ -219,14 +219,10 @@ export async function renderTicketPng(ticket: Ticket): Promise<Blob> {
   ctx.strokeStyle = '#ececea';
   ctx.lineWidth = 2;
   ctx.stroke();
-  try {
-    const qr = await loadImage(`/api/v1/public/tickets/${encodeURIComponent(ticket.token)}/qr.png`);
-    ctx.drawImage(qr, qrX, y, qrSize, qrSize);
-  } catch {
-    ctx.fillStyle = INK3;
-    ctx.font = `600 30px ${body}`;
-    ctx.fillText('Open your ticket link to show the QR', qrX + 20, y + qrSize / 2);
-  }
+  // A ticket image without its scannable QR cannot be used at the door. Let the caller show
+  // an error and retry instead of quietly downloading an incomplete image.
+  const qr = await loadImage(`/api/v1/public/tickets/${encodeURIComponent(ticket.token)}/qr.png`);
+  ctx.drawImage(qr, qrX, y, qrSize, qrSize);
   y += qrSize + 90;
 
   // Name + code.

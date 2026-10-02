@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Patch, Post, Res } from '@nestjs/common';
+import { Controller, Delete, Get, Header, HttpCode, Patch, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   adminRegistrationInput,
@@ -18,6 +18,7 @@ import {
   type RegistrationRow,
   type RegistrationStats,
   type ResendResult,
+  type Ticket,
 } from '@zemi/shared';
 import type { Response } from 'express';
 import type { z } from 'zod';
@@ -158,6 +159,12 @@ export class AdminRegistrationsController {
     @Ip() ip: string | null,
   ): Promise<RegistrationRow> {
     return this.regs.create(id, body, actorOf(auth, ip));
+  }
+
+  @Get('registrations/:id/ticket')
+  @Header('Cache-Control', 'private, no-store')
+  getTicket(@UuidParam() id: string, @CurrentAuth() auth: RequestAuth): Promise<Ticket> {
+    return this.regs.ticketFor(auth.ability, id);
   }
 
   @Post('events/:id/registrations/bulk')

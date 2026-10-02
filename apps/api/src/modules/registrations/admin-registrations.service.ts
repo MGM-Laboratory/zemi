@@ -14,6 +14,7 @@ import {
   type RegistrationStats,
   type registrationUpdateInput,
   type ResendResult,
+  type Ticket,
 } from '@zemi/shared';
 import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 import type { z } from 'zod';
@@ -94,6 +95,12 @@ export class AdminRegistrationsService {
     if (!reg) throw notFound("We couldn't find that registration.");
     const event = await this.eventFor(ability, reg.eventId, action);
     return { reg, event };
+  }
+
+  /** The same ticket the registrant sees, available only to admins who can view this event's registrations. */
+  async ticketFor(ability: Ability, id: string): Promise<Ticket> {
+    const { reg, event } = await this.registrationFor(ability, id, 'registrations.view');
+    return this.ctx.ticket(reg, event);
   }
 
   whereFor(eventId: string, q: ListFilters): SQL {

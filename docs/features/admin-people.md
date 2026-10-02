@@ -65,7 +65,12 @@ screen (`viewportFit: cover`, dark theme color).
   - Bulk actions are gated by permission: check in and undo (`attendance.manage`); resend, cancel, restore and
     delete (`registrations.manage`). Destructive ones confirm and say what happens.
 - **Detail sheet:** status, returning badge, check-in toggle, resend, restore, edit details (409 on the email shows
-  inline), history timeline, notes (1000 chars), and a careful zone for cancel and delete.
+  inline), history timeline, notes (1000 chars), and a careful zone for cancel and delete. It loads the selected
+  registrant's actual ticket from `GET /admin/registrations/:id/ticket` (scoped to `registrations.view`), shows the
+  branded QR card, and lets admins download its PNG to attach manually in WhatsApp. The message below is filled with
+  the person's name, ticket code, event time and location, and private ticket link; it can be copied or opened in
+  WhatsApp with the text prefilled. Cancelled registrations show a void ticket and cancellation text, and cannot
+  download a valid ticket image.
 - **Add registrant:** a manual add or a walk-in, "Check them in now", "Email them the ticket", and friendly handling
   of duplicates.
 - **Export** (`registrations.export`): XLSX or CSV of what you see (current filters), or everyone including

@@ -46,7 +46,7 @@ export function RegistrationsTab() {
             <h2 id="reg-list-title" className="font-display text-xl font-extrabold tracking-[-0.02em]">
               Everyone on the list
             </h2>
-            <p className="text-sm text-ink-3">Click a row for details, notes and history. Select rows for bulk actions.</p>
+            <p className="text-sm text-ink-3">Click a row for its ticket, WhatsApp message, details and history. Select rows for bulk actions.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {canExport ? <PrintSheetDialog eventId={id} inPersonCount={stats.data?.inPerson ?? event.counts.inPerson} totalCount={stats.data?.total ?? event.counts.registrations} hybrid={event.mode === 'hybrid'} /> : null}

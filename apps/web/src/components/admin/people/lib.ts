@@ -13,6 +13,7 @@ export const peopleKeys = {
   list: (id: string, params?: Record<string, unknown>) => adminKeys.events.part(id, 'registrations', params),
   lists: (id: string) => adminKeys.events.part(id, 'registrations'),
   stats: (id: string) => adminKeys.events.part(id, 'registration-stats'),
+  ticket: (eventId: string, registrationId: string) => adminKeys.events.part(eventId, 'registration-ticket', { registrationId }),
   attendance: (id: string) => adminKeys.events.part(id, 'attendance'),
   roster: (id: string, params?: Record<string, unknown>) => adminKeys.events.part(id, 'roster', params),
   emails: (id: string, params?: Record<string, unknown>) => adminKeys.events.part(id, 'emails', params),
