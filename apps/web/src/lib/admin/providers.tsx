@@ -15,6 +15,9 @@ function applyAdminDefaults(client: QueryClient) {
     // other admins, the stream, the door scanner or the public site changed meanwhile. Admin
     // payloads are small; a stale screen that needs a manual reload is the bigger cost.
     staleTime: 0,
+    // Some admin screens override staleTime for lookups. Still verify cached data whenever a
+    // screen opens, so edits from another session show up without a manual page refresh.
+    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     // Never retry 4xx (403, 404, validation). Retry network/5xx twice.

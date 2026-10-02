@@ -1,7 +1,7 @@
 'use client';
 
 import { PerformanceMonitor } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { SceneContext } from './scene-context';
 import { StudioLights, type StudioLightsProps } from './studio';
@@ -30,21 +30,32 @@ const COMPILE_CAP_MS = 4000;
  * (off the main thread where the browser supports KHR_parallel_shader_compile, so the first
  * visible frame doesn't stall the scroll) and a frame or two drew.
  */
-function ReadySignal({ onReady }: { onReady?: () => void }) {
+function ReadySignal({ onReady, visible }: { onReady?: () => void; visible: boolean }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
+  const invalidate = useThree((s) => s.invalidate);
+  const frames = useRef(0);
+  const armed = useRef(false);
+  useFrame(() => {
+    if (!armed.current) return;
+    frames.current += 1;
+    if (frames.current >= 2) {
+      armed.current = false;
+      onReady?.();
+    } else {
+      // A reduced-motion canvas uses frameloop="demand" and needs one more real frame.
+      invalidate();
+    }
+  });
   useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
-    let a = 0;
-    let b = 0;
     const fire = () => {
       if (cancelled) return;
-      a = requestAnimationFrame(() => {
-        b = requestAnimationFrame(() => {
-          if (!cancelled) onReady?.();
-        });
-      });
+      frames.current = 0;
+      armed.current = true;
+      invalidate();
     };
     const compile = (gl as unknown as { compileAsync?: (s: unknown, c: unknown) => Promise<unknown> }).compileAsync;
     if (typeof compile === 'function') {
@@ -64,10 +75,9 @@ function ReadySignal({ onReady }: { onReady?: () => void }) {
     } else fire();
     return () => {
       cancelled = true;
-      cancelAnimationFrame(a);
-      cancelAnimationFrame(b);
+      armed.current = false;
     };
-  }, [gl, scene, camera, onReady]);
+  }, [gl, scene, camera, invalidate, onReady, visible]);
   return null;
 }
 
@@ -139,7 +149,7 @@ export default function SceneCanvasImpl({
           <Suspense fallback={null}>
             {studio ? <StudioLights {...(typeof studio === 'object' ? studio : null)} /> : null}
             {children}
-            <ReadySignal onReady={onReady} />
+            <ReadySignal onReady={onReady} visible={visible} />
           </Suspense>
         </SceneContext.Provider>
       </PerformanceMonitor>
