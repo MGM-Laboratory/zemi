@@ -582,6 +582,8 @@ export const discussionThreads = pgTable('discussion_threads', {
   authorId: uuid('author_id').references(() => discussionIdentities.id, { onDelete: 'set null' }),
   authorLabel: text('author_label').notNull(),
   eventId: uuid('event_id').references(() => events.id, { onDelete: 'set null' }),
+  /** Optional: the speaker on that event's lineup the question is for. */
+  speakerId: uuid('speaker_id').references(() => speakers.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   body: jsonb('body').$type<Blocks>().notNull(),
   bodyText: text('body_text').notNull(),
@@ -598,6 +600,7 @@ export const discussionThreads = pgTable('discussion_threads', {
 }, (t) => [
   index('discussion_threads_created_idx').on(t.createdAt),
   index('discussion_threads_event_idx').on(t.eventId, t.createdAt),
+  index('discussion_threads_speaker_idx').on(t.speakerId),
   index('discussion_threads_status_idx').on(t.status, t.reportCount),
 ]);
 

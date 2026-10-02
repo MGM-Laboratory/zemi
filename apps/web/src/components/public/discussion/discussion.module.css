@@ -310,3 +310,67 @@
 @media(max-width:520px) { .feedTools { align-items:stretch; } .feedTools .sort { width:100%; justify-content:space-between; margin:0; } .eventPickerPanel { max-height:min(77dvh,610px); } .composePageHeader h1 { font-size:3.5rem; } .composeHeaderMark { display:none; } .composeField { padding:23px 0 28px; } .composeField .editor { min-height:230px; } .selectedEventPreview { gap:10px; padding:9px; } .selectedEventPreview img,.selectedEventPreview > span { width:54px; height:64px; } .selectedEventPreview strong { font-size:14px; } .selectedEventPreview p { font-size:11px; } .composeSubmit .primaryButton { width:100%; } .confirmPanel { top:auto; bottom:0; left:0; width:100%; border-radius:23px 23px 0 0; transform:none; animation:confirmMobileIn .24s cubic-bezier(.2,.8,.2,1); } .confirmActions { flex-direction:column-reverse; padding-bottom:max(20px,env(safe-area-inset-bottom)); } .confirmActions button { width:100%; } }
 @keyframes confirmMobileIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 @media(prefers-reduced-motion:reduce) { .composePage *, .eventPickerPanel, .discussionSelectPanel, .confirmOverlay, .confirmPanel { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
+
+/* Speaker picker: who in the event the question is for. */
+.speakerPicker { max-width:760px; }
+.speakerOptions { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:10px; }
+.speakerOption { position:relative; min-width:0; display:flex; align-items:flex-start; gap:13px; padding:14px 40px 14px 14px; border:1px solid #d8d8d2; border-radius:17px; background:#fff; color:#0e1116; text-align:left; cursor:pointer; transition:border-color .2s,background .2s,transform .2s,box-shadow .2s; }
+.speakerOption:hover { border-color:#3a6dc5; transform:translateY(-2px); box-shadow:0 9px 22px #315da612; }
+.speakerOption:focus-visible { outline:3px solid #3a6dc5; outline-offset:3px; }
+.speakerOptionActive { border-color:#3a6dc5; background:#f2f6fd; box-shadow:0 0 0 2px #3a6dc533; }
+.speakerEveryone { width:56px; height:56px; flex:none; display:grid; place-items:center; border-radius:50% 50% 50% 14%; background:#e2f1ea; color:#0b6b45; transform:rotate(-8deg); }
+.speakerFace { position:relative; flex:none; display:inline-flex; }
+.speakerLiveDot { position:absolute; right:0; bottom:2px; width:13px; height:13px; border-radius:50%; background:#e5484d; box-shadow:0 0 0 3px #fff; animation:blink 1.6s ease-in-out infinite; }
+.speakerOptionCopy { min-width:0; display:flex; flex:1; flex-direction:column; gap:3px; }
+.speakerOptionCopy small { color:#2f5aa6; font:700 10px/1.3 var(--font-mono); letter-spacing:.09em; text-transform:uppercase; }
+.speakerOptionCopy small b,.speakerPreviewCopy small b { font-weight:700; }
+.speakerOptionCopy small b[data-timing=now],.speakerPreviewCopy small b[data-timing=now] { color:#d13438; }
+.speakerOptionCopy small b[data-timing=next],.speakerPreviewCopy small b[data-timing=next] { color:#0b6b45; }
+.speakerOptionCopy small b[data-timing=done],.speakerPreviewCopy small b[data-timing=done] { color:#8a9296; }
+.speakerOptionCopy strong { font:800 16px/1.2 var(--font-display); letter-spacing:-.02em; }
+.speakerOptionCopy em { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#6b7280; font:400 12px var(--font-body); }
+.speakerTalk { display:-webkit-box; overflow:hidden; -webkit-line-clamp:2; -webkit-box-orient:vertical; margin-top:4px; color:#0e1116; font:600 13px/1.35 var(--font-body); }
+.speakerTalk svg,.speakerSlot svg { display:inline; vertical-align:-1px; color:#3a6dc5; }
+.speakerSlot { color:#6b7280; font:600 11px var(--font-mono); }
+.speakerCheck { position:absolute; top:14px; right:14px; color:#3a6dc5; }
+.speakerPreview { display:flex; align-items:flex-start; gap:18px; margin-top:14px; padding:18px; border:1px solid #d7e3f6; border-radius:20px; background:linear-gradient(125deg,#ecf1fa 0%,#fff 70%); animation:rise .3s both; }
+.speakerPreviewCopy { min-width:0; flex:1; display:flex; flex-direction:column; gap:5px; }
+.speakerPreviewCopy small { color:#2f5aa6; font:700 10px var(--font-mono); letter-spacing:.1em; }
+.speakerPreviewCopy strong { font:900 clamp(1.3rem,2.2vw,1.7rem)/1.1 var(--font-display); letter-spacing:-.04em; }
+.speakerPreviewCopy strong span { color:#6b7280; font-weight:600; font-size:.7em; letter-spacing:0; }
+.speakerHeadline { margin:0; color:#3b4150; font-size:14px; line-height:1.45; }
+.speakerMeta { display:flex; align-items:center; gap:6px; margin:0; color:#6b7280; font-size:12px; }
+.speakerMeta svg { color:#3a6dc5; flex:none; }
+.speakerPreviewTalk { display:flex; gap:7px; align-items:flex-start; margin:4px 0 0; color:#0e1116; font:700 15px/1.4 var(--font-body); }
+.speakerPreviewTalk svg { flex:none; margin-top:3px; color:#3a6dc5; }
+.speakerProfileLink { flex:none; display:inline-flex; align-items:center; gap:5px; padding:8px 12px; border-radius:999px; background:#fff; color:#3a6dc5; font:700 13px var(--font-body); text-decoration:none; border:1px solid #d7e3f6; }
+.speakerProfileLink:hover { background:#e5edf9; }
+.speakerChip { display:inline-flex; align-items:center; gap:8px; min-width:0; max-width:100%; margin-top:12px; padding:4px 12px 4px 4px; border-radius:999px; background:#f2f6fd; color:#3b4150; font-size:13px; }
+.speakerChip > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.speakerChip strong { color:#0e1116; }
+.speakerChip em { color:#6b7280; font-style:normal; }
+.selectedLineup { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.selectedLineup > span:first-child { display:flex; }
+.selectedLineup > span:first-child > span + span { margin-left:-8px; }
+.pickerLineup { display:flex; align-items:center; gap:7px; margin-top:3px; color:#6b7280; font:400 12px var(--font-body); min-width:0; }
+.pickerLineup > span:first-child { display:flex; flex:none; }
+.pickerLineup > span:first-child > span + span { margin-left:-7px; }
+.pickerLineup > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.speakerFilters { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.speakerFilters button { width:auto !important; display:inline-flex !important; align-items:center; gap:7px; padding:4px 11px 4px 4px !important; border:1px solid #d8d8d2 !important; border-radius:999px !important; background:#fff !important; font-size:12px; }
+.speakerFilters button[aria-pressed=true] { border-color:#3a6dc5 !important; background:#f2f6fd !important; color:#2f5aa6; font-weight:700; }
+.speakerFilters button.speakerFilterAll { padding:7px 12px !important; }
+.speakerDetail { display:flex; align-items:center; gap:14px; margin:-16px 0 32px; padding:16px 18px; border:1px solid #d7e3f6; border-radius:16px; background:#f7faff; color:#0e1116; text-decoration:none; transition:transform .2s,border-color .2s; }
+.speakerDetail:hover { transform:translateY(-2px); border-color:#3a6dc5; }
+.speakerDetail > span:nth-child(2) { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.speakerDetail small { color:#2f5aa6; font:700 10px var(--font-mono); letter-spacing:.08em; }
+.speakerDetail strong { font-size:17px; }
+.speakerDetail em { color:#6b7280; font-style:normal; font-size:13px; }
+.speakerDetail > svg { margin-left:auto; flex:none; color:#3a6dc5; }
+.speakerPickerCompact .speakerOptions { grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:8px; }
+.speakerPickerCompact .speakerOption { padding:10px 34px 10px 10px; border-radius:14px; gap:10px; }
+.speakerPickerCompact .speakerEveryone { width:44px; height:44px; }
+.speakerPickerCompact .speakerOptionCopy strong { font-size:14px; }
+.speakerPickerCompact .speakerOptionCopy em,.speakerPickerCompact .speakerOptionCopy > span:not(.speakerTalk) { display:none; }
+.speakerPickerCompact .speakerTalk { font-size:12px; -webkit-line-clamp:1; }
+@media(max-width:600px) { .speakerOptions { grid-template-columns:minmax(0,1fr); } .speakerPreview { flex-wrap:wrap; gap:12px; padding:14px; } .speakerPreview > span:first-child { width:64px !important; height:64px !important; } .speakerPreviewCopy { flex-basis:100%; order:3; } .speakerProfileLink { margin-left:auto; align-self:flex-start; } }

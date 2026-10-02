@@ -43,6 +43,13 @@
       "when": 1790740000000,
       "tag": "0005_bumpers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790850000000,
+      "tag": "0006_discussion_speaker",
+      "breakpoints": true
     }
   ]
 }

@@ -19,9 +19,10 @@ const challenge = z.string().max(2048).optional();
 const name = z.string().trim().min(2).max(40).regex(/^[\p{L}\p{N}][\p{L}\p{N} .'-]*$/u, 'Use letters, numbers, spaces, apostrophes or periods.');
 const tags = z.array(z.string().trim().min(2).max(24).regex(/^[\p{L}\p{N} -]+$/u)).max(5).default([]);
 const body = z.array(z.record(z.string(), z.unknown())).min(1).max(150);
-const postInput = z.object({ title: z.string().trim().min(8).max(180), body, tags, eventId: z.uuid().nullable().optional(), challenge });
+const postInput = z.object({ title: z.string().trim().min(8).max(180), body, tags, eventId: z.uuid().nullable().optional(), speakerId: z.uuid().nullable().optional(), challenge });
 const listInput = z.object({
   search: z.string().trim().max(100).optional(), eventId: z.union([z.uuid(), z.literal('general')]).optional(),
+  speakerId: z.uuid().optional(),
   tag: z.string().max(24).optional(), sort: z.enum(['hot', 'new', 'top']).default('hot'),
   page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(30).default(15),
 });
@@ -66,6 +67,11 @@ export class DiscussionPublicController {
   async events(@Req() req: Request, @Query('search') search?: string) {
     await this.discussion.requireIdentity(cookie(req));
     return this.discussion.eventChoices((search ?? '').slice(0, 100));
+  }
+  @Get('events/:id')
+  async event(@Req() req: Request, @UuidParam() id: string) {
+    await this.discussion.requireIdentity(cookie(req));
+    return this.discussion.eventChoice(id);
   }
   @Get('threads')
   async list(@Req() req: Request, @ZodQuery(listInput) q: z.infer<typeof listInput>) {

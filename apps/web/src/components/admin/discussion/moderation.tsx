@@ -18,7 +18,7 @@ type State = 'open' | 'locked' | 'archived' | 'hidden' | 'deleted';
 type Thread = { id: string; title: string; authorLabel: string; authorId: string | null; body: Blocks; bodyText: string; tags: string[]; status: State; pinned: boolean; flagged: boolean; score: number; commentCount: number; reportCount: number; createdAt: string; eventId: string | null };
 type Comment = { id: string; authorLabel: string; authorId: string | null; body: string; status: 'visible' | 'hidden' | 'deleted'; score: number; reportCount: number; createdAt: string };
 type Report = { id: string; targetType: 'thread' | 'comment'; targetId: string; reason: string; note: string | null; status: 'open' | 'resolved' | 'dismissed'; createdAt: string };
-type Detail = { thread: Thread; comments: Comment[]; reports: Report[] };
+type Detail = { thread: Thread; comments: Comment[]; reports: Report[]; speaker?: { id: string; fullName: string; slug: string } | null };
 type Page = { items: Thread[]; total: number; page: number; pageSize: number };
 type Participant = { id: string; name: string; tag: string; status: 'active' | 'suspended'; createdAt: string };
 type PeoplePage = { items: Participant[]; total: number; page: number; pageSize: number };
@@ -112,7 +112,7 @@ export function Moderation({ id }: { id?: string }) {
           <section className="rounded-3xl border border-line bg-white p-5 sm:p-8">
             <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-ink-3"><span>{detail.thread.status}</span><span>·</span><span>{date(detail.thread.createdAt)}</span><span>·</span><span>{detail.thread.reportCount} reports</span>{detail.thread.flagged && <span className="text-red-600">· Flagged for review</span>}</div>
             <h2 className="mt-4 font-display text-3xl font-black tracking-tight sm:text-4xl">{detail.thread.title}</h2>
-            <p className="mt-2 text-sm text-ink-3">by {detail.thread.authorLabel} · {detail.thread.score} votes · {detail.thread.commentCount} replies</p>
+            <p className="mt-2 text-sm text-ink-3">by {detail.thread.authorLabel} · {detail.thread.score} votes · {detail.thread.commentCount} replies{detail.speaker ? <> · for <strong className="text-ink">{detail.speaker.fullName}</strong></> : null}</p>
             <div className="mt-7 border-t border-line pt-6"><BlocksRenderer blocks={detail.thread.body} /></div>
             <div className="mt-5 flex flex-wrap gap-2">{detail.thread.tags.map(tag => <span key={tag} className="rounded-full bg-surface-muted px-3 py-1 text-xs font-bold">#{tag}</span>)}</div>
           </section>

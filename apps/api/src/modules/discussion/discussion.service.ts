@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
-import type { Blocks, Principal } from '@zemi/shared';
+import type { Blocks, ImageRef, Principal } from '@zemi/shared';
 import { AppConfig } from '../../config/app-config.js';
 import { DB, type Db } from '../../db/client.js';
-import { auditLogs, discussionComments as comments, discussionIdentities as identities, discussionReactions as reactions, discussionReports as reports, discussionThreads as threads, discussionVotes as votes, events, eventSpeakers, speakers } from '../../db/schema.js';
+import { auditLogs, discussionComments as comments, discussionIdentities as identities, discussionReactions as reactions, discussionReports as reports, discussionThreads as threads, discussionVotes as votes, events, eventSpeakers, rundownItems, speakers } from '../../db/schema.js';
 import { blocksToPlainText } from '../../common/blocks.js';
 import { badRequest, conflict, forbidden, notFound, unauthorized } from '../../common/errors.js';
 import { RateLimitService } from '../../common/rate-limit.service.js';
@@ -19,6 +19,15 @@ type Identity = typeof identities.$inferSelect;
 type Target = 'thread' | 'comment';
 const label = (r: Identity) => `${r.name} #${r.tag}`;
 const visible = ['open', 'locked', 'archived'] as const;
+
+/** A speaker on an event's lineup, as the discussion shows it (picker, cards, live questions). */
+export interface DiscussionSpeaker {
+  id: string; slug: string; fullName: string; nickname: string | null; headline: string | null;
+  avatar: ImageRef | null; role: string; organization: string | null; position: string | null;
+  talkTitle: string | null;
+  /** Their slot in the rundown (Jakarta wall clock), when the rundown names them. */
+  slot: { time: string; endTime: string | null; agenda: string } | null;
+}
 
 @Injectable()
 export class DiscussionService {
@@ -100,17 +109,76 @@ export class DiscussionService {
     });
   }
 
+  /**
+   * The public lineup of each event (lineup order), with avatars, talk titles and rundown slots.
+   * Draft speakers are left out, like everywhere on the public site.
+   */
+  async lineups(eventIds: string[]): Promise<Map<string, DiscussionSpeaker[]>> {
+    const out = new Map<string, DiscussionSpeaker[]>();
+    const ids = [...new Set(eventIds)];
+    if (!ids.length) return out;
+    const [rows, slots] = await Promise.all([
+      this.db.select({
+        eventId: eventSpeakers.eventId, id: speakers.id, slug: speakers.slug, fullName: speakers.fullName, nickname: speakers.nickname,
+        headline: speakers.headline, avatarAssetId: speakers.avatarAssetId, role: eventSpeakers.role,
+        organization: sql<string | null>`coalesce(${eventSpeakers.organization}, ${speakers.defaultOrganization})`,
+        position: sql<string | null>`coalesce(${eventSpeakers.position}, ${speakers.defaultPosition})`,
+        talkTitle: eventSpeakers.talkTitle,
+      }).from(eventSpeakers).innerJoin(speakers, eq(speakers.id, eventSpeakers.speakerId))
+        .where(and(inArray(eventSpeakers.eventId, ids), sql`${speakers.visibility} <> 'draft'`))
+        .orderBy(asc(eventSpeakers.eventId), asc(eventSpeakers.sortOrder)),
+      this.db.select({ eventId: rundownItems.eventId, speakerId: rundownItems.speakerId, time: rundownItems.time, endTime: rundownItems.endTime, agenda: rundownItems.agenda })
+        .from(rundownItems).where(and(inArray(rundownItems.eventId, ids), sql`${rundownItems.speakerId} is not null`))
+        .orderBy(asc(rundownItems.sortOrder), asc(rundownItems.time)),
+    ]);
+    const avatars = await this.refs.imageRefs(rows.map(r => r.avatarAssetId));
+    // A speaker's first slot in the rundown (talk before Q and A).
+    const slotOf = new Map<string, DiscussionSpeaker['slot']>();
+    for (const r of slots) {
+      const key = `${r.eventId}:${r.speakerId}`;
+      if (!slotOf.has(key)) slotOf.set(key, { time: r.time, endTime: r.endTime ?? null, agenda: r.agenda });
+    }
+    const seen = new Set<string>();
+    for (const r of rows) {
+      const key = `${r.eventId}:${r.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const list = out.get(r.eventId) ?? [];
+      list.push({
+        id: r.id, slug: r.slug, fullName: r.fullName, nickname: r.nickname ?? null, headline: r.headline ?? null,
+        avatar: avatars.get(r.avatarAssetId ?? '') ?? null, role: r.role, organization: r.organization ?? null,
+        position: r.position ?? null, talkTitle: r.talkTitle ?? null, slot: slotOf.get(key) ?? null,
+      });
+      out.set(r.eventId, list);
+    }
+    return out;
+  }
+
   async eventChoices(search = '') {
     const rows = await this.db.select({ id: events.id, slug: events.slug, title: events.title, number: events.number, summary: events.summary, startsAt: events.startsAt, endsAt: events.endsAt, coverAssetId: events.coverAssetId }).from(events).where(and(eq(events.visibility, 'published'), sql`${events.cancelledAt} is null`, searchCondition(search, 'public'))).orderBy(sql`case when ${events.endsAt} > now() then 0 else 1 end`, sql`case when ${events.endsAt} > now() then ${events.startsAt} end asc nulls last`, desc(events.startsAt)).limit(60);
-    const [covers, speakerRows] = await Promise.all([
+    const [covers, lineups] = await Promise.all([
       this.refs.imageRefs(rows.map(r => r.coverAssetId)),
-      rows.length ? this.db.select({ eventId: eventSpeakers.eventId, name: speakers.fullName }).from(eventSpeakers).innerJoin(speakers, eq(speakers.id, eventSpeakers.speakerId)).where(and(inArray(eventSpeakers.eventId, rows.map(r => r.id)), sql`${speakers.visibility} <> 'draft'`)).orderBy(asc(eventSpeakers.sortOrder)) : Promise.resolve([]),
+      this.lineups(rows.map(r => r.id)),
     ]);
-    const names = new Map<string, string[]>();
-    for (const row of speakerRows) names.set(row.eventId, [...(names.get(row.eventId) ?? []), row.name]);
     const now = new Date();
     const featuredId = rows.find(r => r.endsAt > now)?.id;
-    return rows.map(r => ({ id: r.id, slug: r.slug, title: r.title, number: r.number, summary: r.summary, startsAt: r.startsAt.toISOString(), endsAt: r.endsAt.toISOString(), cover: covers.get(r.coverAssetId ?? '') ?? null, speakers: (names.get(r.id) ?? []).slice(0, 2), featured: r.id === featuredId, current: r.startsAt <= now && r.endsAt > now }));
+    return rows.map(r => {
+      const lineup = lineups.get(r.id) ?? [];
+      return { id: r.id, slug: r.slug, title: r.title, number: r.number, summary: r.summary, startsAt: r.startsAt.toISOString(), endsAt: r.endsAt.toISOString(), cover: covers.get(r.coverAssetId ?? '') ?? null, speakers: lineup.slice(0, 2).map(sp => sp.fullName), lineup, featured: r.id === featuredId, current: r.startsAt <= now && r.endsAt > now };
+    });
+  }
+  /** One event's lineup, for the live questions window and links that preselect an event. */
+  async eventChoice(id: string) {
+    const [row] = await this.db.select({ id: events.id, slug: events.slug, title: events.title, number: events.number, summary: events.summary, startsAt: events.startsAt, endsAt: events.endsAt, coverAssetId: events.coverAssetId }).from(events).where(and(eq(events.id, id), eq(events.visibility, 'published'), sql`${events.cancelledAt} is null`)).limit(1);
+    if (!row) throw notFound('That event is not open for questions.');
+    const [cover, lineups, [next]] = await Promise.all([
+      this.refs.imageRef(row.coverAssetId),
+      this.lineups([row.id]),
+      this.db.select({ id: events.id }).from(events).where(and(eq(events.visibility, 'published'), sql`${events.cancelledAt} is null`, sql`${events.endsAt} > now()`)).orderBy(asc(events.startsAt)).limit(1),
+    ]);
+    const now = new Date();
+    const lineup = lineups.get(row.id) ?? [];
+    return { id: row.id, slug: row.slug, title: row.title, number: row.number, summary: row.summary, startsAt: row.startsAt.toISOString(), endsAt: row.endsAt.toISOString(), cover, speakers: lineup.slice(0, 2).map(sp => sp.fullName), lineup, featured: next?.id === row.id, current: row.startsAt <= now && row.endsAt > now };
   }
   private async thread(id: string) {
     const [row] = await this.db.select().from(threads).where(and(eq(threads.id, id), inArray(threads.status, [...visible]))).limit(1);
@@ -126,7 +194,10 @@ export class DiscussionService {
       this.db.select().from(reactions).where(and(eq(reactions.identityId, me), eq(reactions.targetType, 'thread'), inArray(reactions.targetId, rows.map(r => r.id)))),
     ]);
     const eventMap = new Map(eventRows.map(e => [e.id, e]));
-    const covers = await this.refs.imageRefs(eventRows.map(e => e.coverAssetId));
+    const [covers, lineups] = await Promise.all([
+      this.refs.imageRefs(eventRows.map(e => e.coverAssetId)),
+      rows.some(r => r.speakerId) ? this.lineups(rows.filter(r => r.speakerId && r.eventId).map(r => r.eventId!)) : Promise.resolve(new Map<string, DiscussionSpeaker[]>()),
+    ]);
     const voteMap = new Map(mineVotes.map(v => [v.targetId, v.value]));
     return rows.map(r => {
       const e = r.eventId ? eventMap.get(r.eventId) : undefined;
@@ -137,14 +208,16 @@ export class DiscussionService {
         myReactions: mineReactions.filter(x => x.targetId === r.id).map(x => x.kind),
         commentCount: r.commentCount, acceptedCommentId: r.acceptedCommentId,
         event: e ? { id: e.id, slug: e.slug, number: e.number, title: e.title, summary: e.summary, accent: e.accent, cover: covers.get(e.coverAssetId ?? '') ?? null, startsAt: e.startsAt.toISOString(), endsAt: e.endsAt.toISOString(), featured: e.id === nextId } : null,
+        speaker: (r.eventId && r.speakerId ? lineups.get(r.eventId)?.find(sp => sp.id === r.speakerId) : null) ?? null,
         featured: !!e && e.id === nextId, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString(),
       };
     });
   }
-  async list(me: Identity, q: { search?: string; eventId?: string; tag?: string; sort?: string; page: number; pageSize: number }) {
+  async list(me: Identity, q: { search?: string; eventId?: string; speakerId?: string; tag?: string; sort?: string; page: number; pageSize: number }) {
     const where = and(
       inArray(threads.status, [...visible]),
       q.eventId === 'general' ? sql`${threads.eventId} is null` : q.eventId ? eq(threads.eventId, q.eventId) : undefined,
+      q.speakerId ? eq(threads.speakerId, q.speakerId) : undefined,
       q.search ? or(ilike(threads.title, `%${q.search}%`), ilike(threads.bodyText, `%${q.search}%`)) : undefined,
       q.tag ? sql`${threads.tags} @> ${JSON.stringify([q.tag])}::jsonb` : undefined,
     );
@@ -170,32 +243,39 @@ export class DiscussionService {
       score: r.score, myVote: voteMap.get(r.id) ?? 0, createdAt: r.createdAt.toISOString(),
     })) };
   }
-  private async validateEvent(eventId: string | null | undefined) {
-    if (!eventId) return;
+  private async validateEvent(eventId: string | null | undefined, speakerId?: string | null) {
+    if (!eventId) {
+      if (speakerId) throw badRequest('Choose the event first, then its speaker.');
+      return;
+    }
     const [row] = await this.db.select({ id: events.id }).from(events).where(and(eq(events.id, eventId), eq(events.visibility, 'published'))).limit(1);
     if (!row) throw badRequest('Choose a published event, or General.');
+    if (!speakerId) return;
+    const [onLineup] = await this.db.select({ id: eventSpeakers.id }).from(eventSpeakers).innerJoin(speakers, eq(speakers.id, eventSpeakers.speakerId))
+      .where(and(eq(eventSpeakers.eventId, eventId), eq(eventSpeakers.speakerId, speakerId), sql`${speakers.visibility} <> 'draft'`)).limit(1);
+    if (!onLineup) throw badRequest('That speaker is not on this event. Pick someone from its lineup.');
   }
   private bodyText(body: Blocks) {
     const text = blocksToPlainText(body, 20001);
     if (text.length < 10 || text.length > 20000) throw badRequest('Write between 10 and 20,000 characters.');
     return text;
   }
-  async create(me: Identity, input: { title: string; body: Blocks; tags: string[]; eventId?: string | null }, ip: string | null, challenge: string | undefined) {
+  async create(me: Identity, input: { title: string; body: Blocks; tags: string[]; eventId?: string | null; speakerId?: string | null }, ip: string | null, challenge: string | undefined) {
     this.rate.consume(`discussion:post:${me.id}`, { limit: 5, windowMs: 3600000 });
     this.rate.consume(`discussion:post-ip:${ip ?? 'unknown'}`, { limit: 15, windowMs: 3600000 });
     await this.verify(challenge, 'discussion_post', ip);
-    await this.validateEvent(input.eventId);
-    const [row] = await this.db.insert(threads).values({ authorId: me.id, authorLabel: label(me), title: input.title, body: input.body, bodyText: this.bodyText(input.body), tags: input.tags, eventId: input.eventId || null }).returning();
+    await this.validateEvent(input.eventId, input.speakerId);
+    const [row] = await this.db.insert(threads).values({ authorId: me.id, authorLabel: label(me), title: input.title, body: input.body, bodyText: this.bodyText(input.body), tags: input.tags, eventId: input.eventId || null, speakerId: (input.eventId && input.speakerId) || null }).returning();
     await this.audit.log({ principal: { kind: 'public', id: me.id, name: label(me) }, action: 'discussion.create', resourceType: 'discussion', resourceId: row.id, summary: `Posted ${input.title}`, ip });
     return { id: row.id };
   }
-  async edit(me: Identity, id: string, input: { title: string; body: Blocks; tags: string[]; eventId?: string | null }, ip: string | null, challenge: string | undefined) {
+  async edit(me: Identity, id: string, input: { title: string; body: Blocks; tags: string[]; eventId?: string | null; speakerId?: string | null }, ip: string | null, challenge: string | undefined) {
     const row = await this.thread(id);
     if (row.authorId !== me.id || row.status !== 'open') throw forbidden('Only the author can edit an open question.');
     this.rate.consume(`discussion:edit:${me.id}`, { limit: 15, windowMs: 3600000 });
     await this.verify(challenge, 'discussion_post', ip);
-    await this.validateEvent(input.eventId);
-    await this.db.update(threads).set({ title: input.title, body: input.body, bodyText: this.bodyText(input.body), tags: input.tags, eventId: input.eventId || null, updatedAt: new Date() }).where(eq(threads.id, id));
+    await this.validateEvent(input.eventId, input.speakerId);
+    await this.db.update(threads).set({ title: input.title, body: input.body, bodyText: this.bodyText(input.body), tags: input.tags, eventId: input.eventId || null, speakerId: (input.eventId && input.speakerId) || null, updatedAt: new Date() }).where(eq(threads.id, id));
     return { ok: true };
   }
   async deleteOwn(me: Identity, id: string) {
@@ -298,7 +378,8 @@ export class DiscussionService {
     if (!thread) throw notFound();
     const replies = await this.db.select().from(comments).where(eq(comments.threadId, id)).orderBy(asc(comments.createdAt));
     const allReports = await this.db.select().from(reports).where(or(and(eq(reports.targetType, 'thread'), eq(reports.targetId, id)), replies.length ? and(eq(reports.targetType, 'comment'), inArray(reports.targetId, replies.map(c => c.id))) : sql`false`)).orderBy(desc(reports.createdAt));
-    return { thread, comments: replies, reports: allReports };
+    const [speaker] = thread.speakerId ? await this.db.select({ id: speakers.id, fullName: speakers.fullName, slug: speakers.slug }).from(speakers).where(eq(speakers.id, thread.speakerId)).limit(1) : [];
+    return { thread, comments: replies, reports: allReports, speaker: speaker ?? null };
   }
   async adminUpdateThread(id: string, patch: { status?: 'open' | 'locked' | 'archived' | 'hidden' | 'deleted'; pinned?: boolean; flagged?: boolean; tags?: string[] }, principal: Principal, ip: string | null) {
     const [row] = await this.db.update(threads).set({ ...patch, updatedAt: new Date() }).where(eq(threads.id, id)).returning();

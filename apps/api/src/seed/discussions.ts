@@ -1,6 +1,7 @@
 /** Plausible, synthetic conversations for preview. Every participant and token is disposable. */
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { blocksToPlainText } from '../common/blocks.js';
+import { asc, inArray } from 'drizzle-orm';
 import {
   discussionComments,
   discussionIdentities,
@@ -8,6 +9,7 @@ import {
   discussionReports,
   discussionThreads,
   discussionVotes,
+  eventSpeakers,
 } from '../db/schema.js';
 import type { SeedCtx, SeededEvent } from './content.js';
 import { doc, p } from './lib/blocks.js';
@@ -103,7 +105,16 @@ export async function seedDiscussions(ctx: SeedCtx, seeded: SeededEvent[]) {
   const olderEvents = rng.sample(activeEvents.slice(0, -48), 12);
   const eventPool = [...olderEvents, ...recentEvents];
 
-  function addThread(event: SeededEvent | null, title: string, bodyText: string, tags: readonly string[], index: number) {
+  // Most event questions go to one speaker on that event's lineup (no extra rng draws, so the
+  // rest of the seeded data stays the same).
+  const lineupRows = eventPool.length
+    ? await ctx.db.select({ eventId: eventSpeakers.eventId, speakerId: eventSpeakers.speakerId }).from(eventSpeakers)
+      .where(inArray(eventSpeakers.eventId, eventPool.map(e => e.id))).orderBy(asc(eventSpeakers.sortOrder))
+    : [];
+  const lineup = new Map<string, string[]>();
+  for (const row of lineupRows) lineup.set(row.eventId, [...(lineup.get(row.eventId) ?? []), row.speakerId]);
+
+  function addThread(event: SeededEvent | null, title: string, bodyText: string, tags: readonly string[], index: number, speakerId: string | null = null) {
     const author = rng.pick(people);
     const earliest = event?.plan.past
       ? new Date(event.plan.startsAt.getTime() - 7 * DAY)
@@ -134,7 +145,7 @@ export async function seedDiscussions(ctx: SeedCtx, seeded: SeededEvent[]) {
     const accepted = status === 'open' && index % 4 === 0 ? threadComments[0].id : null;
     threads.push({
       id, authorId: author.id, authorLabel: `${author.name} #${author.tag}`,
-      eventId: event?.id ?? null, title, body, bodyText: blocksToPlainText(body), tags: [...tags],
+      eventId: event?.id ?? null, speakerId, title, body, bodyText: blocksToPlainText(body), tags: [...tags],
       status, pinned: !event && title === GENERAL_QUESTIONS[0][0], acceptedCommentId: accepted,
       score, commentCount: replyCount, createdAt, updatedAt: createdAt,
     });
@@ -157,7 +168,10 @@ export async function seedDiscussions(ctx: SeedCtx, seeded: SeededEvent[]) {
     const count = eventIndex >= olderEvents.length ? 3 : 1;
     for (let i = 0; i < count; i++) {
       const question = EVENT_QUESTIONS[(eventIndex * 2 + i) % EVENT_QUESTIONS.length](event.plan.title);
-      addThread(event, question.title, question.body, [...question.tags, ...event.plan.theme.tags.slice(0, 1)], threads.length);
+      const speakers = lineup.get(event.id) ?? [];
+      // One slot in each round stays with the whole event.
+      const slot = (eventIndex + i) % (speakers.length + 1);
+      addThread(event, question.title, question.body, [...question.tags, ...event.plan.theme.tags.slice(0, 1)], threads.length, speakers[slot] ?? null);
     }
   });
   GENERAL_QUESTIONS.forEach(([title, body, tags]) => addThread(null, title, body, tags, threads.length));

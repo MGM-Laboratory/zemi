@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 import { memo, useCallback, useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 import { BlocksRenderer } from '@/components/public/media/blocks-renderer';
-import { coverThumb, discussionRequest, type EventOption, type Identity, type Page, type Reply, type Thread, type ThreadDetail } from './api';
+import { Avatar } from '@/components/public/ui/avatar';
+import { coverThumb, discussionRequest, ROLE_LABEL, type DiscussionSpeaker, type EventOption, type Identity, type Page, type Reply, type Thread, type ThreadDetail } from './api';
+import { SpeakerChip, speakerAffiliation } from './speaker-picker';
 import { DiscussionConfirm } from './discussion-confirm';
 import { DiscussionSelect } from './discussion-select';
 import { EventPicker } from './event-picker';
@@ -16,7 +18,7 @@ import styles from './discussion.module.css';
 
 const dateFormat = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' });
 const fmt = (date: string) => dateFormat.format(new Date(date));
-const ago = (date: string) => {
+export const ago = (date: string) => {
   const minutes = Math.max(1, Math.floor((Date.now() - new Date(date).getTime()) / 60000));
   if (minutes < 60) return `${minutes}m ago`;
   if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
@@ -50,9 +52,26 @@ export function DiscussionSpace({ id }: { id?: string }) {
   const query = useDebounced(search.trim(), SEARCH_DEBOUNCE_MS);
   const [eventFilter, setEventFilter] = useState('all');
   const [selectedFilterEvent, setSelectedFilterEvent] = useState<EventOption | null>(null);
+  const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
   const [sort, setSort] = useState<'hot' | 'new' | 'top'>('hot');
   const [page, setPage] = useState(1);
   const [settings, setSettings] = useState(false);
+  // /discussion?event=<id>[&speaker=<id>] opens filtered (the live window links here).
+  const linked = useRef(false);
+  useEffect(() => {
+    if (id || !me || linked.current) return;
+    linked.current = true;
+    const q = new URLSearchParams(window.location.search);
+    const eventId = q.get('event');
+    if (!eventId || !/^[0-9a-f-]{36}$/i.test(eventId)) return;
+    discussionRequest<EventOption>('GET', `/events/${eventId}`).then(event => {
+      setSelectedFilterEvent(event);
+      setEventFilter(event.id);
+      const sp = q.get('speaker');
+      setSpeakerFilter(sp && event.lineup?.some(s => s.id === sp) ? sp : null);
+      setPage(1);
+    }).catch(() => undefined);
+  }, [id, me]);
   const [bookmarks, setBookmarks] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
     try { return JSON.parse(localStorage.getItem(localBookmarkKey) || '[]') as string[]; }
@@ -83,6 +102,7 @@ export function DiscussionSpace({ id }: { id?: string }) {
         const params = new URLSearchParams({ page: String(page), pageSize: '15', sort });
         if (query) params.set('search', query);
         if (eventFilter !== 'all') params.set('eventId', eventFilter);
+        if (eventFilter !== 'all' && eventFilter !== 'general' && speakerFilter) params.set('speakerId', speakerFilter);
         const data = await discussionRequest<Page<Thread>>('GET', `/threads?${params}`, undefined, ctrl.signal);
         if (n === seq.current) setThreads(data);
       }
@@ -92,7 +112,7 @@ export function DiscussionSpace({ id }: { id?: string }) {
     } finally {
       if (n === seq.current) setLoading(false);
     }
-  }, [id, page, sort, query, eventFilter]);
+  }, [id, page, sort, query, eventFilter, speakerFilter]);
 
   // The feed loads in parallel with the identity check (no waterfall); it reloads after joining.
   const joined = me === null ? 'out' : 'in';
@@ -168,9 +188,9 @@ export function DiscussionSpace({ id }: { id?: string }) {
           <aside className={styles.filters} aria-label="Discussion filters">
             <p className={styles.filterLabel}>FIND YOUR ROOM</p>
             <div className={styles.filterControls}>
-              <button className={eventFilter === 'all' ? styles.activeFilter : ''} onClick={() => { setEventFilter('all'); setSelectedFilterEvent(null); setPage(1); }}>All conversations <span>↗</span></button>
-              <button className={eventFilter === 'general' ? styles.activeFilter : ''} onClick={() => { setEventFilter('general'); setSelectedFilterEvent(null); setPage(1); }}>General questions <span>↗</span></button>
-              <div className={styles.filterPicker}><EventPicker selected={selectedFilterEvent} filter onSelect={event => { if (event) { setSelectedFilterEvent(event); setEventFilter(event.id); setPage(1); } }} />{selectedFilterEvent && <button className={styles.clearEventFilter} onClick={() => { setSelectedFilterEvent(null); setEventFilter('all'); setPage(1); }}>Clear event filter <X size={14} /></button>}</div>
+              <button className={eventFilter === 'all' ? styles.activeFilter : ''} onClick={() => { setEventFilter('all'); setSelectedFilterEvent(null); setSpeakerFilter(null); setPage(1); }}>All conversations <span>↗</span></button>
+              <button className={eventFilter === 'general' ? styles.activeFilter : ''} onClick={() => { setEventFilter('general'); setSelectedFilterEvent(null); setSpeakerFilter(null); setPage(1); }}>General questions <span>↗</span></button>
+              <div className={styles.filterPicker}><EventPicker selected={selectedFilterEvent} filter onSelect={event => { if (event) { setSelectedFilterEvent(event); setEventFilter(event.id); setSpeakerFilter(null); setPage(1); } }} />{selectedFilterEvent?.lineup?.length ? <div className={styles.speakerFilters} role="group" aria-label="Filter by speaker"><button type="button" className={styles.speakerFilterAll} aria-pressed={!speakerFilter} onClick={() => { setSpeakerFilter(null); setPage(1); }}>Every speaker</button>{selectedFilterEvent.lineup.map(sp => <button key={sp.id} type="button" aria-pressed={speakerFilter === sp.id} title={sp.talkTitle ?? sp.fullName} onClick={() => { setSpeakerFilter(speakerFilter === sp.id ? null : sp.id); setPage(1); }}><Avatar name={sp.fullName} image={sp.avatar} size={24} />{sp.fullName}</button>)}</div> : null}{selectedFilterEvent && <button className={styles.clearEventFilter} onClick={() => { setSelectedFilterEvent(null); setEventFilter('all'); setSpeakerFilter(null); setPage(1); }}>Clear event filter <X size={14} /></button>}</div>
             </div>
             <div className={styles.filterNote}><Sparkles size={17} /><p>Wondering about a paper, a talk, or something in between? There is room for it here.</p></div>
           </aside>
@@ -228,7 +248,7 @@ function IdentitySettings({ me, onClose, onChanged, onDeleted }: { me: Identity;
   return <><div className={styles.modalBackdrop} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className={styles.settings} role="dialog" aria-modal="true" aria-label="Your discussion identity"><button className={styles.close} onClick={onClose} aria-label="Close"><X /></button><p className={styles.eyebrow}>YOUR SPACE</p><h2>Your identity</h2><p>Showing up as <strong>{me.label}</strong>. Change the name for future posts, or leave the conversation.</p><form onSubmit={save}><label htmlFor="new-name">Display name</label><input id="new-name" value={name} minLength={2} maxLength={40} required onChange={e => setName(e.target.value)} /><Turnstile action="discussion_rename" onToken={onToken} resetKey={challengeVersion} /><button className={styles.primaryButton} disabled={busy || !token || name.trim() === me.name}>Save name</button></form><button className={styles.dangerLink} onClick={() => setConfirmDelete(true)}><Trash2 size={16} /> Delete my identity</button></section></div><DiscussionConfirm open={confirmDelete} onOpenChange={setConfirmDelete} title="Leave the conversation?" description="Your identity will be removed. Your questions and replies stay visible as Former participant, and your votes disappear." action="Delete identity" onConfirm={remove} /></>;
 }
 
-function VoteControl({ score, mine, onVote }: { score: number; mine: number; onVote: (value: -1 | 0 | 1) => void }) {
+export function VoteControl({ score, mine, onVote }: { score: number; mine: number; onVote: (value: -1 | 0 | 1) => void }) {
   return <div className={styles.votes} aria-label="Votes"><button aria-label="Upvote" aria-pressed={mine === 1} onClick={e => { e.preventDefault(); onVote(mine === 1 ? 0 : 1); }}><ArrowUp size={17} fill={mine === 1 ? 'currentColor' : 'none'} /></button><strong>{score}</strong><button aria-label="Downvote" aria-pressed={mine === -1} onClick={e => { e.preventDefault(); onVote(mine === -1 ? 0 : -1); }}><ArrowDown size={17} fill={mine === -1 ? 'currentColor' : 'none'} /></button></div>;
 }
 
@@ -257,6 +277,7 @@ const ThreadCard = memo(function ThreadCard({ thread, index, saved, onVote, onBo
       <div className={styles.cardMeta}>{thread.featured && <span className={styles.featuredLabel}><span className={styles.liveDot} /> Next Friday</span>}{thread.pinned && <span className={styles.pinLabel}>Pinned by Zemi</span>}<span>{thread.event ? `Zemi #${thread.event.number ?? '•'}` : 'General'}</span><span className={styles.dotSep}>·</span><span>{ago(thread.createdAt)}</span></div>
       <Link href={href} className={styles.cardTitle} data-cursor="question">{thread.title}<ArrowRight size={19} /></Link>
       <p className={styles.excerpt}>{thread.excerpt}</p>
+      {thread.speaker ? <SpeakerChip speaker={thread.speaker} /> : null}
       {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.eventMini} data-cursor="open">{thread.event.cover ? <Image className={styles.eventCover} src={coverThumb(thread.event.cover, 39)} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>THE EVENT</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)}</em></span><ArrowRight size={17} /></Link>}
       <div className={styles.cardTags}>{thread.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
       <div className={styles.cardBottom}><Link href={href} data-cursor="question"><MessageCircle size={16} /> {thread.commentCount} replies</Link><span>by {thread.author}</span><div className={styles.cardUtilities}><button onClick={() => onBookmark(thread.id)} aria-label={saved ? 'Remove bookmark' : 'Save discussion'} aria-pressed={saved}><Bookmark size={16} fill={saved ? 'currentColor' : 'none'} /></button><button onClick={() => onShare(thread.id)} aria-label="Copy discussion link"><Share2 size={16} /></button></div></div>
@@ -286,6 +307,7 @@ function ThreadView({ thread, saved, bookmark, onVote, onReact, onShare, onRefre
     <div className={styles.detailMeta}>{thread.featured && <span className={styles.featuredLabel}>NEXT FRIDAY</span>}<span>{thread.event ? `Zemi #${thread.event.number ?? '•'}` : 'GENERAL QUESTION'}</span><span>·</span><span>{ago(thread.createdAt)}</span></div>
     <h2>{thread.title}</h2><p className={styles.byline}>Asked by <strong>{thread.author}</strong></p>
     {thread.event && <Link href={`/events/${thread.event.slug}`} className={styles.detailEvent}>{thread.event.cover ? <Image className={styles.eventCover} src={coverThumb(thread.event.cover, 55)} alt={thread.event.cover.alt || thread.event.title} width={80} height={80} unoptimized /> : <span className={styles.eventSymbol}>✳</span>}<span><small>PART OF THIS FRIDAY</small><strong>{thread.event.title}</strong><em>{fmt(thread.event.startsAt)} · Explore the event</em></span><ArrowRight size={21} /></Link>}
+    {thread.speaker ? <SpeakerDetail speaker={thread.speaker} /> : null}
     <div className={styles.richBody}><BlocksRenderer blocks={thread.body} /></div>
     <div className={styles.cardTags}>{thread.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>
     <div className={styles.detailActions}><VoteControl score={thread.score} mine={thread.myVote} onVote={value => onVote(thread.id, value)} /><button onClick={bookmark} aria-pressed={saved}><Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />{saved ? 'Saved' : 'Save'}</button><button onClick={() => onShare(thread.id)}><Share2 size={17} />Share</button><button onClick={() => setReporting({ type: 'thread', id: thread.id })}><Flag size={16} />Report</button>{thread.mine && thread.status === 'open' && <Link href={`/discussion/create?edit=${thread.id}`}><Pencil size={16} />Edit</Link>}{thread.mine && <button className={styles.dangerLink} onClick={() => setConfirmDeleteThread(true)}><Trash2 size={16} />Delete</button>}</div>
@@ -301,11 +323,20 @@ function ThreadView({ thread, saved, bookmark, onVote, onReact, onShare, onRefre
   </div>;
 }
 
+/** Who the question is addressed to, on the question page. */
+function SpeakerDetail({ speaker }: { speaker: DiscussionSpeaker }) {
+  return <Link href={`/speakers/${speaker.slug}`} className={styles.speakerDetail} data-cursor="open">
+    <Avatar name={speaker.fullName} image={speaker.avatar} size={55} />
+    <span><small>ASKED TO · {(ROLE_LABEL[speaker.role] ?? 'Speaker').toUpperCase()}</small><strong>{speaker.fullName}</strong>{speaker.talkTitle ? <em>&ldquo;{speaker.talkTitle}&rdquo;</em> : null}{speakerAffiliation(speaker) ? <em>{speakerAffiliation(speaker)}</em> : null}</span>
+    <ArrowRight size={21} />
+  </Link>;
+}
+
 /**
  * The reply box owns its text, so typing re-renders only the form, not the question body and
  * every reply above it (long threads used to lag on each keystroke).
  */
-function ReplyForm({ threadId, replyTo, onCancelReplyTo, onPosted }: { threadId: string; replyTo: Reply | null; onCancelReplyTo: () => void; onPosted: () => void }) {
+export function ReplyForm({ threadId, replyTo, onCancelReplyTo, onPosted }: { threadId: string; replyTo: Reply | null; onCancelReplyTo: () => void; onPosted: () => void }) {
   const [reply, setReply] = useState('');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -321,7 +352,7 @@ function ReplyForm({ threadId, replyTo, onCancelReplyTo, onPosted }: { threadId:
   return <form className={styles.replyForm} onSubmit={post}><label htmlFor="reply-box">Add to the conversation</label>{replyTo && <p className={styles.replyingTo}>Replying to {replyTo.author}<button type="button" onClick={onCancelReplyTo} aria-label="Cancel reply"><X size={15} /></button></p>}<textarea id="reply-box" minLength={2} maxLength={5000} required rows={5} value={reply} onChange={e => setReply(e.target.value)} placeholder="A thought, a follow-up, a useful link..." /><div className={styles.replySubmit}><Turnstile action="discussion_comment" onToken={onToken} resetKey={challengeVersion} /><button className={styles.primaryButton} disabled={!token || busy}><Send size={17} /> Post reply</button></div></form>;
 }
 
-function ReportDialog({ target, onClose }: { target: { type: 'thread' | 'comment'; id: string }; onClose: () => void }) {
+export function ReportDialog({ target, onClose }: { target: { type: 'thread' | 'comment'; id: string }; onClose: () => void }) {
   const [reason, setReason] = useState('spam');
   const [note, setNote] = useState('');
   const [token, setToken] = useState('');

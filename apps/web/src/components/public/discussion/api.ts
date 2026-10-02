@@ -1,13 +1,20 @@
-import type { Blocks } from '@zemi/shared';
+import { jakartaParts, type Blocks, type ImageRef } from '@zemi/shared';
 
 export interface Identity { id: string; name: string; tag: string; label: string }
-export interface EventOption { id: string; slug: string; title: string; number: number | null; startsAt: string; endsAt: string; summary?: string | null; speakers?: string[]; accent?: string; featured?: boolean; current?: boolean; cover?: EventCover | null }
+export interface EventOption { id: string; slug: string; title: string; number: number | null; startsAt: string; endsAt: string; summary?: string | null; speakers?: string[]; lineup?: DiscussionSpeaker[]; accent?: string; featured?: boolean; current?: boolean; cover?: EventCover | null }
+/** A speaker on an event's lineup: who a question can be addressed to. */
+export interface DiscussionSpeaker {
+  id: string; slug: string; fullName: string; nickname: string | null; headline: string | null;
+  avatar: ImageRef | null; role: string; organization: string | null; position: string | null; talkTitle: string | null;
+  /** Their rundown slot, Jakarta wall clock ("13:30"). */
+  slot: { time: string; endTime: string | null; agenda: string } | null;
+}
 /** The event cover as the API sends it (an ImageRef). Thumbnails use the smallest variant, see `coverThumb`. */
 export interface EventCover { src: string; alt: string | null; width: number; height: number; webp?: Array<{ width: number; url: string }>; avif?: Array<{ width: number; url: string }> }
 export interface Thread {
   id: string; author: string; authorId: string | null; mine: boolean; title: string; body: Blocks; excerpt: string;
   tags: string[]; status: string; pinned: boolean; score: number; myVote: number; myReactions: string[];
-  commentCount: number; acceptedCommentId: string | null; event: EventOption | null; featured: boolean;
+  commentCount: number; acceptedCommentId: string | null; event: EventOption | null; speaker: DiscussionSpeaker | null; featured: boolean;
   createdAt: string; updatedAt: string;
 }
 export interface Reply { id: string; parentId: string | null; author: string; authorId: string | null; mine: boolean; body: string; status: string; score: number; myVote: number; createdAt: string }
@@ -47,4 +54,36 @@ export async function uploadDiscussionImage(file: File, challenge: string): Prom
     throw new Error(json?.error?.message || 'The image could not be uploaded.');
   }
   return (await response.json() as { url: string }).url;
+}
+
+export const ROLE_LABEL: Record<string, string> = { speaker: 'Speaker', keynote: 'Keynote', moderator: 'Moderator', panelist: 'Panelist' };
+
+/** "13:30 to 14:00" (or just the start). */
+export function slotLabel(slot: DiscussionSpeaker['slot']): string | null {
+  if (!slot) return null;
+  return slot.endTime ? `${slot.time} to ${slot.endTime}` : slot.time;
+}
+
+const minutes = (hhmm: string) => {
+  const m = /^(\d{1,2}):(\d{2})/.exec(hhmm);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : Number.NaN;
+};
+
+/**
+ * Where a speaker is on the day, from their rundown slot and the Jakarta clock: on stage now, up
+ * next (their slot starts within the hour), done, or unknown. Only meaningful on the event's day.
+ */
+export function speakerTiming(speaker: DiscussionSpeaker, event: Pick<EventOption, 'startsAt' | 'endsAt'>, now: Date | null): 'now' | 'next' | 'done' | null {
+  if (!now || !speaker.slot) return null;
+  const start = Date.parse(event.startsAt), end = Date.parse(event.endsAt);
+  const day = jakartaParts(start), today = jakartaParts(now);
+  if (day.year !== today.year || day.month !== today.month || day.day !== today.day) return null;
+  if (now.getTime() > end + 30 * 60_000) return 'done';
+  const t = today.hour * 60 + today.minute;
+  const a = minutes(speaker.slot.time);
+  const b = speaker.slot.endTime ? minutes(speaker.slot.endTime) : a + 30;
+  if (Number.isNaN(a)) return null;
+  if (t >= a && t < b) return 'now';
+  if (t < a && a - t <= 60) return 'next';
+  return t >= b ? 'done' : null;
 }

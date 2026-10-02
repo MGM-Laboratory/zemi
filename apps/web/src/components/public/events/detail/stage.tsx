@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
+import dynamic from 'next/dynamic';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { formatTimeRange, type EventDetail, type EventStreamPublic } from '@zemi/shared';
 import { Character } from '@/components/brand/character';
@@ -15,6 +16,12 @@ import styles from '../events.module.css';
 import { accentVars, eventLabel, mapsLink } from '../lib';
 import { Ambient } from './ambient';
 import { Recordings } from './recordings';
+
+// The discussion editor and question detail UI are needed only while an event is live.
+const LiveQuestions = dynamic(
+  () => import('@/components/public/discussion/live-questions').then((module) => module.LiveQuestions),
+  { loading: () => <p className="py-8 text-center text-white/70">Opening live questions...</p> },
+);
 
 function StageShell({
   event,
@@ -158,9 +165,13 @@ export function LiveStage({
           </motion.div>
         </div>
         <p className={cn(styles.stageHint, 'text-center text-[0.9375rem] text-ink-inverse/60')}>
-          Tap a reaction to cheer on the speaker. Questions? Wave at the camera, or save them for Q
-          and A.
+          Tap a reaction to cheer on the speaker. Questions? Ask them right below, the room sees
+          them live.
         </p>
+        {/* Only while the stream is live: the event's questions, without leaving the player. */}
+        <div className={styles.stageQuestions}>
+          <LiveQuestions event={event} />
+        </div>
       </div>
     </StageShell>
   );

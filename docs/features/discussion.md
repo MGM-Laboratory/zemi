@@ -18,7 +18,15 @@ uses another browser can create another identity. No claim of global uniqueness 
 
 ## Participation
 
-- Threads have a title, BlockNote body, up to five tags and an optional published event.
+- Threads have a title, BlockNote body, up to five tags, an optional published event and,
+  inside that event, an optional speaker from its lineup (`speaker_id`, set null if the speaker
+  is deleted). The API rejects a speaker without an event or one that is not on the event's
+  public lineup. The composer shows the lineup with photo, role, affiliation, talk title, rundown
+  slot and an "On stage now" / "Up next" badge (Jakarta clock against the rundown), plus a
+  detailed preview of the chosen speaker. `/discussion/create?event=<id>&speaker=<id>` opens it
+  preselected; `/discussion?event=<id>&speaker=<id>` opens the feed filtered. Cards and the
+  question page show who a question is for, and the feed filters by speaker within an event.
+  `GET /public/discussion/events` returns each event's `lineup`; `GET /events/:id` returns one.
 - BlockNote offers slash commands. Uploaded JPG, PNG, WebP and AVIF images are capped at 5 MB,
   re-encoded to WebP to strip metadata, stored under `assets/discussion/`, and served by the
   existing media proxy. The author must complete a fresh Turnstile check for each image.
@@ -28,6 +36,17 @@ uses another browser can create another identity. No claim of global uniqueness 
 - Locked and archived threads remain readable but cannot receive replies. Hidden and deleted
   threads are not available through public endpoints. The public API checks identity for all
   discussion reads and writes, independently of the client-side name gate.
+
+## Live questions
+
+While an event's stream is live, its page shows a questions window under the player
+(`components/public/discussion/live-questions.tsx`, rendered by `LiveStage` only). It is the
+event's regular discussion, not a chat: questions sorted by votes or newest, filtered by speaker,
+refreshed every 10 seconds while the tab is visible. Viewers join with a name inline, vote, open a
+question to read it and its replies, reply, and ask their own (title, optional details, and who it
+is for; it defaults to the speaker on stage per the rundown). Everything posts through the same
+public endpoints, Turnstile checks and rate limits, so questions stay in the discussion after the
+stream ends. "Longer question" opens the full composer in a new tab, preselected.
 
 ## Moderation and abuse control
 

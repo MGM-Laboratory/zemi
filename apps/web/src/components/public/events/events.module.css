@@ -337,6 +337,11 @@
   }
 }
 
+/* Live questions under the player (a light card on the dark stage). */
+.stageQuestions {
+  min-width: 0;
+}
+
 /* Landscape phones: the screen comes first and fills the height under the nav; the title follows. */
 @media (orientation: landscape) and (max-height: 520px) {
   .stageTight {
@@ -350,6 +355,9 @@
   }
   .stageTight .stageHint {
     display: none;
+  }
+  .stageTight .stageQuestions {
+    order: 3;
   }
   .stageTight .waitClock {
     font-size: 2.75rem;
